@@ -1,0 +1,24 @@
+model = "gpt-5.5"
+model_provider = "acw"
+model_context_window = 200000
+personality = "pragmatic"
+
+[model_providers.acw]
+name = "acw"
+base_url = "https://api.aicodewith.com/v1"
+supports_websockets = false
+
+[projects.'c:\windows\system32']
+trust_level = "trusted"
+
+[projects.'c:\quant_system_v0.8_ths']
+trust_level = "trusted"
+
+[projects.'c:\tower-of-babel\codex']
+trust_level = "trusted"
+
+[tui.model_availability_nux]
+"gpt-5.5" = 4
+
+[windows]
+sandbox = "elevated"

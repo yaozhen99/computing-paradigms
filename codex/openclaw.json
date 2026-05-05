@@ -1,0 +1,195 @@
+{
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "acw": {
+        "baseUrl": "https://api.aicodewith.com/v1",
+        "apiKey": "sk-acw-901a135d-16d3bff2fdaa7d86",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "gpt-5.5",
+            "name": "GPT-5.5",
+            "reasoning": false,
+            "input": ["text"],
+            "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+            "contextWindow": 200000,
+            "maxTokens": 128000
+          },
+          {
+            "id": "gpt-5.3-codex",
+            "name": "GPT-5.3 Codex",
+            "reasoning": false,
+            "input": ["text"],
+            "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+            "contextWindow": 200000,
+            "maxTokens": 128000
+          }
+        ]
+      },
+      "deepseek": {
+        "baseUrl": "https://api.deepseek.com/v1",
+        "apiKey": "sk-4b266b0d02564bdd8b91bee9e1fb773e",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "deepseek-v4-pro",
+            "name": "DeepSeek V4 Pro",
+            "reasoning": false,
+            "input": ["text"],
+            "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+            "contextWindow": 1000000,
+            "maxTokens": 65536
+          },
+          {
+            "id": "deepseek-v4-flash",
+            "name": "DeepSeek V4 Flash",
+            "reasoning": false,
+            "input": ["text"],
+            "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+            "contextWindow": 1000000,
+            "maxTokens": 65536
+          }
+        ]
+      },
+      "astroncodingplan": {
+        "baseUrl": "https://maas-coding-api.cn-huabei-1.xf-yun.com/v2",
+        "apiKey": "2eb8e6c687fbb47b855a82e8a5e81533:MjU3ZjM3NjkwZjc0MTViOTFmYmVhNWQx",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "astron-code-latest",
+            "name": "Astron Code Latest",
+            "reasoning": false,
+            "input": ["text"],
+            "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+            "contextWindow": 128000,
+            "maxTokens": 32768
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "astroncodingplan/astron-code-latest"
+      },
+      "models": {
+        "astroncodingplan/astron-code-latest": {
+          "alias": "astroncodingplan"
+        }
+      },
+      "maxConcurrent": 3,
+      "subagents": {
+        "maxConcurrent": 4,
+        "allowAgents": [
+          "puck",
+          "athena",
+          "guardian",
+          "*"
+        ]
+      },
+      "compaction": {
+        "mode": "safeguard"
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "default": true,
+        "name": "Atlas",
+        "workspace": "C:/Users/yz01/.openclaw/workspace"
+      },
+      {
+        "id": "puck",
+        "name": "Puck",
+        "workspace": "C:/Users/yz01/.openclaw/workspace-puck"
+      },
+      {
+        "id": "athena",
+        "name": "Athena",
+        "workspace": "C:/Users/yz01/.openclaw/workspace-athena"
+      },
+      {
+        "id": "guardian",
+        "name": "Guardian",
+        "workspace": "C:/Users/yz01/.openclaw/workspace-guardian"
+      }
+    ]
+  },
+  "gateway": {
+    "auth": {
+      "mode": "token",
+      "token": "5bae8a269e548625c2931b2b8b2de60421ee38b5552c3e41"
+    },
+    "mode": "local"
+  },
+  "meta": {
+    "lastTouchedVersion": "2026.4.27",
+    "lastTouchedAt": "2026-05-01T14:13:01.473Z"
+  },
+  "channels": {
+    "openclaw-feishu": {
+      "enabled": true,
+      "appId": "cli_a965f42177f8dbc3",
+      "appSecret": "3iAdMjxm0JOVcjNWxgz6hbu220vKujJ6",
+      "accounts": {
+        "default": {
+          "appId": "cli_a965f42177f8dbc3",
+          "appSecret": "3iAdMjxm0JOVcjNWxgz6hbu220vKujJ6",
+          "agentId": "main",
+          "groupPolicy": "allowlist",
+          "groupAllowFrom": [
+            "oc_f16e9f45d7ce40242187fe070267d93e"
+          ],
+          "requireMention": true
+        },
+        "puck": {
+          "appId": "cli_a97a281469b9dbd5",
+          "appSecret": "qh2dGb48dxRQINdba8AhthTaHOrgtpsB",
+          "agentId": "puck",
+          "groupPolicy": "allowlist",
+          "groupAllowFrom": [
+            "oc_f16e9f45d7ce40242187fe070267d93e"
+          ]
+        },
+        "athena": {
+          "appId": "cli_a97acdc4443b1bdf",
+          "appSecret": "vWhXfqTeDQhTVaatsFhR5cY3hdDdHP03",
+          "agentId": "athena",
+          "groupPolicy": "allowlist",
+          "groupAllowFrom": [
+            "oc_f16e9f45d7ce40242187fe070267d93e"
+          ]
+        }
+      }
+    },
+    "feishu": {
+      "enabled": true
+    }
+  },
+  "tools": {
+    "sessions": {
+      "visibility": "all"
+    },
+    "agentToAgent": {
+      "enabled": true
+    }
+  },
+  "plugins": {
+    "allow": [
+      "openclaw-feishu",
+      "browser",
+      "memory-core"
+    ],
+    "entries": {
+      "bonjour": {
+        "enabled": false
+      },
+      "openclaw-feishu": {
+        "enabled": true
+      }
+    }
+  }
+}
