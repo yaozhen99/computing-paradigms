@@ -1,0 +1,1 @@
+{"task_id": "copy-env", "query": "cp /mnt/c/Users/yz01/.openclaw/workspace/puck-env-temp.txt ~/.hermes-puck/.env", "type": "shell", "from": "unknown", "created": "2026-04-29T00:03:39.903486"}

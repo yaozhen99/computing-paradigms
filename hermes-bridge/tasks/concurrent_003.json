@@ -1,0 +1,1 @@
+{"task_id": "concurrent_003", "query": "bash -c 'source ~/hermes-venv/bin/activate && cd /mnt/c/civibbs/pipeline/done_claude_opus/cf/validate_config && python -m pytest test_execute.py -q 2>&1 | tail -2'", "type": "shell", "from": "atlas", "created": "2026-04-25T19:55:32.253341"}

@@ -1,0 +1,1016 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>插件程序开发请求</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script>
+        tailwind.config = {
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <link rel="shortcut icon" href="https://chatboxai.app/icon.png">
+</head>
+<body class='bg-slate-100'>
+    <div class='mx-auto max-w-5xl shadow-md prose bg-white px-2 py-4'>
+        <h1 class='flex flex-row justify-between items-center my-4 h-8'>
+            <span>插件程序开发请求</span>
+            <a href="https://chatboxai.app" target="_blank" >
+                <img src='https://chatboxai.app/icon.png' class="w-12">
+            </a>
+        </h1>
+        <hr />
+        <div class="prose-sm">
+<h2>1. 插件程序开发请求</h2>
+<div class="mb-4">
+<p class="text-green-500 text-lg"><b>SYSTEM: </b></p>
+<style data-mantine-styles="classes">@media (max-width: 35.99375em) {.mantine-visible-from-xs {display: none !important;}}@media (min-width: 36em) {.mantine-hidden-from-xs {display: none !important;}}@media (max-width: 47.99375em) {.mantine-visible-from-sm {display: none !important;}}@media (min-width: 48em) {.mantine-hidden-from-sm {display: none !important;}}@media (max-width: 61.99375em) {.mantine-visible-from-md {display: none !important;}}@media (min-width: 62em) {.mantine-hidden-from-md {display: none !important;}}@media (max-width: 74.99375em) {.mantine-visible-from-lg {display: none !important;}}@media (min-width: 75em) {.mantine-hidden-from-lg {display: none !important;}}@media (max-width: 87.99375em) {.mantine-visible-from-xl {display: none !important;}}@media (min-width: 88em) {.mantine-hidden-from-xl {display: none !important;}}</style><div class="break-words "><p>You are a helpful assistant.</p></div></div>
+<div class="mb-4">
+<p class="text-green-500 text-lg"><b>USER: </b></p>
+<style data-mantine-styles="classes">@media (max-width: 35.99375em) {.mantine-visible-from-xs {display: none !important;}}@media (min-width: 36em) {.mantine-hidden-from-xs {display: none !important;}}@media (max-width: 47.99375em) {.mantine-visible-from-sm {display: none !important;}}@media (min-width: 48em) {.mantine-hidden-from-sm {display: none !important;}}@media (max-width: 61.99375em) {.mantine-visible-from-md {display: none !important;}}@media (min-width: 62em) {.mantine-hidden-from-md {display: none !important;}}@media (max-width: 74.99375em) {.mantine-visible-from-lg {display: none !important;}}@media (min-width: 75em) {.mantine-hidden-from-lg {display: none !important;}}@media (max-width: 87.99375em) {.mantine-visible-from-xl {display: none !important;}}@media (min-width: 88em) {.mantine-hidden-from-xl {display: none !important;}}</style><div class="break-words "><p>根据下面的需求写一个插件程序:</p></div></div>
+<div class="mb-4">
+<p class="text-green-500 text-lg"><b>USER: </b></p>
+<style data-mantine-styles="classes">@media (max-width: 35.99375em) {.mantine-visible-from-xs {display: none !important;}}@media (min-width: 36em) {.mantine-hidden-from-xs {display: none !important;}}@media (max-width: 47.99375em) {.mantine-visible-from-sm {display: none !important;}}@media (min-width: 48em) {.mantine-hidden-from-sm {display: none !important;}}@media (max-width: 61.99375em) {.mantine-visible-from-md {display: none !important;}}@media (min-width: 62em) {.mantine-hidden-from-md {display: none !important;}}@media (max-width: 74.99375em) {.mantine-visible-from-lg {display: none !important;}}@media (min-width: 75em) {.mantine-hidden-from-lg {display: none !important;}}@media (max-width: 87.99375em) {.mantine-visible-from-xl {display: none !important;}}@media (min-width: 88em) {.mantine-hidden-from-xl {display: none !important;}}</style><div class="break-words "><p>二、FS-01 create_directory（定稿版）<br/>
+yaml</p>
+<h1>libsmallcreate_directorydefinition.yaml</h1>
+<p>name create_directory<br/>
+version 1.0.0<br/>
+type function<br/>
+description 创建目录（如不存在）</p>
+<p>inputs</p>
+<ul>
+<li>name dir_path<br/>
+type path<br/>
+required true<br/>
+constraints
+<ul>
+<li>路径不能为空</li>
+<li>路径长度 1-1024 字符</li>
+</ul>
+</li>
+</ul>
+<p>outputs</p>
+<ul>
+<li>name created<br/>
+type bool<br/>
+description 本次是否创建了目录</li>
+<li>name exists<br/>
+type bool<br/>
+description 目录是否存在（创建后）</li>
+</ul>
+<p>error_codes</p>
+<ul>
+<li>code E_PERMISSION<br/>
+description 权限不足<br/>
+recovery 检查目录权限或使用有权限的路径</li>
+<li>code E_PATH_INVALID<br/>
+description 路径无效<br/>
+recovery 检查路径是否为空或包含非法字符</li>
+<li>code E_IO_ERROR<br/>
+description 输入输出错误<br/>
+recovery 检查磁盘状态或重试</li>
+</ul>
+<p>internal_logic</p>
+<ol>
+<li>将 dir_path 转换为 Path 对象</li>
+<li>检查路径是否存在
+<ul>
+<li>如果存在 created=False, exists=True</li>
+</ul>
+</li>
+<li>如果不存在
+<ul>
+<li>调用 path.mkdir(parents=True, exist_ok=True)</li>
+<li>created=True, exists=True</li>
+</ul>
+</li>
+<li>异常处理
+<ul>
+<li>PermissionError → 记录日志，返回 (False, False)</li>
+<li>OSError → 记录日志，返回 (False, False)</li>
+</ul>
+</li>
+</ol>
+<p>dependencies []  # 使用标准库 pathlib</p>
+<p>logs</p>
+<ul>
+<li>trigger 目录已存在<br/>
+level DEBUG<br/>
+template 目录已存在 {dir_path}</li>
+<li>trigger 目录创建成功<br/>
+level DEBUG<br/>
+template 目录创建成功 {dir_path}</li>
+<li>trigger 权限不足<br/>
+level ERROR<br/>
+template 创建目录失败 {dir_path}, 权限不足</li>
+<li>trigger 其他错误<br/>
+level ERROR<br/>
+template 创建目录失败 {dir_path}, {error}</li>
+</ul>
+<p>triggers</p>
+<ul>
+<li>name normal<br/>
+description 正常创建新目录<br/>
+input<br/>
+dir_path tmpnew_dir<br/>
+expect<br/>
+output {created true, exists true}<br/>
+logs<br/>
+- level DEBUG<br/>
+contains 目录创建成功</li>
+<li>name already_exists<br/>
+description 目录已存在<br/>
+input<br/>
+dir_path existingdir<br/>
+expect<br/>
+output {created false, exists true}<br/>
+logs<br/>
+- level DEBUG<br/>
+contains 目录已存在</li>
+<li>name no_permission<br/>
+description 权限不足<br/>
+input<br/>
+dir_path roottest_dir<br/>
+expect<br/>
+output {created false, exists false}<br/>
+logs<br/>
+- level ERROR<br/>
+contains 权限不足</li>
+</ul></div></div>
+<div class="mb-4">
+<p class="text-blue-500 text-lg"><b>ASSISTANT: </b></p>
+<style data-mantine-styles="classes">@media (max-width: 35.99375em) {.mantine-visible-from-xs {display: none !important;}}@media (min-width: 36em) {.mantine-hidden-from-xs {display: none !important;}}@media (max-width: 47.99375em) {.mantine-visible-from-sm {display: none !important;}}@media (min-width: 48em) {.mantine-hidden-from-sm {display: none !important;}}@media (max-width: 61.99375em) {.mantine-visible-from-md {display: none !important;}}@media (min-width: 62em) {.mantine-hidden-from-md {display: none !important;}}@media (max-width: 74.99375em) {.mantine-visible-from-lg {display: none !important;}}@media (min-width: 75em) {.mantine-hidden-from-lg {display: none !important;}}@media (max-width: 87.99375em) {.mantine-visible-from-xl {display: none !important;}}@media (min-width: 88em) {.mantine-hidden-from-xl {display: none !important;}}</style><div class="break-words "><h1>FS-01 <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">create_directory</code> 插件程序（定稿版）</h1>
+<p>根据您提供的 YAML 规范，下面是完整的插件实现：</p>
+<hr/>
+<h2>项目结构</h2>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rd97"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R3dd97"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-file-type-txt "><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M16.5 15h3"></path><path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4"></path><path d="M4.5 15h3"></path><path d="M6 15v6"></path><path d="M18 15v6"></path><path d="M10 15l4 6"></path><path d="M10 21l4 -6"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">TEXT</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R5dd97"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span>create_directory/</span></span>
+<span class="line"><span>├── __init__.py</span></span>
+<span class="line"><span>├── plugin.py              # 插件主逻辑</span></span>
+<span class="line"><span>├── definition.yaml        # 插件定义文件</span></span>
+<span class="line"><span>├── tests/</span></span>
+<span class="line"><span>│   ├── __init__.py</span></span>
+<span class="line"><span>│   └── test_create_directory.py  # 单元测试</span></span>
+<span class="line"><span>└── README.md</span></span>
+<span class="line"><span></span></span></code></pre></div></div></div></pre>
+<hr/>
+<h2>1. <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">definition.yaml</code> — 插件定义文件</h2>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rd9v"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R3dd9v"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-code "><path d="M7 8l-4 4l4 4"></path><path d="M17 8l4 4l-4 4"></path><path d="M14 4l-4 16"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">YAML</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R5dd9v"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span style="color:#7F848E;font-style:italic"># libsmall/create_directory/definition.yaml</span></span>
+<span class="line"><span style="color:#E06C75">name</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">create_directory</span></span>
+<span class="line"><span style="color:#E06C75">version</span><span style="color:#ABB2BF">: </span><span style="color:#D19A66">1.0.0</span></span>
+<span class="line"><span style="color:#E06C75">type</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">function</span></span>
+<span class="line"><span style="color:#E06C75">description</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">创建目录（如不存在）</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">inputs</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">  - </span><span style="color:#E06C75">name</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">dir_path</span></span>
+<span class="line"><span style="color:#E06C75">    type</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">path</span></span>
+<span class="line"><span style="color:#E06C75">    required</span><span style="color:#ABB2BF">: </span><span style="color:#D19A66">true</span></span>
+<span class="line"><span style="color:#E06C75">    constraints</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">      - </span><span style="color:#98C379">路径不能为空</span></span>
+<span class="line"><span style="color:#ABB2BF">      - </span><span style="color:#98C379">路径长度 1-1024 字符</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">outputs</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">  - </span><span style="color:#E06C75">name</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">created</span></span>
+<span class="line"><span style="color:#E06C75">    type</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">bool</span></span>
+<span class="line"><span style="color:#E06C75">    description</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">本次是否创建了目录</span></span>
+<span class="line"><span style="color:#ABB2BF">  - </span><span style="color:#E06C75">name</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">exists</span></span>
+<span class="line"><span style="color:#E06C75">    type</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">bool</span></span>
+<span class="line"><span style="color:#E06C75">    description</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">目录是否存在（创建后）</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">error_codes</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">  - </span><span style="color:#E06C75">code</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">E_PERMISSION</span></span>
+<span class="line"><span style="color:#E06C75">    description</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">权限不足</span></span>
+<span class="line"><span style="color:#E06C75">    recovery</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">检查目录权限或使用有权限的路径</span></span>
+<span class="line"><span style="color:#ABB2BF">  - </span><span style="color:#E06C75">code</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">E_PATH_INVALID</span></span>
+<span class="line"><span style="color:#E06C75">    description</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">路径无效</span></span>
+<span class="line"><span style="color:#E06C75">    recovery</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">检查路径是否为空或包含非法字符</span></span>
+<span class="line"><span style="color:#ABB2BF">  - </span><span style="color:#E06C75">code</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">E_IO_ERROR</span></span>
+<span class="line"><span style="color:#E06C75">    description</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">输入输出错误</span></span>
+<span class="line"><span style="color:#E06C75">    recovery</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">检查磁盘状态或重试</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">dependencies</span><span style="color:#ABB2BF">: []</span></span>
+<span class="line"></span></code></pre></div></div></div></pre>
+<hr/>
+<h2>2. <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">plugin.py</code> — 插件主逻辑</h2>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rdan"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R3ddan"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-brand-python "><path d="M12 9h-7a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h3"></path><path d="M12 15h7a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-3"></path><path d="M8 9v-4a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v5a2 2 0 0 1 -2 2h-4a2 2 0 0 0 -2 2v5a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4"></path><path d="M11 6l0 .01"></path><path d="M13 18l0 .01"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">PYTHON</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R5ddan"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span style="color:#98C379">"""</span></span>
+<span class="line"><span style="color:#98C379">FS-01 create_directory 插件</span></span>
+<span class="line"><span style="color:#98C379">版本: 1.0.0</span></span>
+<span class="line"><span style="color:#98C379">描述: 创建目录（如不存在）</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#98C379">依赖: 标准库 pathlib, logging（无第三方依赖）</span></span>
+<span class="line"><span style="color:#98C379">"""</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">from</span><span style="color:#E06C75"> __future__</span><span style="color:#C678DD"> import</span><span style="color:#ABB2BF"> annotations</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> logging</span></span>
+<span class="line"><span style="color:#C678DD">from</span><span style="color:#ABB2BF"> dataclasses </span><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> dataclass</span></span>
+<span class="line"><span style="color:#C678DD">from</span><span style="color:#ABB2BF"> pathlib </span><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> Path</span></span>
+<span class="line"><span style="color:#C678DD">from</span><span style="color:#ABB2BF"> typing </span><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> Optional</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># 常量 &#x26; 错误码</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D19A66">PLUGIN_NAME</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "create_directory"</span></span>
+<span class="line"><span style="color:#D19A66">PLUGIN_VERSION</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "1.0.0"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># 路径约束</span></span>
+<span class="line"><span style="color:#D19A66">_MIN_PATH_LENGTH</span><span style="color:#56B6C2"> =</span><span style="color:#D19A66"> 1</span></span>
+<span class="line"><span style="color:#D19A66">_MAX_PATH_LENGTH</span><span style="color:#56B6C2"> =</span><span style="color:#D19A66"> 1024</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># 错误码枚举</span></span>
+<span class="line"><span style="color:#C678DD">class</span><span style="color:#E5C07B"> ErrorCode</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#D19A66">    E_PERMISSION</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "E_PERMISSION"</span></span>
+<span class="line"><span style="color:#D19A66">    E_PATH_INVALID</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "E_PATH_INVALID"</span></span>
+<span class="line"><span style="color:#D19A66">    E_IO_ERROR</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "E_IO_ERROR"</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># 数据模型</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">@dataclass</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75;font-style:italic">frozen</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">True</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#C678DD">class</span><span style="color:#E5C07B"> CreateDirectoryResult</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#98C379">    """create_directory 的返回结果。"""</span></span>
+<span class="line"><span style="color:#ABB2BF">    created: </span><span style="color:#56B6C2">bool</span><span style="color:#7F848E;font-style:italic">       # 本次是否创建了目录</span></span>
+<span class="line"><span style="color:#ABB2BF">    exists: </span><span style="color:#56B6C2">bool</span><span style="color:#7F848E;font-style:italic">        # 目录是否存在（创建后）</span></span>
+<span class="line"><span style="color:#ABB2BF">    error_code: Optional[</span><span style="color:#56B6C2">str</span><span style="color:#ABB2BF">] </span><span style="color:#56B6C2">=</span><span style="color:#D19A66"> None</span><span style="color:#7F848E;font-style:italic">   # 错误码（成功时为 None）</span></span>
+<span class="line"><span style="color:#ABB2BF">    error_message: Optional[</span><span style="color:#56B6C2">str</span><span style="color:#ABB2BF">] </span><span style="color:#56B6C2">=</span><span style="color:#D19A66"> None</span><span style="color:#7F848E;font-style:italic">  # 错误信息（成功时为 None）</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> to_dict</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">) -> </span><span style="color:#56B6C2">dict</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#98C379">        """转换为字典，便于序列化。"""</span></span>
+<span class="line"><span style="color:#ABB2BF">        result </span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF"> {</span></span>
+<span class="line"><span style="color:#98C379">            "created"</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.created,</span></span>
+<span class="line"><span style="color:#98C379">            "exists"</span><span style="color:#ABB2BF">: </span><span style="color:#E5C07B">self</span><span style="color:#ABB2BF">.exists,</span></span>
+<span class="line"><span style="color:#ABB2BF">        }</span></span>
+<span class="line"><span style="color:#C678DD">        if</span><span style="color:#E5C07B"> self</span><span style="color:#ABB2BF">.error_code </span><span style="color:#C678DD">is</span><span style="color:#C678DD"> not</span><span style="color:#D19A66"> None</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">            result[</span><span style="color:#98C379">"error_code"</span><span style="color:#ABB2BF">] </span><span style="color:#56B6C2">=</span><span style="color:#E5C07B"> self</span><span style="color:#ABB2BF">.error_code</span></span>
+<span class="line"><span style="color:#ABB2BF">            result[</span><span style="color:#98C379">"error_message"</span><span style="color:#ABB2BF">] </span><span style="color:#56B6C2">=</span><span style="color:#E5C07B"> self</span><span style="color:#ABB2BF">.error_message</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#ABB2BF"> result</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># 核心函数</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">logger </span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF"> logging.</span><span style="color:#61AFEF">getLogger</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">f</span><span style="color:#98C379">"libsmall.</span><span style="color:#D19A66">{PLUGIN_NAME}</span><span style="color:#98C379">"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">def</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66;font-style:italic">dir_path</span><span style="color:#ABB2BF">: </span><span style="color:#56B6C2">str</span><span style="color:#ABB2BF">) -> CreateDirectoryResult:</span></span>
+<span class="line"><span style="color:#98C379">    """</span></span>
+<span class="line"><span style="color:#98C379">    创建目录（如不存在）。</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#98C379">    参数:</span></span>
+<span class="line"><span style="color:#98C379">        dir_path (str): 要创建的目录路径。</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#98C379">    返回:</span></span>
+<span class="line"><span style="color:#98C379">        CreateDirectoryResult:</span></span>
+<span class="line"><span style="color:#98C379">            - created: 本次是否创建了目录</span></span>
+<span class="line"><span style="color:#98C379">            - exists:  目录是否存在（创建后）</span></span>
+<span class="line"><span style="color:#98C379">            - error_code: 错误码（成功时为 None）</span></span>
+<span class="line"><span style="color:#98C379">            - error_message: 错误信息（成功时为 None）</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#98C379">    内部逻辑:</span></span>
+<span class="line"><span style="color:#98C379">        1. 校验 dir_path（非空、长度 1-1024）</span></span>
+<span class="line"><span style="color:#98C379">        2. 将 dir_path 转换为 Path 对象</span></span>
+<span class="line"><span style="color:#98C379">        3. 检查路径是否已存在</span></span>
+<span class="line"><span style="color:#98C379">           - 已存在 → created=False, exists=True</span></span>
+<span class="line"><span style="color:#98C379">        4. 如果不存在</span></span>
+<span class="line"><span style="color:#98C379">           - 调用 path.mkdir(parents=True, exist_ok=True)</span></span>
+<span class="line"><span style="color:#98C379">           - created=True, exists=True</span></span>
+<span class="line"><span style="color:#98C379">        5. 异常处理</span></span>
+<span class="line"><span style="color:#98C379">           - PermissionError → 记录日志，返回 (False, False)</span></span>
+<span class="line"><span style="color:#98C379">           - OSError         → 记录日志，返回 (False, False)</span></span>
+<span class="line"><span style="color:#98C379">    """</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # ----------------------------------------------------------</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # Step 0: 输入校验</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # ----------------------------------------------------------</span></span>
+<span class="line"><span style="color:#C678DD">    if</span><span style="color:#ABB2BF"> dir_path </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> None</span><span style="color:#C678DD"> or</span><span style="color:#C678DD"> not</span><span style="color:#56B6C2"> isinstance</span><span style="color:#ABB2BF">(dir_path, </span><span style="color:#56B6C2">str</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#ABB2BF">        error_msg </span><span style="color:#56B6C2">=</span><span style="color:#C678DD"> f</span><span style="color:#98C379">"创建目录失败: 路径不能为 None 或非字符串类型"</span></span>
+<span class="line"><span style="color:#ABB2BF">        logger.</span><span style="color:#61AFEF">error</span><span style="color:#ABB2BF">(error_msg)</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#61AFEF"> CreateDirectoryResult</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            created</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            exists</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_code</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">ErrorCode.</span><span style="color:#D19A66">E_PATH_INVALID</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_message</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">error_msg,</span></span>
+<span class="line"><span style="color:#ABB2BF">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # 去除首尾空格后检查</span></span>
+<span class="line"><span style="color:#ABB2BF">    stripped_path </span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF"> dir_path.</span><span style="color:#61AFEF">strip</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#C678DD">    if</span><span style="color:#56B6C2"> len</span><span style="color:#ABB2BF">(stripped_path) </span><span style="color:#56B6C2">&#x3C;</span><span style="color:#D19A66"> _MIN_PATH_LENGTH</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">        error_msg </span><span style="color:#56B6C2">=</span><span style="color:#C678DD"> f</span><span style="color:#98C379">"创建目录失败: 路径不能为空"</span></span>
+<span class="line"><span style="color:#ABB2BF">        logger.</span><span style="color:#61AFEF">error</span><span style="color:#ABB2BF">(error_msg)</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#61AFEF"> CreateDirectoryResult</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            created</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            exists</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_code</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">ErrorCode.</span><span style="color:#D19A66">E_PATH_INVALID</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_message</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">error_msg,</span></span>
+<span class="line"><span style="color:#ABB2BF">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    if</span><span style="color:#56B6C2"> len</span><span style="color:#ABB2BF">(stripped_path) </span><span style="color:#56B6C2">></span><span style="color:#D19A66"> _MAX_PATH_LENGTH</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">        error_msg </span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF"> (</span></span>
+<span class="line"><span style="color:#C678DD">            f</span><span style="color:#98C379">"创建目录失败: 路径长度 </span><span style="color:#D19A66">{</span><span style="color:#56B6C2">len</span><span style="color:#ABB2BF">(stripped_path)</span><span style="color:#D19A66">}</span><span style="color:#98C379"> 超过最大限制 "</span></span>
+<span class="line"><span style="color:#C678DD">            f</span><span style="color:#98C379">"</span><span style="color:#D19A66">{_MAX_PATH_LENGTH}</span><span style="color:#98C379"> 字符"</span></span>
+<span class="line"><span style="color:#ABB2BF">        )</span></span>
+<span class="line"><span style="color:#ABB2BF">        logger.</span><span style="color:#61AFEF">error</span><span style="color:#ABB2BF">(error_msg)</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#61AFEF"> CreateDirectoryResult</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            created</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            exists</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_code</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">ErrorCode.</span><span style="color:#D19A66">E_PATH_INVALID</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_message</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">error_msg,</span></span>
+<span class="line"><span style="color:#ABB2BF">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # ----------------------------------------------------------</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # Step 1: 转换为 Path 对象</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # ----------------------------------------------------------</span></span>
+<span class="line"><span style="color:#C678DD">    try</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">        path </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> Path</span><span style="color:#ABB2BF">(stripped_path)</span></span>
+<span class="line"><span style="color:#C678DD">    except</span><span style="color:#ABB2BF"> Exception </span><span style="color:#C678DD">as</span><span style="color:#ABB2BF"> exc:</span></span>
+<span class="line"><span style="color:#ABB2BF">        error_msg </span><span style="color:#56B6C2">=</span><span style="color:#C678DD"> f</span><span style="color:#98C379">"创建目录失败 </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">stripped_path</span><span style="color:#D19A66">}</span><span style="color:#98C379">, </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">exc</span><span style="color:#D19A66">}</span><span style="color:#98C379">"</span></span>
+<span class="line"><span style="color:#ABB2BF">        logger.</span><span style="color:#61AFEF">error</span><span style="color:#ABB2BF">(error_msg)</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#61AFEF"> CreateDirectoryResult</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            created</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            exists</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_code</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">ErrorCode.</span><span style="color:#D19A66">E_PATH_INVALID</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_message</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">error_msg,</span></span>
+<span class="line"><span style="color:#ABB2BF">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # ----------------------------------------------------------</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # Step 2: 检查路径是否已存在</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # ----------------------------------------------------------</span></span>
+<span class="line"><span style="color:#C678DD">    try</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#C678DD">        if</span><span style="color:#ABB2BF"> path.</span><span style="color:#61AFEF">exists</span><span style="color:#ABB2BF">() </span><span style="color:#C678DD">and</span><span style="color:#ABB2BF"> path.</span><span style="color:#61AFEF">is_dir</span><span style="color:#ABB2BF">():</span></span>
+<span class="line"><span style="color:#ABB2BF">            logger.</span><span style="color:#61AFEF">debug</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">f</span><span style="color:#98C379">"目录已存在 </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">stripped_path</span><span style="color:#D19A66">}</span><span style="color:#98C379">"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#C678DD">            return</span><span style="color:#61AFEF"> CreateDirectoryResult</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75;font-style:italic">created</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75;font-style:italic">exists</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">True</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#C678DD">    except</span><span style="color:#ABB2BF"> PermissionError:</span></span>
+<span class="line"><span style="color:#ABB2BF">        error_msg </span><span style="color:#56B6C2">=</span><span style="color:#C678DD"> f</span><span style="color:#98C379">"创建目录失败 </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">stripped_path</span><span style="color:#D19A66">}</span><span style="color:#98C379">, 权限不足"</span></span>
+<span class="line"><span style="color:#ABB2BF">        logger.</span><span style="color:#61AFEF">error</span><span style="color:#ABB2BF">(error_msg)</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#61AFEF"> CreateDirectoryResult</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            created</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            exists</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_code</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">ErrorCode.</span><span style="color:#D19A66">E_PERMISSION</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_message</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">error_msg,</span></span>
+<span class="line"><span style="color:#ABB2BF">        )</span></span>
+<span class="line"><span style="color:#C678DD">    except</span><span style="color:#ABB2BF"> OSError </span><span style="color:#C678DD">as</span><span style="color:#ABB2BF"> exc:</span></span>
+<span class="line"><span style="color:#ABB2BF">        error_msg </span><span style="color:#56B6C2">=</span><span style="color:#C678DD"> f</span><span style="color:#98C379">"创建目录失败 </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">stripped_path</span><span style="color:#D19A66">}</span><span style="color:#98C379">, </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">exc</span><span style="color:#D19A66">}</span><span style="color:#98C379">"</span></span>
+<span class="line"><span style="color:#ABB2BF">        logger.</span><span style="color:#61AFEF">error</span><span style="color:#ABB2BF">(error_msg)</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#61AFEF"> CreateDirectoryResult</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            created</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            exists</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_code</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">ErrorCode.</span><span style="color:#D19A66">E_IO_ERROR</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_message</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">error_msg,</span></span>
+<span class="line"><span style="color:#ABB2BF">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # ----------------------------------------------------------</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # Step 3: 目录不存在，执行创建</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # ----------------------------------------------------------</span></span>
+<span class="line"><span style="color:#C678DD">    try</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">        path.</span><span style="color:#61AFEF">mkdir</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75;font-style:italic">parents</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">True</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75;font-style:italic">exist_ok</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">True</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#ABB2BF">        logger.</span><span style="color:#61AFEF">debug</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">f</span><span style="color:#98C379">"目录创建成功 </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">stripped_path</span><span style="color:#D19A66">}</span><span style="color:#98C379">"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#61AFEF"> CreateDirectoryResult</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75;font-style:italic">created</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">True</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75;font-style:italic">exists</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">True</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    except</span><span style="color:#ABB2BF"> PermissionError:</span></span>
+<span class="line"><span style="color:#ABB2BF">        error_msg </span><span style="color:#56B6C2">=</span><span style="color:#C678DD"> f</span><span style="color:#98C379">"创建目录失败 </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">stripped_path</span><span style="color:#D19A66">}</span><span style="color:#98C379">, 权限不足"</span></span>
+<span class="line"><span style="color:#ABB2BF">        logger.</span><span style="color:#61AFEF">error</span><span style="color:#ABB2BF">(error_msg)</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#61AFEF"> CreateDirectoryResult</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            created</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            exists</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_code</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">ErrorCode.</span><span style="color:#D19A66">E_PERMISSION</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_message</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">error_msg,</span></span>
+<span class="line"><span style="color:#ABB2BF">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    except</span><span style="color:#ABB2BF"> OSError </span><span style="color:#C678DD">as</span><span style="color:#ABB2BF"> exc:</span></span>
+<span class="line"><span style="color:#ABB2BF">        error_msg </span><span style="color:#56B6C2">=</span><span style="color:#C678DD"> f</span><span style="color:#98C379">"创建目录失败 </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">stripped_path</span><span style="color:#D19A66">}</span><span style="color:#98C379">, </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">exc</span><span style="color:#D19A66">}</span><span style="color:#98C379">"</span></span>
+<span class="line"><span style="color:#ABB2BF">        logger.</span><span style="color:#61AFEF">error</span><span style="color:#ABB2BF">(error_msg)</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#61AFEF"> CreateDirectoryResult</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            created</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            exists</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_code</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">ErrorCode.</span><span style="color:#D19A66">E_IO_ERROR</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">            error_message</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">error_msg,</span></span>
+<span class="line"><span style="color:#ABB2BF">        )</span></span>
+<span class="line"></span></code></pre></div></div></div></pre>
+<hr/>
+<h2>3. <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">__init__.py</code> — 包导出</h2>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rdbf"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R3ddbf"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-brand-python "><path d="M12 9h-7a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h3"></path><path d="M12 15h7a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-3"></path><path d="M8 9v-4a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v5a2 2 0 0 1 -2 2h-4a2 2 0 0 0 -2 2v5a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4"></path><path d="M11 6l0 .01"></path><path d="M13 18l0 .01"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">PYTHON</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R5ddbf"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span style="color:#98C379">"""</span></span>
+<span class="line"><span style="color:#98C379">libsmall.create_directory</span></span>
+<span class="line"><span style="color:#98C379">~~~~~~~~~~~~~~~~~~~~~~~~~</span></span>
+<span class="line"><span style="color:#98C379">FS-01 create_directory 插件：创建目录（如不存在）。</span></span>
+<span class="line"><span style="color:#98C379">"""</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">from</span><span style="color:#ABB2BF"> .plugin </span><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> (</span></span>
+<span class="line"><span style="color:#D19A66">    PLUGIN_NAME</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#D19A66">    PLUGIN_VERSION</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">    ErrorCode,</span></span>
+<span class="line"><span style="color:#ABB2BF">    CreateDirectoryResult,</span></span>
+<span class="line"><span style="color:#ABB2BF">    create_directory,</span></span>
+<span class="line"><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">__all__</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> [</span></span>
+<span class="line"><span style="color:#98C379">    "PLUGIN_NAME"</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#98C379">    "PLUGIN_VERSION"</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#98C379">    "ErrorCode"</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#98C379">    "CreateDirectoryResult"</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#98C379">    "create_directory"</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">]</span></span>
+<span class="line"></span></code></pre></div></div></div></pre>
+<hr/>
+<h2>4. <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">tests/test_create_directory.py</code> — 完整单元测试</h2>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rdc7"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R3ddc7"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-brand-python "><path d="M12 9h-7a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h3"></path><path d="M12 15h7a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-3"></path><path d="M8 9v-4a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v5a2 2 0 0 1 -2 2h-4a2 2 0 0 0 -2 2v5a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4"></path><path d="M11 6l0 .01"></path><path d="M13 18l0 .01"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">PYTHON</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R5ddc7"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span style="color:#98C379">"""</span></span>
+<span class="line"><span style="color:#98C379">create_directory 插件单元测试</span></span>
+<span class="line"><span style="color:#98C379">覆盖 definition.yaml 中定义的全部 triggers 及边界情况。</span></span>
+<span class="line"><span style="color:#98C379">"""</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">from</span><span style="color:#E06C75"> __future__</span><span style="color:#C678DD"> import</span><span style="color:#ABB2BF"> annotations</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> logging</span></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> os</span></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> stat</span></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> sys</span></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> tempfile</span></span>
+<span class="line"><span style="color:#C678DD">from</span><span style="color:#ABB2BF"> pathlib </span><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> Path</span></span>
+<span class="line"><span style="color:#C678DD">from</span><span style="color:#ABB2BF"> unittest </span><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> mock</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> pytest</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># 将上层目录加入搜索路径（方便独立运行）</span></span>
+<span class="line"><span style="color:#ABB2BF">sys.path.</span><span style="color:#61AFEF">insert</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">0</span><span style="color:#ABB2BF">, </span><span style="color:#56B6C2">str</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">Path</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">__file__</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">resolve</span><span style="color:#ABB2BF">().parent.parent))</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">from</span><span style="color:#ABB2BF"> plugin </span><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> ErrorCode, create_directory  </span><span style="color:#7F848E;font-style:italic"># noqa: E402</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># 辅助 Fixtures</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">@pytest</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">fixture</span></span>
+<span class="line"><span style="color:#C678DD">def</span><span style="color:#61AFEF"> tmp_base</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66;font-style:italic">tmp_path</span><span style="color:#ABB2BF">: Path):</span></span>
+<span class="line"><span style="color:#98C379">    """提供一个临时基础目录。"""</span></span>
+<span class="line"><span style="color:#C678DD">    return</span><span style="color:#ABB2BF"> tmp_path</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">@pytest</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">fixture</span></span>
+<span class="line"><span style="color:#C678DD">def</span><span style="color:#61AFEF"> log_capture</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66;font-style:italic">caplog</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#98C379">    """捕获 libsmall.create_directory 的日志。"""</span></span>
+<span class="line"><span style="color:#C678DD">    with</span><span style="color:#ABB2BF"> caplog.</span><span style="color:#61AFEF">at_level</span><span style="color:#ABB2BF">(logging.</span><span style="color:#D19A66">DEBUG</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75;font-style:italic">logger</span><span style="color:#56B6C2">=</span><span style="color:#98C379">"libsmall.create_directory"</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#C678DD">        yield</span><span style="color:#ABB2BF"> caplog</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># Trigger: normal — 正常创建新目录</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">class</span><span style="color:#E5C07B"> TestNormalCreation</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#98C379">    """对应 triggers[0]: normal"""</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_create_new_directory</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">tmp_base</span><span style="color:#ABB2BF">: Path, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#98C379">        """创建一个全新的目录，应返回 created=True, exists=True。"""</span></span>
+<span class="line"><span style="color:#ABB2BF">        target </span><span style="color:#56B6C2">=</span><span style="color:#56B6C2"> str</span><span style="color:#ABB2BF">(tmp_base </span><span style="color:#56B6C2">/</span><span style="color:#98C379"> "new_dir"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">        result </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(target)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> True</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> True</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.error_code </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> None</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#61AFEF"> Path</span><span style="color:#ABB2BF">(target).</span><span style="color:#61AFEF">is_dir</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">        # 日志检查</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#56B6C2"> any</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"目录创建成功"</span><span style="color:#C678DD"> in</span><span style="color:#ABB2BF"> r.message </span><span style="color:#C678DD">for</span><span style="color:#ABB2BF"> r </span><span style="color:#C678DD">in</span><span style="color:#ABB2BF"> log_capture.records)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_create_nested_directory</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">tmp_base</span><span style="color:#ABB2BF">: Path, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#98C379">        """创建多层嵌套目录 (parents=True)。"""</span></span>
+<span class="line"><span style="color:#ABB2BF">        target </span><span style="color:#56B6C2">=</span><span style="color:#56B6C2"> str</span><span style="color:#ABB2BF">(tmp_base </span><span style="color:#56B6C2">/</span><span style="color:#98C379"> "a"</span><span style="color:#56B6C2"> /</span><span style="color:#98C379"> "b"</span><span style="color:#56B6C2"> /</span><span style="color:#98C379"> "c"</span><span style="color:#56B6C2"> /</span><span style="color:#98C379"> "d"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">        result </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(target)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> True</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> True</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#61AFEF"> Path</span><span style="color:#ABB2BF">(target).</span><span style="color:#61AFEF">is_dir</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_to_dict</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">tmp_base</span><span style="color:#ABB2BF">: Path):</span></span>
+<span class="line"><span style="color:#98C379">        """验证 to_dict 序列化。"""</span></span>
+<span class="line"><span style="color:#ABB2BF">        target </span><span style="color:#56B6C2">=</span><span style="color:#56B6C2"> str</span><span style="color:#ABB2BF">(tmp_base </span><span style="color:#56B6C2">/</span><span style="color:#98C379"> "dict_test"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#ABB2BF">        result </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(target)</span></span>
+<span class="line"><span style="color:#ABB2BF">        d </span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF"> result.</span><span style="color:#61AFEF">to_dict</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> d </span><span style="color:#56B6C2">==</span><span style="color:#ABB2BF"> {</span><span style="color:#98C379">"created"</span><span style="color:#ABB2BF">: </span><span style="color:#D19A66">True</span><span style="color:#ABB2BF">, </span><span style="color:#98C379">"exists"</span><span style="color:#ABB2BF">: </span><span style="color:#D19A66">True</span><span style="color:#ABB2BF">}</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># Trigger: already_exists — 目录已存在</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">class</span><span style="color:#E5C07B"> TestAlreadyExists</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#98C379">    """对应 triggers[1]: already_exists"""</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_existing_directory</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">tmp_base</span><span style="color:#ABB2BF">: Path, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#98C379">        """目录已存在时，应返回 created=False, exists=True。"""</span></span>
+<span class="line"><span style="color:#ABB2BF">        target </span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF"> tmp_base </span><span style="color:#56B6C2">/</span><span style="color:#98C379"> "existing_dir"</span></span>
+<span class="line"><span style="color:#ABB2BF">        target.</span><span style="color:#61AFEF">mkdir</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">        result </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">str</span><span style="color:#ABB2BF">(target))</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> True</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.error_code </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> None</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">        # 日志检查</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#56B6C2"> any</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"目录已存在"</span><span style="color:#C678DD"> in</span><span style="color:#ABB2BF"> r.message </span><span style="color:#C678DD">for</span><span style="color:#ABB2BF"> r </span><span style="color:#C678DD">in</span><span style="color:#ABB2BF"> log_capture.records)</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># Trigger: no_permission — 权限不足</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">class</span><span style="color:#E5C07B"> TestNoPermission</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#98C379">    """对应 triggers[2]: no_permission"""</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    @pytest</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">mark</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">skipif</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#61AFEF">        os</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">name </span><span style="color:#56B6C2">==</span><span style="color:#98C379"> "nt"</span><span style="color:#C678DD"> or</span><span style="color:#61AFEF"> os</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">getuid</span><span style="color:#ABB2BF">()</span><span style="color:#56B6C2"> ==</span><span style="color:#D19A66"> 0</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">        reason</span><span style="color:#56B6C2">=</span><span style="color:#98C379">"权限测试仅在非 root 的 POSIX 系统上有效"</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">    )</span></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_permission_denied</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">tmp_base</span><span style="color:#ABB2BF">: Path, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#98C379">        """在无写权限的目录下创建子目录，应返回 created=False, exists=False。"""</span></span>
+<span class="line"><span style="color:#ABB2BF">        restricted </span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF"> tmp_base </span><span style="color:#56B6C2">/</span><span style="color:#98C379"> "restricted"</span></span>
+<span class="line"><span style="color:#ABB2BF">        restricted.</span><span style="color:#61AFEF">mkdir</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">        # 移除写权限</span></span>
+<span class="line"><span style="color:#ABB2BF">        restricted.</span><span style="color:#61AFEF">chmod</span><span style="color:#ABB2BF">(stat.</span><span style="color:#D19A66">S_IRUSR</span><span style="color:#56B6C2"> |</span><span style="color:#ABB2BF"> stat.</span><span style="color:#D19A66">S_IXUSR</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">        target </span><span style="color:#56B6C2">=</span><span style="color:#56B6C2"> str</span><span style="color:#ABB2BF">(restricted </span><span style="color:#56B6C2">/</span><span style="color:#98C379"> "test_dir"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        try</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">            result </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(target)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">            assert</span><span style="color:#ABB2BF"> result.created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">            assert</span><span style="color:#ABB2BF"> result.exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">            assert</span><span style="color:#ABB2BF"> result.error_code </span><span style="color:#56B6C2">==</span><span style="color:#ABB2BF"> ErrorCode.</span><span style="color:#D19A66">E_PERMISSION</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">            # 日志检查</span></span>
+<span class="line"><span style="color:#C678DD">            assert</span><span style="color:#56B6C2"> any</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"权限不足"</span><span style="color:#C678DD"> in</span><span style="color:#ABB2BF"> r.message </span><span style="color:#C678DD">for</span><span style="color:#ABB2BF"> r </span><span style="color:#C678DD">in</span><span style="color:#ABB2BF"> log_capture.records)</span></span>
+<span class="line"><span style="color:#C678DD">        finally</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">            # 恢复权限，确保 tmp_path 可以被清理</span></span>
+<span class="line"><span style="color:#ABB2BF">            restricted.</span><span style="color:#61AFEF">chmod</span><span style="color:#ABB2BF">(stat.</span><span style="color:#D19A66">S_IRWXU</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_permission_denied_via_mock</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#98C379">        """通过 mock 模拟 PermissionError。"""</span></span>
+<span class="line"><span style="color:#C678DD">        with</span><span style="color:#ABB2BF"> mock.</span><span style="color:#61AFEF">patch</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"plugin.Path.exists"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75;font-style:italic">return_value</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">), \</span></span>
+<span class="line"><span style="color:#ABB2BF">             mock.</span><span style="color:#61AFEF">patch</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"plugin.Path.mkdir"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75;font-style:italic">side_effect</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">PermissionError(</span><span style="color:#98C379">"mocked"</span><span style="color:#ABB2BF">)):</span></span>
+<span class="line"><span style="color:#ABB2BF">            result </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"/mocked/path"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.error_code </span><span style="color:#56B6C2">==</span><span style="color:#ABB2BF"> ErrorCode.</span><span style="color:#D19A66">E_PERMISSION</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#56B6C2"> any</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"权限不足"</span><span style="color:#C678DD"> in</span><span style="color:#ABB2BF"> r.message </span><span style="color:#C678DD">for</span><span style="color:#ABB2BF"> r </span><span style="color:#C678DD">in</span><span style="color:#ABB2BF"> log_capture.records)</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># 输入校验 — 边界情况</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ============================================================</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">class</span><span style="color:#E5C07B"> TestInputValidation</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#98C379">    """路径约束校验。"""</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    @pytest</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">mark</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">parametrize</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"invalid_path"</span><span style="color:#ABB2BF">,</span><span style="color:#ABB2BF"> [</span></span>
+<span class="line"><span style="color:#98C379">        ""</span><span style="color:#ABB2BF">,</span><span style="color:#7F848E;font-style:italic">       # 空字符串</span></span>
+<span class="line"><span style="color:#98C379">        "   "</span><span style="color:#ABB2BF">,</span><span style="color:#7F848E;font-style:italic">    # 纯空格</span></span>
+<span class="line"><span style="color:#ABB2BF">    ])</span></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_empty_path</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">invalid_path</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#98C379">        """空路径应返回 E_PATH_INVALID。"""</span></span>
+<span class="line"><span style="color:#ABB2BF">        result </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(invalid_path)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.error_code </span><span style="color:#56B6C2">==</span><span style="color:#ABB2BF"> ErrorCode.</span><span style="color:#D19A66">E_PATH_INVALID</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_none_path</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#98C379">        """None 路径应返回 E_PATH_INVALID。"""</span></span>
+<span class="line"><span style="color:#ABB2BF">        result </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">None</span><span style="color:#ABB2BF">)  </span><span style="color:#7F848E;font-style:italic"># type: ignore[arg-type]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> result.error_code </span><span style="color:#56B6C2">==</span><span style="color:#ABB2BF"> ErrorCode.</span><span style="color:#D19A66">E_PATH_INVALID</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_path_too_long</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#98C379">        """超过 1024 字符的路径应</span></span>
+<span class="line"></span></code></pre></div></div></div></pre></div></div>
+<div class="mb-4">
+<p class="text-green-500 text-lg"><b>USER: </b></p>
+<style data-mantine-styles="classes">@media (max-width: 35.99375em) {.mantine-visible-from-xs {display: none !important;}}@media (min-width: 36em) {.mantine-hidden-from-xs {display: none !important;}}@media (max-width: 47.99375em) {.mantine-visible-from-sm {display: none !important;}}@media (min-width: 48em) {.mantine-hidden-from-sm {display: none !important;}}@media (max-width: 61.99375em) {.mantine-visible-from-md {display: none !important;}}@media (min-width: 62em) {.mantine-hidden-from-md {display: none !important;}}@media (max-width: 74.99375em) {.mantine-visible-from-lg {display: none !important;}}@media (min-width: 75em) {.mantine-hidden-from-lg {display: none !important;}}@media (max-width: 87.99375em) {.mantine-visible-from-xl {display: none !important;}}@media (min-width: 88em) {.mantine-hidden-from-xl {display: none !important;}}</style><div class="break-words "><p>error_code、error_message 字段你是怎么想的?规范里没有啊:擅自增加 error_code、error_message 字段	🔴 严重<br/>
+用了 dataclass（规格没要求）	🟡 中等（可接受但不必要）<br/>
+代码量翻倍	🟡 中等</p></div></div>
+<div class="mb-4">
+<p class="text-blue-500 text-lg"><b>ASSISTANT: </b></p>
+<style data-mantine-styles="classes">@media (max-width: 35.99375em) {.mantine-visible-from-xs {display: none !important;}}@media (min-width: 36em) {.mantine-hidden-from-xs {display: none !important;}}@media (max-width: 47.99375em) {.mantine-visible-from-sm {display: none !important;}}@media (min-width: 48em) {.mantine-hidden-from-sm {display: none !important;}}@media (max-width: 61.99375em) {.mantine-visible-from-md {display: none !important;}}@media (min-width: 62em) {.mantine-hidden-from-md {display: none !important;}}@media (max-width: 74.99375em) {.mantine-visible-from-lg {display: none !important;}}@media (min-width: 75em) {.mantine-hidden-from-lg {display: none !important;}}@media (max-width: 87.99375em) {.mantine-visible-from-xl {display: none !important;}}@media (min-width: 88em) {.mantine-hidden-from-xl {display: none !important;}}</style><div class="break-words "><p>你说得完全对。我重新审视规范：</p>
+<p><strong>规范明确定义的输出只有两个：</strong></p>
+<ul>
+<li><code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">created: bool</code></li>
+<li><code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">exists: bool</code></li>
+</ul>
+<p><strong>错误处理规范明确说的是：</strong></p>
+<ul>
+<li>异常 → 记录日志，返回 <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">(False, False)</code></li>
+</ul>
+<p>我擅自加了 <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">error_code</code>、<code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">error_message</code>、<code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">dataclass</code> 包装，全是画蛇添足。现在严格按规范重写：</p>
+<hr/>
+<h1>FS-01 <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">create_directory</code> 插件（定稿版）</h1>
+<h2>项目结构</h2>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rdaf"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R3ddaf"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-file-type-txt "><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M16.5 15h3"></path><path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4"></path><path d="M4.5 15h3"></path><path d="M6 15v6"></path><path d="M18 15v6"></path><path d="M10 15l4 6"></path><path d="M10 21l4 -6"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">TEXT</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R5ddaf"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span>create_directory/</span></span>
+<span class="line"><span>├── __init__.py</span></span>
+<span class="line"><span>├── plugin.py</span></span>
+<span class="line"><span>├── definition.yaml</span></span>
+<span class="line"><span>└── tests/</span></span>
+<span class="line"><span>    ├── __init__.py</span></span>
+<span class="line"><span>    └── test_create_directory.py</span></span>
+<span class="line"><span></span></span></code></pre></div></div></div></pre>
+<hr/>
+<h2>1. <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">definition.yaml</code></h2>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rdb7"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R3ddb7"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-code "><path d="M7 8l-4 4l4 4"></path><path d="M17 8l4 4l-4 4"></path><path d="M14 4l-4 16"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">YAML</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R5ddb7"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span style="color:#E06C75">name</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">create_directory</span></span>
+<span class="line"><span style="color:#E06C75">version</span><span style="color:#ABB2BF">: </span><span style="color:#D19A66">1.0.0</span></span>
+<span class="line"><span style="color:#E06C75">type</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">function</span></span>
+<span class="line"><span style="color:#E06C75">description</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">创建目录（如不存在）</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">inputs</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">  - </span><span style="color:#E06C75">name</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">dir_path</span></span>
+<span class="line"><span style="color:#E06C75">    type</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">path</span></span>
+<span class="line"><span style="color:#E06C75">    required</span><span style="color:#ABB2BF">: </span><span style="color:#D19A66">true</span></span>
+<span class="line"><span style="color:#E06C75">    constraints</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">      - </span><span style="color:#98C379">路径不能为空</span></span>
+<span class="line"><span style="color:#ABB2BF">      - </span><span style="color:#98C379">路径长度 1-1024 字符</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">outputs</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">  - </span><span style="color:#E06C75">name</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">created</span></span>
+<span class="line"><span style="color:#E06C75">    type</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">bool</span></span>
+<span class="line"><span style="color:#E06C75">    description</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">本次是否创建了目录</span></span>
+<span class="line"><span style="color:#ABB2BF">  - </span><span style="color:#E06C75">name</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">exists</span></span>
+<span class="line"><span style="color:#E06C75">    type</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">bool</span></span>
+<span class="line"><span style="color:#E06C75">    description</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">目录是否存在（创建后）</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">error_codes</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">  - </span><span style="color:#E06C75">code</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">E_PERMISSION</span></span>
+<span class="line"><span style="color:#E06C75">    description</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">权限不足</span></span>
+<span class="line"><span style="color:#E06C75">    recovery</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">检查目录权限或使用有权限的路径</span></span>
+<span class="line"><span style="color:#ABB2BF">  - </span><span style="color:#E06C75">code</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">E_PATH_INVALID</span></span>
+<span class="line"><span style="color:#E06C75">    description</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">路径无效</span></span>
+<span class="line"><span style="color:#E06C75">    recovery</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">检查路径是否为空或包含非法字符</span></span>
+<span class="line"><span style="color:#ABB2BF">  - </span><span style="color:#E06C75">code</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">E_IO_ERROR</span></span>
+<span class="line"><span style="color:#E06C75">    description</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">输入输出错误</span></span>
+<span class="line"><span style="color:#E06C75">    recovery</span><span style="color:#ABB2BF">: </span><span style="color:#98C379">检查磁盘状态或重试</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">dependencies</span><span style="color:#ABB2BF">: []</span></span>
+<span class="line"></span></code></pre></div></div></div></pre>
+<hr/>
+<h2>2. <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">plugin.py</code> — 插件主逻辑</h2>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rdbv"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R3ddbv"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-brand-python "><path d="M12 9h-7a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h3"></path><path d="M12 15h7a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-3"></path><path d="M8 9v-4a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v5a2 2 0 0 1 -2 2h-4a2 2 0 0 0 -2 2v5a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4"></path><path d="M11 6l0 .01"></path><path d="M13 18l0 .01"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">PYTHON</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R5ddbv"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span style="color:#98C379">"""</span></span>
+<span class="line"><span style="color:#98C379">FS-01 create_directory 插件</span></span>
+<span class="line"><span style="color:#98C379">版本: 1.0.0</span></span>
+<span class="line"><span style="color:#98C379">描述: 创建目录（如不存在）</span></span>
+<span class="line"><span style="color:#98C379">依赖: 标准库 pathlib, logging</span></span>
+<span class="line"><span style="color:#98C379">"""</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> logging</span></span>
+<span class="line"><span style="color:#C678DD">from</span><span style="color:#ABB2BF"> pathlib </span><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> Path</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">logger </span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF"> logging.</span><span style="color:#61AFEF">getLogger</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"libsmall.create_directory"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D19A66">_MAX_PATH_LENGTH</span><span style="color:#56B6C2"> =</span><span style="color:#D19A66"> 1024</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">def</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66;font-style:italic">dir_path</span><span style="color:#ABB2BF">: </span><span style="color:#56B6C2">str</span><span style="color:#ABB2BF">) -> tuple[</span><span style="color:#56B6C2">bool</span><span style="color:#ABB2BF">, </span><span style="color:#56B6C2">bool</span><span style="color:#ABB2BF">]:</span></span>
+<span class="line"><span style="color:#98C379">    """</span></span>
+<span class="line"><span style="color:#98C379">    创建目录（如不存在）。</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#98C379">    参数:</span></span>
+<span class="line"><span style="color:#98C379">        dir_path: 要创建的目录路径</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#98C379">    返回:</span></span>
+<span class="line"><span style="color:#98C379">        (created, exists)</span></span>
+<span class="line"><span style="color:#98C379">        - created: 本次是否创建了目录</span></span>
+<span class="line"><span style="color:#98C379">        - exists:  目录是否存在（创建后）</span></span>
+<span class="line"><span style="color:#98C379">    """</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # 输入校验</span></span>
+<span class="line"><span style="color:#C678DD">    if</span><span style="color:#C678DD"> not</span><span style="color:#ABB2BF"> dir_path </span><span style="color:#C678DD">or</span><span style="color:#C678DD"> not</span><span style="color:#ABB2BF"> dir_path.</span><span style="color:#61AFEF">strip</span><span style="color:#ABB2BF">():</span></span>
+<span class="line"><span style="color:#ABB2BF">        logger.</span><span style="color:#61AFEF">error</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"创建目录失败, 路径不能为空"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#D19A66"> False</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">False</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">    dir_path </span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF"> dir_path.</span><span style="color:#61AFEF">strip</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    if</span><span style="color:#56B6C2"> len</span><span style="color:#ABB2BF">(dir_path) </span><span style="color:#56B6C2">></span><span style="color:#D19A66"> _MAX_PATH_LENGTH</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">        logger.</span><span style="color:#61AFEF">error</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">f</span><span style="color:#98C379">"创建目录失败 </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">dir_path</span><span style="color:#D19A66">}</span><span style="color:#98C379">, 路径长度超过 </span><span style="color:#D19A66">{_MAX_PATH_LENGTH}</span><span style="color:#98C379"> 字符"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#D19A66"> False</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">False</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">    # 转换为 Path 对象</span></span>
+<span class="line"><span style="color:#ABB2BF">    path </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> Path</span><span style="color:#ABB2BF">(dir_path)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    try</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">        # 检查路径是否已存在</span></span>
+<span class="line"><span style="color:#C678DD">        if</span><span style="color:#ABB2BF"> path.</span><span style="color:#61AFEF">exists</span><span style="color:#ABB2BF">() </span><span style="color:#C678DD">and</span><span style="color:#ABB2BF"> path.</span><span style="color:#61AFEF">is_dir</span><span style="color:#ABB2BF">():</span></span>
+<span class="line"><span style="color:#ABB2BF">            logger.</span><span style="color:#61AFEF">debug</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">f</span><span style="color:#98C379">"目录已存在 </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">dir_path</span><span style="color:#D19A66">}</span><span style="color:#98C379">"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#C678DD">            return</span><span style="color:#D19A66"> False</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">True</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic">        # 不存在，执行创建</span></span>
+<span class="line"><span style="color:#ABB2BF">        path.</span><span style="color:#61AFEF">mkdir</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75;font-style:italic">parents</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">True</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75;font-style:italic">exist_ok</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">True</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#ABB2BF">        logger.</span><span style="color:#61AFEF">debug</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">f</span><span style="color:#98C379">"目录创建成功 </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">dir_path</span><span style="color:#D19A66">}</span><span style="color:#98C379">"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#D19A66"> True</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">True</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    except</span><span style="color:#ABB2BF"> PermissionError:</span></span>
+<span class="line"><span style="color:#ABB2BF">        logger.</span><span style="color:#61AFEF">error</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">f</span><span style="color:#98C379">"创建目录失败 </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">dir_path</span><span style="color:#D19A66">}</span><span style="color:#98C379">, 权限不足"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#D19A66"> False</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">False</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    except</span><span style="color:#ABB2BF"> OSError </span><span style="color:#C678DD">as</span><span style="color:#ABB2BF"> e:</span></span>
+<span class="line"><span style="color:#ABB2BF">        logger.</span><span style="color:#61AFEF">error</span><span style="color:#ABB2BF">(</span><span style="color:#C678DD">f</span><span style="color:#98C379">"创建目录失败 </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">dir_path</span><span style="color:#D19A66">}</span><span style="color:#98C379">, </span><span style="color:#D19A66">{</span><span style="color:#ABB2BF">e</span><span style="color:#D19A66">}</span><span style="color:#98C379">"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"><span style="color:#C678DD">        return</span><span style="color:#D19A66"> False</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66">False</span></span>
+<span class="line"></span></code></pre></div></div></div></pre>
+<hr/>
+<h2>3. <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">__init__.py</code></h2>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rdcn"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R3ddcn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-brand-python "><path d="M12 9h-7a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h3"></path><path d="M12 15h7a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-3"></path><path d="M8 9v-4a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v5a2 2 0 0 1 -2 2h-4a2 2 0 0 0 -2 2v5a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4"></path><path d="M11 6l0 .01"></path><path d="M13 18l0 .01"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">PYTHON</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R5ddcn"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span style="color:#C678DD">from</span><span style="color:#ABB2BF"> .plugin </span><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> create_directory</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">__all__</span><span style="color:#56B6C2"> =</span><span style="color:#ABB2BF"> [</span><span style="color:#98C379">"create_directory"</span><span style="color:#ABB2BF">]</span></span>
+<span class="line"></span></code></pre></div></div></div></pre>
+<hr/>
+<h2>4. <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">tests/test_create_directory.py</code></h2>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rddf"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R3dddf"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-brand-python "><path d="M12 9h-7a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h3"></path><path d="M12 15h7a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-3"></path><path d="M8 9v-4a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v5a2 2 0 0 1 -2 2h-4a2 2 0 0 0 -2 2v5a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-4"></path><path d="M11 6l0 .01"></path><path d="M13 18l0 .01"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">PYTHON</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R5dddf"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span style="color:#98C379">"""</span></span>
+<span class="line"><span style="color:#98C379">create_directory 单元测试</span></span>
+<span class="line"><span style="color:#98C379">覆盖 definition.yaml 中定义的 3 个 triggers 及边界情况。</span></span>
+<span class="line"><span style="color:#98C379">"""</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> logging</span></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> os</span></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> stat</span></span>
+<span class="line"><span style="color:#C678DD">from</span><span style="color:#ABB2BF"> pathlib </span><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> Path</span></span>
+<span class="line"><span style="color:#C678DD">from</span><span style="color:#ABB2BF"> unittest </span><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> mock</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> pytest</span></span>
+<span class="line"><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> sys</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">sys.path.</span><span style="color:#61AFEF">insert</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66">0</span><span style="color:#ABB2BF">, </span><span style="color:#56B6C2">str</span><span style="color:#ABB2BF">(</span><span style="color:#61AFEF">Path</span><span style="color:#ABB2BF">(</span><span style="color:#E06C75">__file__</span><span style="color:#ABB2BF">).</span><span style="color:#61AFEF">resolve</span><span style="color:#ABB2BF">().parent.parent))</span></span>
+<span class="line"><span style="color:#C678DD">from</span><span style="color:#ABB2BF"> plugin </span><span style="color:#C678DD">import</span><span style="color:#ABB2BF"> create_directory  </span><span style="color:#7F848E;font-style:italic"># noqa: E402</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D19A66">LOGGER_NAME</span><span style="color:#56B6C2"> =</span><span style="color:#98C379"> "libsmall.create_directory"</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">@pytest</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">fixture</span></span>
+<span class="line"><span style="color:#C678DD">def</span><span style="color:#61AFEF"> log_capture</span><span style="color:#ABB2BF">(</span><span style="color:#D19A66;font-style:italic">caplog</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#C678DD">    with</span><span style="color:#ABB2BF"> caplog.</span><span style="color:#61AFEF">at_level</span><span style="color:#ABB2BF">(logging.</span><span style="color:#D19A66">DEBUG</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75;font-style:italic">logger</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">LOGGER_NAME</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#C678DD">        yield</span><span style="color:#ABB2BF"> caplog</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ---- trigger: normal ---- 正常创建新目录</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">class</span><span style="color:#E5C07B"> TestNormal</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_create_new_directory</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">tmp_path</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#ABB2BF">        target </span><span style="color:#56B6C2">=</span><span style="color:#56B6C2"> str</span><span style="color:#ABB2BF">(tmp_path </span><span style="color:#56B6C2">/</span><span style="color:#98C379"> "new_dir"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">        created, exists </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(target)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> True</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> True</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#61AFEF"> Path</span><span style="color:#ABB2BF">(target).</span><span style="color:#61AFEF">is_dir</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#56B6C2"> any</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"目录创建成功"</span><span style="color:#C678DD"> in</span><span style="color:#ABB2BF"> r.message </span><span style="color:#C678DD">for</span><span style="color:#ABB2BF"> r </span><span style="color:#C678DD">in</span><span style="color:#ABB2BF"> log_capture.records)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_create_nested_directory</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">tmp_path</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#ABB2BF">        target </span><span style="color:#56B6C2">=</span><span style="color:#56B6C2"> str</span><span style="color:#ABB2BF">(tmp_path </span><span style="color:#56B6C2">/</span><span style="color:#98C379"> "a"</span><span style="color:#56B6C2"> /</span><span style="color:#98C379"> "b"</span><span style="color:#56B6C2"> /</span><span style="color:#98C379"> "c"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">        created, exists </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(target)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> True</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> True</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#61AFEF"> Path</span><span style="color:#ABB2BF">(target).</span><span style="color:#61AFEF">is_dir</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ---- trigger: already_exists ---- 目录已存在</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">class</span><span style="color:#E5C07B"> TestAlreadyExists</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_existing_directory</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">tmp_path</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#ABB2BF">        target </span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF"> tmp_path </span><span style="color:#56B6C2">/</span><span style="color:#98C379"> "existing_dir"</span></span>
+<span class="line"><span style="color:#ABB2BF">        target.</span><span style="color:#61AFEF">mkdir</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">        created, exists </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">str</span><span style="color:#ABB2BF">(target))</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> True</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#56B6C2"> any</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"目录已存在"</span><span style="color:#C678DD"> in</span><span style="color:#ABB2BF"> r.message </span><span style="color:#C678DD">for</span><span style="color:#ABB2BF"> r </span><span style="color:#C678DD">in</span><span style="color:#ABB2BF"> log_capture.records)</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ---- trigger: no_permission ---- 权限不足</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">class</span><span style="color:#E5C07B"> TestNoPermission</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    @pytest</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">mark</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">skipif</span><span style="color:#ABB2BF">(</span></span>
+<span class="line"><span style="color:#61AFEF">        os</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">name </span><span style="color:#56B6C2">==</span><span style="color:#98C379"> "nt"</span><span style="color:#C678DD"> or</span><span style="color:#61AFEF"> os</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">getuid</span><span style="color:#ABB2BF">()</span><span style="color:#56B6C2"> ==</span><span style="color:#D19A66"> 0</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#E06C75;font-style:italic">        reason</span><span style="color:#56B6C2">=</span><span style="color:#98C379">"权限测试仅在非 root 的 POSIX 系统上有效"</span><span style="color:#ABB2BF">,</span></span>
+<span class="line"><span style="color:#ABB2BF">    )</span></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_permission_denied</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">tmp_path</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#ABB2BF">        restricted </span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF"> tmp_path </span><span style="color:#56B6C2">/</span><span style="color:#98C379"> "restricted"</span></span>
+<span class="line"><span style="color:#ABB2BF">        restricted.</span><span style="color:#61AFEF">mkdir</span><span style="color:#ABB2BF">()</span></span>
+<span class="line"><span style="color:#ABB2BF">        restricted.</span><span style="color:#61AFEF">chmod</span><span style="color:#ABB2BF">(stat.</span><span style="color:#D19A66">S_IRUSR</span><span style="color:#56B6C2"> |</span><span style="color:#ABB2BF"> stat.</span><span style="color:#D19A66">S_IXUSR</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        try</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">            created, exists </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(</span><span style="color:#56B6C2">str</span><span style="color:#ABB2BF">(restricted </span><span style="color:#56B6C2">/</span><span style="color:#98C379"> "sub"</span><span style="color:#ABB2BF">))</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">            assert</span><span style="color:#ABB2BF"> created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">            assert</span><span style="color:#ABB2BF"> exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">            assert</span><span style="color:#56B6C2"> any</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"权限不足"</span><span style="color:#C678DD"> in</span><span style="color:#ABB2BF"> r.message </span><span style="color:#C678DD">for</span><span style="color:#ABB2BF"> r </span><span style="color:#C678DD">in</span><span style="color:#ABB2BF"> log_capture.records)</span></span>
+<span class="line"><span style="color:#C678DD">        finally</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"><span style="color:#ABB2BF">            restricted.</span><span style="color:#61AFEF">chmod</span><span style="color:#ABB2BF">(stat.</span><span style="color:#D19A66">S_IRWXU</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_permission_denied_via_mock</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#C678DD">        with</span><span style="color:#ABB2BF"> mock.</span><span style="color:#61AFEF">patch</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"plugin.Path.exists"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75;font-style:italic">return_value</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">), \</span></span>
+<span class="line"><span style="color:#ABB2BF">             mock.</span><span style="color:#61AFEF">patch</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"plugin.Path.mkdir"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75;font-style:italic">side_effect</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">PermissionError(</span><span style="color:#98C379">"mocked"</span><span style="color:#ABB2BF">)):</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">            created, exists </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"/mocked/path"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#56B6C2"> any</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"权限不足"</span><span style="color:#C678DD"> in</span><span style="color:#ABB2BF"> r.message </span><span style="color:#C678DD">for</span><span style="color:#ABB2BF"> r </span><span style="color:#C678DD">in</span><span style="color:#ABB2BF"> log_capture.records)</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#7F848E;font-style:italic"># ---- 输入校验 ----</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">class</span><span style="color:#E5C07B"> TestInputValidation</span><span style="color:#ABB2BF">:</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#61AFEF">    @pytest</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">mark</span><span style="color:#ABB2BF">.</span><span style="color:#61AFEF">parametrize</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"bad_path"</span><span style="color:#ABB2BF">,</span><span style="color:#ABB2BF"> [</span><span style="color:#98C379">""</span><span style="color:#ABB2BF">,</span><span style="color:#98C379"> "   "</span><span style="color:#ABB2BF">])</span></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_empty_path</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">bad_path</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#ABB2BF">        created, exists </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(bad_path)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_path_too_long</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#ABB2BF">        long_path </span><span style="color:#56B6C2">=</span><span style="color:#98C379"> "/tmp/"</span><span style="color:#56B6C2"> +</span><span style="color:#98C379"> "a"</span><span style="color:#56B6C2"> *</span><span style="color:#D19A66"> 1025</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">        created, exists </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(long_path)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">    def</span><span style="color:#61AFEF"> test_oserror_via_mock</span><span style="color:#ABB2BF">(</span><span style="color:#E5C07B;font-style:italic">self</span><span style="color:#ABB2BF">, </span><span style="color:#D19A66;font-style:italic">log_capture</span><span style="color:#ABB2BF">):</span></span>
+<span class="line"><span style="color:#C678DD">        with</span><span style="color:#ABB2BF"> mock.</span><span style="color:#61AFEF">patch</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"plugin.Path.exists"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75;font-style:italic">return_value</span><span style="color:#56B6C2">=</span><span style="color:#D19A66">False</span><span style="color:#ABB2BF">), \</span></span>
+<span class="line"><span style="color:#ABB2BF">             mock.</span><span style="color:#61AFEF">patch</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"plugin.Path.mkdir"</span><span style="color:#ABB2BF">, </span><span style="color:#E06C75;font-style:italic">side_effect</span><span style="color:#56B6C2">=</span><span style="color:#ABB2BF">OSError(</span><span style="color:#98C379">"disk error"</span><span style="color:#ABB2BF">)):</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">            created, exists </span><span style="color:#56B6C2">=</span><span style="color:#61AFEF"> create_directory</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"/some/path"</span><span style="color:#ABB2BF">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> created </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#ABB2BF"> exists </span><span style="color:#C678DD">is</span><span style="color:#D19A66"> False</span></span>
+<span class="line"><span style="color:#C678DD">        assert</span><span style="color:#56B6C2"> any</span><span style="color:#ABB2BF">(</span><span style="color:#98C379">"disk error"</span><span style="color:#C678DD"> in</span><span style="color:#ABB2BF"> r.message </span><span style="color:#C678DD">for</span><span style="color:#ABB2BF"> r </span><span style="color:#C678DD">in</span><span style="color:#ABB2BF"> log_capture.records)</span></span>
+<span class="line"></span></code></pre></div></div></div></pre>
+<hr/>
+<h2>对比修正点</h2>
+<table><thead><tr><th>问题</th><th>修正前</th><th>修正后</th></tr></thead><tbody><tr><td>擅自增加 <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">error_code</code>/<code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">error_message</code></td><td>🔴 有</td><td>✅ 移除，严格返回 <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">tuple[bool, bool]</code></td></tr><tr><td>不必要的 <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">dataclass</code> 包装</td><td>🟡 有</td><td>✅ 移除，直接返回元组</td></tr><tr><td>代码量</td><td>🟡 ~150 行</td><td>✅ ~50 行</td></tr><tr><td>返回值与规范一致性</td><td>❌ 不一致</td><td>✅ <code class="bg-chatbox-background-secondary border border-solid border-chatbox-border-secondary rounded-sm px-1 py-0.5 mx-1">(created, exists)</code> 完全对齐</td></tr></tbody></table>
+<p><strong>核心原则：规范写什么就实现什么，不多不少。</strong></p></div></div>
+<div class="mb-4">
+<p class="text-green-500 text-lg"><b>USER: </b></p>
+<style data-mantine-styles="classes">@media (max-width: 35.99375em) {.mantine-visible-from-xs {display: none !important;}}@media (min-width: 36em) {.mantine-hidden-from-xs {display: none !important;}}@media (max-width: 47.99375em) {.mantine-visible-from-sm {display: none !important;}}@media (min-width: 48em) {.mantine-hidden-from-sm {display: none !important;}}@media (max-width: 61.99375em) {.mantine-visible-from-md {display: none !important;}}@media (min-width: 62em) {.mantine-hidden-from-md {display: none !important;}}@media (max-width: 74.99375em) {.mantine-visible-from-lg {display: none !important;}}@media (min-width: 75em) {.mantine-hidden-from-lg {display: none !important;}}@media (max-width: 87.99375em) {.mantine-visible-from-xl {display: none !important;}}@media (min-width: 88em) {.mantine-hidden-from-xl {display: none !important;}}</style><div class="break-words "><p>把我的项目要求做个总结,以作为以后插件开发的warn.md</p></div></div>
+<div class="mb-4">
+<p class="text-blue-500 text-lg"><b>ASSISTANT: </b></p>
+<style data-mantine-styles="classes">@media (max-width: 35.99375em) {.mantine-visible-from-xs {display: none !important;}}@media (min-width: 36em) {.mantine-hidden-from-xs {display: none !important;}}@media (max-width: 47.99375em) {.mantine-visible-from-sm {display: none !important;}}@media (min-width: 48em) {.mantine-hidden-from-sm {display: none !important;}}@media (max-width: 61.99375em) {.mantine-visible-from-md {display: none !important;}}@media (min-width: 62em) {.mantine-hidden-from-md {display: none !important;}}@media (max-width: 74.99375em) {.mantine-visible-from-lg {display: none !important;}}@media (min-width: 75em) {.mantine-hidden-from-lg {display: none !important;}}@media (max-width: 87.99375em) {.mantine-visible-from-xl {display: none !important;}}@media (min-width: 88em) {.mantine-hidden-from-xl {display: none !important;}}</style><div class="break-words "><h1>warn.md</h1>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rqgf"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R6qqgf"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-code "><path d="M7 8l-4 4l4 4"></path><path d="M17 8l4 4l-4 4"></path><path d="M14 4l-4 16"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">MARKDOWN</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-Raqqgf"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span style="color:#E06C75"># ⚠️ 插件开发警告清单</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">在开发任何插件之前，必须逐条对照本文件。违反即返工。</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">---</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">## 一、输出必须严格对齐规范</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E06C75">### 🔴 禁止擅自增加字段</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ABB2BF">规范定义了什么输出，就返回什么输出。</span><span style="color:#D19A66">**不多不少。**</span></span>
+<span class="line"></span>
+<span class="line"></span></code></pre></div></div></div></pre>
+<h1>规范定义</h1>
+<p>outputs:</p>
+<ul>
+<li>name: created<br/>
+type: bool</li>
+<li>name: exists<br/>
+type: bool</li>
+</ul>
+<h1>✅ 正确</h1>
+<p>return False, True</p>
+<h1>❌ 错误：擅自加了 error_code、error_message</h1>
+<p>return CreateDirectoryResult(created=False, exists=True, error_code=&quot;E_PERMISSION&quot;, ...)</p>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rqif"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R6qqif"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-file-type-txt "><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M16.5 15h3"></path><path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4"></path><path d="M4.5 15h3"></path><path d="M6 15v6"></path><path d="M18 15v6"></path><path d="M10 15l4 6"></path><path d="M10 21l4 -6"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">TEXT</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-Raqqif"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span></span></span>
+<span class="line"><span>**判断标准：** 返回值中出现任何规范 `outputs` 里没有的字段，即为违规。</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>---</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>## 二、不要过度封装</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>### 🟡 不使用规范未要求的包装结构</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>规范没要求 dataclass / NamedTuple / 自定义类，就不要用。</span></span>
+<span class="line"><span>元组能解决的事情，不要造一个类。</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span></span></span></code></pre></div></div></div></pre>
+<h1>✅ 规范说返回 (bool, bool)，就返回元组</h1>
+<p>return True, True</p>
+<h1>❌ 没人让你写 dataclass</h1>
+<p>@dataclass<br/>
+class CreateDirectoryResult:<br/>
+...</p>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rqjn"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R6qqjn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-file-type-txt "><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M16.5 15h3"></path><path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4"></path><path d="M4.5 15h3"></path><path d="M6 15v6"></path><path d="M18 15v6"></path><path d="M10 15l4 6"></path><path d="M10 21l4 -6"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">TEXT</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-Raqqjn"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span></span></span>
+<span class="line"><span>---</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>## 三、控制代码量</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>### 🟡 实现体量应与规范复杂度匹配</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>一个简单函数的插件，核心逻辑不应超过 **50 行**。</span></span>
+<span class="line"><span>如果写到 150 行，一定是加了规范没要求的东西。</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>**自查方法：** 写完后把代码和规范并排放，逐行对照，删掉所有在规范中找不到依据的代码。</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>---</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>## 四、错误处理严格按 internal_logic</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>### 🔴 异常分支的返回值以规范为准</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>规范写了 `PermissionError → 返回 (False, False)`，就只返回 `(False, False)` 并记日志。</span></span>
+<span class="line"><span>不要自作主张把错误码塞进返回值。</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span></span></span></code></pre></div></div></div></pre>
+<h1>规范: PermissionError → 记录日志，返回 (False, False)</h1>
+<h1>✅ 正确</h1>
+<p>except PermissionError:<br/>
+logger.error(f&quot;创建目录失败 {dir_path}, 权限不足&quot;)<br/>
+return False, False</p>
+<h1>❌ 错误：返回值里夹带私货</h1>
+<p>except PermissionError:<br/>
+return CreateDirectoryResult(<br/>
+created=False, exists=False,<br/>
+error_code=ErrorCode.E_PERMISSION,  # 规范没让你返回这个<br/>
+error_message=&quot;...&quot;                  # 规范没让你返回这个<br/>
+)</p>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rql7"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R6qql7"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-file-type-txt "><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M16.5 15h3"></path><path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4"></path><path d="M4.5 15h3"></path><path d="M6 15v6"></path><path d="M18 15v6"></path><path d="M10 15l4 6"></path><path d="M10 21l4 -6"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">TEXT</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-Raqql7"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span></span></span>
+<span class="line"><span>---</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>## 五、日志模板必须与规范一致</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>### 🔴 日志内容逐字对照</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>规范定义了 `template`，代码中的日志字符串必须包含该模板内容。</span></span>
+<span class="line"><span>测试用 `contains` 匹配，模板关键词不能改。</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span></span></span></code></pre></div></div></div></pre>
+<h1>规范 template: &quot;目录已存在 {dir_path}&quot;</h1>
+<h1>✅ 正确</h1>
+<p>logger.debug(f&quot;目录已存在 {dir_path}&quot;)</p>
+<h1>❌ 错误：改了措辞</h1>
+<p>logger.debug(f&quot;路径 {dir_path} 已经存在，跳过创建&quot;)</p>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rqmn"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R6qqmn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-file-type-txt "><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M16.5 15h3"></path><path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4"></path><path d="M4.5 15h3"></path><path d="M6 15v6"></path><path d="M18 15v6"></path><path d="M10 15l4 6"></path><path d="M10 21l4 -6"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">TEXT</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-Raqqmn"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span></span></span>
+<span class="line"><span>---</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>## 六、日志级别必须与规范一致</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>### 🔴 DEBUG 就是 DEBUG，ERROR 就是 ERROR</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span></span></span></code></pre></div></div></div></pre>
+<h1>规范: trigger=目录已存在, level=DEBUG</h1>
+<h1>✅ 正确</h1>
+<p>logger.debug(...)</p>
+<h1>❌ 错误：升级成了 INFO</h1>
+<p>logger.info(...)</p>
+<pre><div style="--stack-gap:0rem;--stack-align:stretch;--stack-justify:flex-start" class="m_6d731127 mantine-Stack-root"><div style="justify-content:space-between" class="p-xs bg-chatbox-background-secondary rounded-t-md border border-solid border-[var(--chatbox-border-primary)] sticky top-0 z-10 m_8bffd616 mantine-Flex-root __m__-Rqo7"><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-R6qqo7"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--chatbox-tint-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-file-type-txt "><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M16.5 15h3"></path><path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4"></path><path d="M4.5 15h3"></path><path d="M6 15v6"></path><path d="M18 15v6"></path><path d="M10 15l4 6"></path><path d="M10 21l4 -6"></path></svg><span style="color:chatbox-tertiary;font-weight:600" class="mantine-focus-auto font-mono m_b6d8b162 mantine-Text-root">TEXT</span></div><div style="gap:var(--mantine-spacing-xs);align-items:center" class="m_8bffd616 mantine-Flex-root __m__-Raqqo7"></div></div><div style="--stack-gap:var(--mantine-spacing-md);--stack-align:stretch;--stack-justify:flex-start" class="border border-t-0 border-solid border-[var(--chatbox-border-primary)] rounded-b-md m_6d731127 mantine-Stack-root"><div class="shiki-code-wrapper"><pre class="shiki one-dark-pro" style="background-color:#282c34;color:#abb2bf" tabindex="0"><code><span class="line"><span></span></span>
+<span class="line"><span>---</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>## 七、dependencies 为空就只用标准库</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>### 🔴 不引入第三方依赖</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>`dependencies: []` 意味着只能用 Python 标准库。</span></span>
+<span class="line"><span>不要引入 `click`、`pydantic`、`attrs` 等任何第三方包。</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>---</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>## 八、开发流程检查单</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>每次提交前逐项打勾：</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>- [ ] 返回值字段与规范 `outputs` **完全一致**，无增无减</span></span>
+<span class="line"><span>- [ ] 返回值类型与规范一致（bool 就是 bool，不是 Optional[bool]）</span></span>
+<span class="line"><span>- [ ] 异常分支返回值与 `internal_logic` 一致</span></span>
+<span class="line"><span>- [ ] 日志模板关键词与规范 `logs.template` 一致</span></span>
+<span class="line"><span>- [ ] 日志级别与规范 `logs.level` 一致</span></span>
+<span class="line"><span>- [ ] 没有使用规范未要求的类/结构体包装</span></span>
+<span class="line"><span>- [ ] 没有引入规范 `dependencies` 之外的依赖</span></span>
+<span class="line"><span>- [ ] 核心逻辑代码量与规范复杂度匹配，无冗余</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>---</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>## 一句话总结</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>> **规范写什么就实现什么，不多不少，不改不加。**</span></span>
+<span class="line"><span></span></span></code></pre></div></div></div></pre></div></div>
+<hr />
+</div>
+
+        <hr />
+        <a href="https://chatboxai.app" style="display: flex; align-items: center;" class="text-sky-500" target="_blank">
+            <img src='https://chatboxai.app/icon.png' class="w-12 pr-2">
+            <b style='font-size:30px'>Chatbox AI</b>
+        </a>
+        <p><a a href="https://chatboxai.app" target="_blank">https://chatboxai.app</a></p>
+    </div>
+</body>
+</html>

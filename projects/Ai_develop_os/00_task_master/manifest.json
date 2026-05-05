@@ -1,0 +1,19 @@
+{
+  "role": "task_master",
+  "title": "任务师",
+  "inputs": [
+    "user_input.md",
+    "architecture_guide.md",
+    "role_templates_guide.md"
+  ],
+  "outputs": [
+    "_system/proposed_tech_stack.json",
+    "_system/approved_tech_stack.json",
+    "_system/pipeline_blueprint.json",
+    "_system/system_state.json",
+    "_shared/",
+    "_prompts_active/",
+    "_scripts/"
+  ],
+  "lock": null
+}

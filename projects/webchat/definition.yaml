@@ -1,0 +1,84 @@
+name: webchat
+version: 1.0.0
+type: plugin
+description: AI agent web chat interaction tool — 降维提取 + 行为模拟
+
+inputs:
+  - name: command
+    type: string
+    required: true
+    constraints:
+      - Must be one of: connect, dump, read, send, wait, chat
+  - name: text
+    type: string
+    required: false
+    description: Message text to send (required for send/chat commands)
+    constraints:
+      - Max 4000 characters
+  - name: humanize
+    type: bool
+    required: false
+    default: true
+    description: Use humanized typing with random delays
+  - name: last
+    type: bool
+    required: false
+    default: false
+    description: Only read the last message (read command)
+  - name: since
+    type: float
+    required: false
+    default: 0
+    description: Read messages from last N seconds (read command)
+  - name: timeout
+    type: float
+    required: false
+    default: 120
+    description: Max wait seconds for reply (wait/chat commands)
+
+outputs:
+  - name: ok
+    type: bool
+    description: Whether the command succeeded
+  - name: reply
+    type: string
+    description: AI reply content (wait/chat commands)
+  - name: messages
+    type: list
+    description: List of {role, content} dicts (read command)
+  - name: error
+    type: string
+    description: Error message if ok is false
+
+commands:
+  connect:
+    description: Check CDP connection to browser on port 9333
+    returns: {ok, browser, url, title, pages}
+  dump:
+    description: Detect chat input boxes and message containers on page
+    returns: {ok, url, inputs, message_containers}
+  read:
+    description: Read chat messages via dimensionality reduction (降维提取)
+    params: [last, since]
+    returns: {ok, messages, count, snapshot}
+  send:
+    description: Type and send a message with humanized behavior simulation
+    params: [text, humanize]
+    returns: {ok, sent, humanized}
+  wait:
+    description: Wait for AI reply using content stability detection
+    params: [timeout]
+    returns: {ok, reply, role, duration_seconds}
+  chat:
+    description: Send message + wait for reply (one-shot conversation)
+    params: [text, humanize, timeout]
+    returns: {ok, sent, reply, role, duration_seconds, incomplete}
+
+prerequisites:
+  - Edge/Chrome launched with --remote-debugging-port=9333
+  - Playwright installed (pip install playwright && playwright install chromium)
+
+architecture:
+  read_strategy: 降维提取 — page.inner_text("body") dumps page to pure text, parsed offline
+  write_strategy: 行为模拟 — Playwright type() with humanized delays (40-120ms/char)
+  wait_strategy: 内容稳定性 — MD5 hash of page text, stable for 2s = reply complete

@@ -1,0 +1,1 @@
+{"task_id": "b3295ce0", "status": "done", "output": "收到，我是Hermes，WSL2通信正常。\nhermes --resume 20260430_155750_58e2ad", "debug": "stdout_len=2612, stderr_len=0, rc=0", "error": "", "returncode": 0, "completed": "2026-04-30T15:58:18.274955"}

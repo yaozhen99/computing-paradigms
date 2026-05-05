@@ -1,0 +1,8 @@
+{
+  "role": "reviewer",
+  "title": "代码审核员",
+  "inputs": ["02_design/api_contracts.md", "03_source", "04_testing/report_execution_raw.md", "04_testing/report_security.md"],
+  "outputs": ["04_testing/report_review.md"],
+  "lock": "_pipes/lock_reviewer.json",
+  "override_output": "_pipes/override_.json"
+}

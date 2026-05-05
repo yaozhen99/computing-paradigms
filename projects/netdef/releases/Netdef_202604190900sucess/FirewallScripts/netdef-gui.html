@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ Netdef Security Suite - Network Definer</title>
+    <style>
+        /* ========== RESET & BASE ========== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 50%, #0f2847 100%);
+            color: #eee;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ========== MAIN CONTAINER ========== */
+        .game-container {
+            width: 1150px; height: 720px;
+            background: linear-gradient(180deg, #080818 0%, #12122e 50%, #0a1628 100%);
+            border: 4px solid #4a90d9;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: 0 0 40px rgba(74, 144, 217, 0.4), inset 0 0 80px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            grid-template-rows: auto 1fr auto;
+            grid-template-areas: "header header" "rhino controls" "status status";
+        }
+
+        /* ========== HEADER ========== */
+        .header {
+            grid-area: header; text-align: center; padding: 12px 20px;
+            background: linear-gradient(180deg, rgba(74, 144, 217, 0.25) 0%, transparent 100%);
+            border-bottom: none;
+        }
+        .title {
+            font-size: 24px; font-weight: bold; color: #4af;
+            text-shadow: 0 0 12px #4af, 2px 2px 0 #000; letter-spacing: 3px;
+            animation: titleGlow 2s ease-in-out infinite alternate;
+        }
+        @keyframes titleGlow {
+            from { text-shadow: 0 0 10px #4af, 2px 2px 0 #000; }
+            to { text-shadow: 0 0 22px #4af, 0 0 35px #48f, 2px 2px 0 #000; }
+        }
+        .subtitle { font-size: 11px; color: #8af; margin-top: 4px; opacity: 0.85; }
+
+        /* ========== LEFT ZONE: RHINO WITH REAL IMAGE ========== */
+        .rhino-zone {
+            grid-area: rhino; position: relative;
+            background: transparent;
+            border: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 0; overflow: visible;
+        }
+
+        /* Rhino Image Container - MAXIMIZE SPACE */
+        .rhino-image-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: visible;
+            transform: scale(1.0);
+            transform-origin: center center;
+        }
+
+        /* The actual rhino image - COMPLETE IMAGE, SCALED UP */
+        .rhino-img {
+            width: 80%;
+            height: 80%;
+            max-width: 300px;
+            max-height: 300px;
+            object-fit: contain;
+            object-position: center center;
+            animation: rhinoFloat 4s ease-in-out infinite;
+            filter: drop-shadow(0 0 30px rgba(74, 144, 217, 0.7));
+            transition: transform 0.3s ease, filter 0.3s ease;
+        }
+
+        @keyframes rhinoFloat {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-8px) scale(1.02); }
+        }
+
+        /* Glow ring around rhino - LARGER TO MATCH IMAGE */
+        .rhino-glow-ring {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 95%; height: 95%;
+            border: 3px solid rgba(74, 144, 217, 0.4);
+            border-radius: 50%;
+            animation: glowRingPulse 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes glowRingPulse {
+            0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.3; box-shadow: 0 0 30px rgba(74, 144, 217, 0.3); }
+            50% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.6; box-shadow: 0 0 50px rgba(74, 144, 217, 0.6); }
+            100% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.3; box-shadow: 0 0 30px rgba(74, 144, 217, 0.3); }
+        }
+
+        /* Status badges around rhino */
+        .status-badge {
+            position: absolute; padding: 6px 12px; border-radius: 20px;
+            font-size: 10px; font-weight: bold; letter-spacing: 1px;
+            animation: badgePulse 2s ease-in-out infinite;
+            white-space: nowrap;
+        }
+        @keyframes badgePulse { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.6; } }
+
+        .badge-top-left { top: 10px; left: 10px; background: rgba(40, 180, 80, 0.85); color: #cfc; }
+        .badge-top-right { top: 10px; right: 10px; background: rgba(60, 140, 220, 0.85); color: #cef; }
+        .badge-bottom { display: none !important; }
+
+        /* Hide glow ring for cleaner look */
+        .rhino-glow-ring { display: none; }
+
+        /* Hide rhino label */
+        .rhino-label { display: none !important; }
+
+        /* Speech bubble for rhino */
+        .speech-bubble {
+            position: absolute; top: -45px; left: 50%; transform: translateX(-50%) scale(0);
+            background: linear-gradient(135deg, #1a3a5c, #0f2440); color: #bdf;
+            padding: 10px 16px; border-radius: 14px; font-size: 12px; font-weight: bold;
+            border: 2px solid #4a90d9; white-space: nowrap; opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 20px rgba(74, 144, 217, 0.3);
+            z-index: 20;
+        }
+        .speech-bubble::after {
+            content: ''; position: absolute; bottom: -9px; left: 50%;
+            transform: translateX(-50%);
+            border-left: 9px solid transparent; border-right: 9px solid transparent;
+            border-top: 9px solid #4a90d9;
+        }
+        .speech-bubble.show { transform: translateX(-50%) scale(1); opacity: 1; }
+
+        /* Rhino interaction states */
+        .rhino-image-container.excited .rhino-img { animation: rhinoExcited 0.5s ease-out !important; }
+        @keyframes rhinoExcited {
+            0% { transform: translateY(0) scale(1); }
+            25% { transform: translateY(-15px) scale(1.08); filter: drop-shadow(0 0 35px rgba(74, 200, 120, 0.8)); }
+            50% { transform: translateY(-6px) scale(1.04); }
+            75% { transform: translateY(-2px) scale(1.01); }
+            100% { transform: translateY(0) scale(1); }
+        }
+
+        .rhino-image-container.alert .rhino-img { animation: rhinoAlert 0.6s ease-out !important; }
+        @keyframes rhinoAlert {
+            0% { transform: translateX(0) scale(1); filter: drop-shadow(0 0 20px rgba(255, 80, 80, 0.6)); }
+            20% { transform: translateX(-8px) scale(1.03); filter: drop-shadow(0 0 35px rgba(255, 100, 100, 0.9)); }
+            40% { transform: translateX(6px) scale(1.02); }
+            60% { transform: translateX(-4px) scale(1.01); }
+            80% { transform: translateX(2px) scale(1); }
+            100% { transform: translateX(0) scale(1); }
+        }
+
+        .rhino-label {
+            margin-top: 10px; font-size: 11px; color: #689;
+            text-align: center; letter-spacing: 2px; opacity: 0.7;
+        }
+
+        /* ========== RIGHT PANEL: CONTROLS ========== */
+        .controls {
+            grid-area: controls; padding: 15px 22px 10px 22px;
+            overflow-y: auto; z-index: 10;
+        }
+        .section-title {
+            font-size: 13px; color: #8bf; margin-bottom: 10px;
+            text-transform: uppercase; letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(136, 191, 255, 0.5);
+        }
+
+        .buttons-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px;
+        }
+
+        .btn {
+            padding: 18px 14px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold;
+            border: 3px solid; border-radius: 10px; cursor: pointer; transition: all 0.2s ease;
+            position: relative; overflow: hidden; text-align: center; line-height: 1.4;
+        }
+        .btn::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); transition: left 0.5s;
+        }
+        .btn:hover::before { left: 100%; }
+        .btn:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
+        .btn:active { transform: translateY(0) scale(0.97); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+        .btn-home { background: linear-gradient(135deg, #2d5a27 0%, #1e3d1a 100%); border-color: #4a8c3f; color: #9fc; box-shadow: 0 4px 15px rgba(74, 140, 63, 0.4), inset 0 1px 0 rgba(255,255,255,0.1); }
+        .btn-home:hover { border-color: #6bc55d; box-shadow: 0 8px 30px rgba(107, 197, 93, 0.6); }
+
+        .btn-office { background: linear-gradient(135deg, #1a3a5c 0%, #0f2440 100%); border-color: #3a7ca5; color: #adf; box-shadow: 0 4px 15px rgba(58, 124, 165, 0.4), inset 0 1px 0 rgba(255,255,255,0.1); }
+        .btn-office:hover { border-color: #5ba8d9; box-shadow: 0 8px 30px rgba(91, 168, 217, 0.6); }
+
+        .btn-travel { background: linear-gradient(135deg, #5c2d3a 0%, #401a24 100%); border-color: #a53a4c; color: #fad; box-shadow: 0 4px 22px rgba(165, 58, 76, 0.5), inset 0 1px 0 rgba(255,255,255,0.15); animation: travelPulse 2s ease-in-out infinite; grid-column: span 2; }
+        @keyframes travelPulse { 0%, 100% { box-shadow: 0 4px 22px rgba(165, 58, 76, 0.5), inset 0 1px 0 rgba(255,255,255,0.15); } 50% { box-shadow: 0 4px 32px rgba(165, 58, 76, 0.85), inset 0 1px 0 rgba(255,255,255,0.2), 0 0 45px rgba(255, 100, 150, 0.3); } }
+        .btn-travel:hover { border-color: #d95a72; box-shadow: 0 8px 38px rgba(217, 90, 114, 0.85), 0 0 55px rgba(255, 100, 150, 0.4); }
+
+        .btn-lockdown { background: linear-gradient(135deg, #3d3d3d 0%, #262626 100%); border-color: #666; color: #ddf; box-shadow: 0 4px 15px rgba(102, 102, 102, 0.4), inset 0 1px 0 rgba(255,255,255,0.1); }
+        .btn-lockdown:hover { border-color: #888; box-shadow: 0 8px 30px rgba(136, 136, 136, 0.6); }
+
+        /* Action Buttons */
+        .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-action {
+            flex: 1; min-width: 105px; padding: 11px 8px; font-size: 10px;
+            background: linear-gradient(135deg, #2a2a4a 0%, #1a1a32 100%);
+            border: 2px solid #555; border-radius: 7px; color: #bdf; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-action:hover { background: linear-gradient(135deg, #3a3a5a 0%, #2a2a42 100%); border-color: #777; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(100, 100, 150, 0.3); }
+        .btn-action.start { border-color: #4a8c3f; color: #9fc; }
+        .btn-action.clean { border-color: #cc8833; color: #fc9; }
+        .btn-action.config { border-color: #8888cc; color: #ccf; }
+        .btn-action.refresh { border-color: #44aaaa; color: #aff; }
+
+        /* Activity Log */
+        .activity-log {
+            background: rgba(0, 0, 0, 0.65); border: 2px solid #334; border-radius: 8px;
+            padding: 8px 12px; font-family: 'Courier New', monospace; font-size: 10px;
+            color: #8bc; overflow-y: auto; max-height: 82px; margin-top: 12px;
+        }
+        .activity-log::-webkit-scrollbar { width: 5px; }
+        .activity-log::-webkit-scrollbar-track { background: #111; }
+        .activity-log::-webkit-scrollbar-thumb { background: #446; border-radius: 3px; }
+        .log-entry { margin-bottom: 2px; line-height: 1.3; }
+        .log-time { color: #689; }
+        .log-msg { color: #bcd; }
+        .log-success { color: #4c4; }
+        .log-error { color: #c44; }
+
+        /* ========== STATUS BAR ========== */
+        .status-panel {
+            grid-area: status; background: rgba(0, 0, 0, 0.65); border-top: 2px solid #334;
+            padding: 10px 22px; display: flex; justify-content: space-between; align-items: center;
+            z-index: 10; gap: 25px;
+        }
+        .status-item { display: flex; align-items: center; gap: 7px; font-size: 11px; }
+        .status-label { color: #89a; font-weight: bold; }
+        .status-value { color: #4af; font-family: 'Courier New', monospace; }
+        .status-value.active { color: #4c4; }
+        .status-value.inactive { color: #c44; }
+        .status-value.running { color: #cc4; animation: statusBlink 1s infinite; }
+        @keyframes statusBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .log-link { color: #5af; text-decoration: underline; cursor: pointer; font-size: 10px; transition: color 0.2s; }
+        .log-link:hover { color: #8cf; }
+
+        /* ========== PARTICLES ========== */
+        .particles { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 1; }
+        .particle { position: absolute; width: 3px; height: 3px; background: #4af; border-radius: 50%; opacity: 0; animation: particleFloat 7s linear infinite; }
+        @keyframes particleFloat { 0% { transform: translateY(100vh) scale(0); opacity: 0; } 10% { opacity: 0.7; } 90% { opacity: 0.2; } 100% { transform: translateY(-20px) scale(1); opacity: 0; } }
+        .particle:nth-child(1) { left: 5%; animation-delay: 0s; animation-duration: 5s; } .particle:nth-child(2) { left: 15%; animation-delay: 1.2s; animation-duration: 7s; } .particle:nth-child(3) { left: 28%; animation-delay: 2.4s; animation-duration: 6s; } .particle:nth-child(4) { left: 42%; animation-delay: 0.6s; animation-duration: 8s; } .particle:nth-child(5) { left: 55%; animation-delay: 1.8s; animation-duration: 5.5s; } .particle:nth-child(6) { left: 68%; animation-delay: 3s; animation-duration: 6.5s; } .particle:nth-child(7) { left: 78%; animation-delay: 0.9s; animation-duration: 7.5s; } .particle:nth-child(8) { left: 88%; animation-delay: 2.1s; animation-duration: 5.8s; } .particle:nth-child(9) { left: 95%; animation-delay: 3.3s; animation-duration: 6.8s; } .particle:nth-child(10) { left: 12%; animation-delay: 4s; animation-duration: 7.2s; }
+
+        /* Scanline */
+        .scanline { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0px, rgba(0, 0, 0, 0.04) 1px, transparent 1px, transparent 3px); pointer-events: none; z-index: 100; opacity: 0.2; }
+
+        /* Toast */
+        .toast { position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #2a4a2a 0%, #1a3a1a 100%); border: 2px solid #4c4; color: #cfc; padding: 14px 20px; border-radius: 10px; font-family: 'Courier New', monospace; font-size: 11px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); transform: translateX(450px); opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 1000; max-width: 400px; }
+        .toast.show { transform: translateX(0); opacity: 1; }
+        .toast.error { background: linear-gradient(135deg, #4a2a2a 0%, #3a1a1a 100%); border-color: #c44; color: #fcc; }
+        .toast.executing { background: linear-gradient(135deg, #2a3a5c 0%, #1a2440 100%); border-color: #4af; color: #def; border-left: 4px solid #4af; }
+
+        /* Loading overlay for execution */
+        .exec-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center;
+            z-index: 2000; flex-direction: column;
+        }
+        .exec-overlay.show { display: flex; }
+        .spinner { width: 50px; height: 50px; border: 4px solid #333; border-top: 4px solid #4af; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .exec-text { color: #4af; margin-top: 15px; font-size: 13px; letter-spacing: 1px; }
+
+        /* Responsive */
+        @media (max-height: 750px) { .game-container { height: 660px; transform: scale(0.96); } }
+        @media (max-height: 700px) { .game-container { height: 600px; transform: scale(0.92); } }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="scanline"></div>
+
+    <div class="particles">
+        <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+        <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+        <div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="title">🛡️ NETDEF SECURITY SUITE</div>
+        <div class="subtitle">Network Definer v1.0 | Zero Trust Made Simple | AI-Powered Defense</div>
+    </div>
+
+    <!-- Left Zone: Real Rhino Image -->
+    <div class="rhino-zone">
+        <!-- Status Badges -->
+        <div class="status-badge badge-top-left">🛡️ FIREWALL ACTIVE</div>
+        <div class="status-badge badge-top-right">⏱ REAL-TIME PROTECTION</div>
+        
+        <div class="rhino-image-container" id="rhinoContainer">
+            <div class="rhino-glow-ring"></div>
+            
+            <!-- YOUR REAL RHINO IMAGE -->
+            <img src="tests/netdef-resized.png" 
+                 alt="Cyber Rhino Guardian" 
+                 class="rhino-img" 
+                 id="rhinoImg"
+                 onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.5em%22 fill=%22%234af%22 font-size=%2280%22>🦏</text></svg>'">
+            
+            <div class="speech-bubble" id="rhinoSpeech">Security Active! ✨</div>
+        </div>
+
+        <div class="status-badge badge-bottom" id="rhinoStatusBadge">PATROL ACTIVE • MONITORING...</div>
+        <div class="rhino-label">CYBER GUARDIAN v1.0</div>
+    </div>
+
+    <!-- Right Zone: Controls + Log -->
+    <div class="controls">
+        <!-- REAL CONFIGURATION DISPLAY -->
+        <div id="configPanel" style="background: rgba(0,20,40,0.7); border: 2px solid #2a4a6a; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 10px;">
+            <div style="color: #8bf; font-weight: bold; margin-bottom: 6px; letter-spacing: 1px;">📋 CURRENT CONFIGURATION (setting.ini)</div>
+            <div id="configContent" style="color: #bcd; line-height: 1.5;">
+                <span style="color:#689">Loading configuration...</span>
+            </div>
+        </div>
+
+        <div class="section-title">🎯 Select Security Profile:</div>
+        
+        <div class="buttons-grid">
+            <button class="btn btn-home" onclick="applyProfile('home', this)" id="btnHome">
+                🏠 HOME NETWORK<br><small>Trusted LAN | Standard</small>
+            </button>
+            
+            <button class="btn btn-office" onclick="applyProfile('office', this)" id="btnOffice">
+                💼 OFFICE MODE<br><small>Corporate | Balanced</small>
+            </button>
+            
+            <button class="btn btn-travel" onclick="applyProfile('travel', this)" id="btnTravel">
+                ✈️ TRAVEL MODE ⭐<br><small>Public WiFi | HIGH Security</small>
+            </button>
+            
+            <button class="btn btn-lockdown" onclick="applyProfile('lockdown', this)" id="btnLockdown">
+                🔒 LOCKDOWN<br><small>Maximum Isolation</small>
+            </button>
+        </div>
+
+        <div class="section-title" style="margin-top: 16px;">⚡ Quick Actions:</div>
+        <div class="action-buttons">
+            <button class="btn-action start" id="btnWail2Ban" onclick="toggleWail2Ban(this)">▶ Wail2Ban</button>
+            <button class="btn-action clean" onclick="cleanupRules(this)">🧹 Cleanup</button>
+            <button class="btn-action config" onclick="editConfig()">⚙ Config</button>
+            <button class="btn-action refresh" onclick="refreshStatus()">🔄 Refresh</button>
+        </div>
+
+        <div class="activity-log" id="activityLog">
+            <div class="log-entry"><span class="log-time">[00:00:00]</span> <span class="log-msg">Netdef Cyber Guardian initialized.</span></div>
+            <div class="log-entry"><span class="log-time">[00:00:00]</span> <span class="log-msg">Rhino guardian online... 🦏✨</span></div>
+        </div>
+    </div>
+
+    <!-- Bottom Status Bar -->
+    <div class="status-panel">
+        <div class="status-item">
+            <span class="status-label">🛡️ Firewall:</span>
+            <span class="status-value" id="fwStatus">Loading...</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">🦏 Guardian:</span>
+            <span class="status-value active" id="w2bStatus">✅ PATROLLING</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">📁 Logs:</span>
+            <span class="log-link" onclick="openLogs()">Open Folder →</span>
+        </div>
+    </div>
+</div>
+
+<!-- Execution Overlay -->
+<div class="exec-overlay" id="execOverlay">
+    <div class="spinner"></div>
+    <div class="exec-text" id="execText">EXECUTING SECURITY PROFILE...</div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast" id="toast"></div>
+
+<script>
+    // ========== GLOBAL STATE ==========
+    let wail2banRunning = false;
+
+    // SIMPLIFIED embedded detection - if window.external is an object, we're embedded!
+    const isEmbedded = (typeof window.external !== 'undefined' && window.external !== null && typeof window.external === 'object');
+
+    // ========== COMMAND QUEUE FOR PS POLLING ==========
+    // PS calls getPendingCommands() every 500ms to check for commands
+    window.netdefCommandQueue = [];
+
+    // Function called by PowerShell via InvokeScript('getPendingCommands')
+    window.getPendingCommands = function() {
+        if (window.netdefCommandQueue.length > 0) {
+            return JSON.stringify(window.netdefCommandQueue.shift()); // Return and remove first command
+        }
+        return '';
+    };
+
+    // Function called by PowerShell to clear queue after processing
+    window.clearCommandQueue = function() {
+        window.netdefCommandQueue = [];
+    };
+
+    // Helper: Queue a command for PowerShell execution
+    function queueCommand(action, params) {
+        const cmd = Object.assign({ action: action }, params);
+        window.netdefCommandQueue.push(cmd);
+        log(`Queued command: ${action}`, 'info');
+    }
+
+    // ========== LOGGING ==========
+    function log(message, type = 'info') {
+        const logEl = document.getElementById('activityLog');
+        const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        const cssClass = type === 'success' ? 'log-success' : type === 'error' ? 'log-error' : 'log-msg';
+        entry.innerHTML = `<span class="log-time">[${time}]</span> <span class="${cssClass}">${message}</span>`;
+        logEl.appendChild(entry);
+        logEl.scrollTop = logEl.scrollHeight;
+        while (logEl.children.length > 50) logEl.removeChild(logEl.firstChild);
+    }
+
+    // ========== TOAST NOTIFICATIONS ==========
+    function showToast(message, type = 'normal') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = 'toast show' + (type === 'error' ? ' error' : type === 'executing' ? ' executing' : '');
+        if (type !== 'executing') setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    // ========== EXECUTION OVERLAY ==========
+    function showExecOverlay(text) {
+        document.getElementById('execText').textContent = text || 'Executing...';
+        document.getElementById('execOverlay').classList.add('show');
+    }
+    function hideExecOverlay() {
+        document.getElementById('execOverlay').classList.remove('show');
+    }
+
+    // ========== RHINO INTERACTIONS ==========
+    function triggerRhinoReaction(type) {
+        const container = document.getElementById('rhinoContainer');
+        const speech = document.getElementById('rhinoSpeech');
+        const badge = document.getElementById('rhinoStatusBadge');
+        
+        container.classList.remove('excited', 'alert');
+        void container.offsetWidth;
+
+        if (type === 'excited') {
+            container.classList.add('excited');
+            showRhinoSpeech("Got it! Profile applied! 👍");
+            badge.textContent = 'PROFILE APPLIED ✓';
+            setTimeout(() => { badge.textContent = 'PATROL ACTIVE • MONITORING...'; }, 3000);
+        } else if (type === 'alert') {
+            container.classList.add('alert');
+            showRhinoSpeech("Alert mode active! 🚨");
+            badge.textContent = '⚠ ALERT MODE ACTIVE';
+            setTimeout(() => { badge.textContent = 'PATROL ACTIVE • MONITORING...'; }, 3000);
+        } else if (type === 'happy') {
+            container.classList.add('excited');
+            showRhinoSpeech("All secure! 🛡️");
+            badge.textContent = 'SYSTEM SECURED ✓';
+            setTimeout(() => { badge.textContent = 'PATROL ACTIVE • MONITORING...'; }, 3000);
+        } else if (type === 'wave') {
+            container.classList.add('excited');
+            showRhinoSpeech("Acknowledged! 👋");
+        }
+
+        setTimeout(() => {
+            container.classList.remove('excited', 'alert');
+            hideRhinoSpeech();
+        }, 2800);
+    }
+
+    function showRhinoSpeech(text) {
+        const speech = document.getElementById('rhinoSpeech');
+        speech.textContent = text;
+        speech.classList.add('show');
+    }
+    function hideRhinoSpeech() {
+        document.getElementById('rhinoSpeech').classList.remove('show');
+    }
+
+    // ========== REAL SCRIPT EXECUTION via Command Queue ==========
+    function executeRealScript(profileName) {
+        return new Promise((resolve, reject) => {
+            if (!isEmbedded) {
+                reject(new Error('Not in embedded mode'));
+                return;
+            }
+
+            try {
+                showExecOverlay(`Applying ${profileName.toUpperCase()} profile...`);
+                log(`Queuing script: ${profileName}...`, 'info');
+
+                // Queue command for PowerShell to pick up (within 500ms)
+                queueCommand('execute', { profile: profileName });
+
+                // Hide overlay after delay (PS will have picked up the command by then)
+                setTimeout(() => {
+                    hideExecOverlay();
+                    resolve(`SUCCESS: Command queued for '${profileName}'. PS will execute shortly.`);
+                }, 800);
+            } catch (err) {
+                hideExecOverlay();
+                reject(err);
+            }
+        });
+    }
+
+    // ========== GET SCRIPT DIRECTORY ==========
+    function getScriptDir() {
+        return location.pathname.replace(/\/[^/]*$/, '').replace('file:\\', '\\').replace(/\//g, '\\').substring(1);
+    }
+
+    // ========== LOAD CONFIGURATION (Polling Mode Info) ==========
+    function loadRealConfig() {
+        if (!isEmbedded) {
+            document.getElementById('configContent').innerHTML =
+                '<span style="color:#c66">⚠ Embedded mode required</span>';
+            return;
+        }
+
+        // Show polling mode status
+        const html = `
+            <div><span style="color:#4c4">✅ Embedded Mode: ACTIVE</span></div>
+            <div><span style="color:#8ab">Bridge:</span> <span style="color:#bc9">InvokeScript Polling (500ms)</span></div>
+            <div><span style="color:#8ab">Engine:</span> <span style="color:#9cf">Any (IE/Edge/Chromium)</span></div>
+            <div style="margin-top:6px; color:#689; font-size:9px;">
+                Commands executed by PowerShell via queue
+            </div>
+        `;
+        document.getElementById('configContent').innerHTML = html;
+        log('Configuration: Polling bridge mode active', 'success');
+    }
+
+    // ========== PROFILE APPLICATION ==========
+    async function applyProfile(profile, btnElement) {
+        // Lock all buttons during execution
+        setButtonsDisabled(true);
+        btnElement.style.transform = 'scale(0.95)';
+        
+        let profileName = '';
+        switch(profile) {
+            case 'home': profileName = 'Home Network'; break;
+            case 'office': profileName = 'Office Mode'; break;
+            case 'travel': profileName = 'Travel Mode ⭐'; break;
+            case 'lockdown':
+                if (!confirm('⚠️ LOCKDOWN MODE will block ALL outbound traffic!\n\nContinue?')) {
+                    setButtonsDisabled(false);
+                    btnElement.style.transform = '';
+                    log('Lockdown cancelled by user.', 'info');
+                    return;
+                }
+                profileName = 'LOCKDOWN Mode';
+                break;
+        }
+
+        showToast(`Activating ${profileName}...`, 'executing');
+        log(`Applying security profile: ${profileName.toUpperCase()}`, 'info');
+
+        try {
+            const result = await executeRealScript(profile);
+            log(`${profileName}: ${result}`, result.includes('ERROR') ? 'error' : 'success');
+            showToast(result.includes('ERROR') ? `❌ ${result}` : `✅ ${result}`, result.includes('ERROR') ? 'error' : 'normal');
+            triggerRhinoReaction(result.includes('ERROR') ? 'alert' : 'excited');
+            refreshStatus();
+        } catch (err) {
+            log(`Error applying profile: ${err.message}`, 'error');
+            showToast(`❌ Error: ${err.message}`, 'error');
+            triggerRhinoReaction('alert');
+        }
+
+        setTimeout(() => { btnElement.style.transform = ''; }, 200);
+        setButtonsDisabled(false);
+    }
+
+    function setButtonsDisabled(disabled) {
+        document.querySelectorAll('.btn, .btn-action').forEach(b => b.disabled = disabled);
+    }
+
+    // ========== WAIL2BAN CONTROL ==========
+    async function toggleWail2Ban(btn) {
+        wail2banRunning = !wail2banRunning;
+
+        if (!isEmbedded) {
+            showToast('⚠ Embedded mode required for Wail2Ban control', 'error');
+            wail2banRunning = !wail2banRunning;
+            return;
+        }
+
+        try {
+            queueCommand('wail2ban', { start: wail2banRunning });
+            log(`Wail2Ban: ${wail2banRunning ? 'Starting...' : 'Stopping...'} (queued)`, 'success');
+            showToast(wail2banRunning ? '🦏 Wail2Ban starting...' : 'Wail2Ban stopping...', 'normal');
+            triggerRhinoReaction('happy');
+        } catch (err) {
+            log(`Wail2Ban error: ${err.message}`, 'error');
+            showToast(`Error: ${err.message}`, 'error');
+            wail2banRunning = !wail2banRunning;
+        }
+
+        if (wail2banRunning) {
+            btn.textContent = '⏹ Stop Wail2Ban';
+            btn.style.borderColor = '#c44'; btn.style.color = '#fcc';
+            document.getElementById('w2bStatus').textContent = '✅ RUNNING';
+            document.getElementById('w2bStatus').className = 'status-value running';
+        } else {
+            btn.textContent = '▶ Start Wail2Ban';
+            btn.style.borderColor = '#4a8c3f'; btn.style.color = '#9fc';
+            document.getElementById('w2bStatus').textContent = '⏹ STOPPED';
+            document.getElementById('w2bStatus').className = 'status-value inactive';
+        }
+    }
+
+    // ========== CLEANUP RULES ==========
+    async function cleanupRules(btn) {
+        if (!isEmbedded) {
+            showToast('⚠ Embedded mode required for cleanup', 'error');
+            return;
+        }
+
+        if (confirm('🧹 Remove ALL custom firewall rules?\n\nThis cannot be undone easily.')) {
+            try {
+                queueCommand('cleanup', {});
+                log('Cleanup: Command queued', 'success');
+                showToast('🧹 Cleanup initiated...', 'normal');
+                triggerRhinoReaction('wave');
+            } catch (err) {
+                log(`Cleanup error: ${err.message}`, 'error');
+                showToast(`Error: ${err.message}`, 'error');
+            }
+        } else {
+            log('Cleanup: Cancelled by user', 'info');
+        }
+    }
+
+    // ========== EDIT CONFIG ==========
+    function editConfig() {
+        if (!isEmbedded) {
+            showToast('⚠ Embedded mode required', 'error');
+            return;
+        }
+        log('Opening configuration file...', 'info');
+        try {
+            queueCommand('config', {});
+            log('Config: Command queued', 'success');
+        } catch (err) {
+            log(`Config error: ${err.message}`, 'error');
+        }
+        showToast('Opening setting.ini...', 'normal');
+        triggerRhinoReaction('wave');
+    }
+
+    // ========== REFRESH STATUS (simplified for polling mode) ==========
+    function refreshStatus() {
+        log('Refreshing system status...', 'info');
+        const fwEl = document.getElementById('fwStatus');
+        fwEl.textContent = 'Active (Polling Mode)';
+        fwEl.className = 'status-value active';
+        document.getElementById('w2bStatus').textContent = '✅ PATROLLING';
+        document.getElementById('w2bStatus').className = 'status-value active';
+        log('Status: Polling mode active - commands will be executed by PS', 'success');
+    }
+
+    // ========== CALLBACK: PowerShell can call this to update status ==========
+    window.updateStatusFromPS = function(statusText) {
+        const fwEl = document.getElementById('fwStatus');
+        if (fwEl) {
+            fwEl.textContent = statusText || 'Active';
+            fwEl.className = 'status-value active';
+        }
+        log('Status updated from PS: ' + (statusText || 'N/A'), 'success');
+    };
+
+    // ========== OPEN LOGS ==========
+    function openLogs() {
+        if (!isEmbedded) {
+            showToast('⚠ Embedded mode required', 'error');
+            return;
+        }
+        log('Opening logs folder...', 'info');
+        try {
+            queueCommand('logs', {});
+            log('Logs: Command queued', 'success');
+        } catch (err) {
+            log(`Logs error: ${err.message}`, 'error');
+        }
+        showToast('Opening logs directory...', 'normal');
+        triggerRhinoReaction('wave');
+    }
+
+    // ========== INITIALIZATION (LOAD REAL CONFIG) ==========
+    document.addEventListener('DOMContentLoaded', () => {
+        log('System ready. Embedded mode: ' + (isEmbedded ? 'YES 🔗' : 'NO (Demo)'), isEmbedded ? 'success' : 'error');
+        log('Debug: window.external type = ' + typeof window.external, 'info');
+
+        if (isEmbedded) {
+            // Load real configuration immediately
+            setTimeout(loadRealConfig, 500);
+            // Refresh status after config loads
+            setTimeout(refreshStatus, 1500);
+        } else {
+            document.getElementById('configContent').innerHTML =
+                '<span style="color:#c66">⚠ Launch via netdef-gui-launcher.ps1 for real data</span>';
+            setTimeout(() => {
+                document.getElementById('fwStatus').textContent = '⚠ Need embedded mode';
+                document.getElementById('fwStatus').className = 'status-value inactive';
+            }, 1000);
+        }
+
+        // Random rhino commentary every 35 seconds
+        setInterval(() => {
+            const msgs = ["Still watching... 👀", "Network secure! 🛡️", "On patrol! 🚶", "Systems nominal ✨", "Stay safe! 💪"];
+            const msg = msgs[Math.floor(Math.random() * msgs.length)];
+            const container = document.getElementById('rhinoContainer');
+            if (!container.classList.contains('excited') && !container.classList.contains('alert')) {
+                showRhinoSpeech(msg);
+                setTimeout(hideRhinoSpeech, 3000);
+            }
+        }, 35000);
+
+        // Welcome speech after 2 seconds
+        setTimeout(() => {
+            showRhinoSpeech("Welcome! I'm your cyber guardian 🦏✨");
+            setTimeout(hideRhinoSpeech, 4500);
+        }, 2000);
+
+        // Update status badge periodically
+        setInterval(() => {
+            const badge = document.getElementById('rhinoStatusBadge');
+            if (!badge.textContent.includes('ALERT') && !badge.textContent.includes('APPLIED')) {
+                const dots = '.'.repeat(Math.floor(Date.now() / 500) % 4);
+                badge.textContent = `PATROL ACTIVE • MONITING${dots}`;
+            }
+        }, 500);
+
+        // Auto-refresh status every 30 seconds when in embedded mode
+        if (isEmbedded) {
+            setInterval(refreshStatus, 30000);
+        }
+    });
+
+    // ========== KEYBOARD SHORTCUTS ==========
+    document.addEventListener('keydown', (e) => {
+        if (e.key === '1') applyProfile('home', document.getElementById('btnHome'));
+        if (e.key === '2') applyProfile('office', document.getElementById('btnOffice'));
+        if (e.key === '3') applyProfile('travel', document.getElementById('btnTravel'));
+        if (e.key === '4') applyProfile('lockdown', document.getElementById('btnLockdown'));
+        if (e.key === 'r' || e.key === 'R') refreshStatus();
+        if (e.key === 'l' || e.key === 'L') openLogs();
+        if (e.key === 'Escape') {
+            document.getElementById('toast').classList.remove('show');
+            hideExecOverlay();
+        }
+    });
+</script>
+
+</body>
+</html>

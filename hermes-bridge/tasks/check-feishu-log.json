@@ -1,0 +1,1 @@
+{"task_id": "check-feishu-log", "query": "tail -30 ~/.hermes-puck/gateway.log", "type": "shell", "from": "unknown", "created": "2026-04-29T00:19:06.953467"}

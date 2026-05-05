@@ -1,0 +1,1 @@
+{"task_id": "test-file_exists", "query": "你是CiviBBS测试岗。对 file_exists 插件跑触发机验证。插件目录：/mnt/c/civibbs/pipeline/workspace_dev/file_exists/ 。读取 definition.yaml 和 triggers/*.yaml，用 python 执行 execute.py 的 execute() 函数模拟每个触发场景。触发机：exists(文件存在), not_exists(文件不存在)。把测试报告写到 /mnt/c/civibbs/pipeline/workspace_dev/file_exists/test_report.md", "created": "2026-04-22T14:49:38.330530"}

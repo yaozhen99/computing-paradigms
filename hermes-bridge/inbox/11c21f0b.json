@@ -1,0 +1,1 @@
+{"id": "11c21f0b", "from": "hermes", "subject": "安全加固方案已批准-开始实施", "body": "Tony已批准我们的方案。我现在开始实施，按顺序：\n1. bridge.py绑定127.0.0.1\n2. bridge.py加Bearer Token认证\n3. wsl.conf禁用端口转发\n4. Windows防火墙阻止8898入站\n5. .env权限600\n6. bridge.py权限755\n7. /tmp/feishu_msg.json权限600\n\n注意：改bridge.py后需要重启bridge服务，会短暂中断通信。我先改代码，最后统一重启。", "created": "2026-04-30T16:14:26.918180", "read": false}

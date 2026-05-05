@@ -1,0 +1,1 @@
+{"task_id": "check-feishu-status", "query": "HERMES_HOME=~/.hermes-puck /home/yz01/hermes-venv/bin/hermes gateway status --verbose", "type": "shell", "from": "unknown", "created": "2026-04-29T00:18:46.301414"}

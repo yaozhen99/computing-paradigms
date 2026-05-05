@@ -1,0 +1,1 @@
+{"task_id": "test-ping3", "status": "done", "output": "pong 馃彄", "debug": "stdout_len=8, stderr_len=36, rc=0", "error": "", "returncode": 0, "completed": "2026-04-22T15:48:38.387710"}

@@ -1,0 +1,250 @@
+"""
+Hermes Bridge - 双向通信桥
+- Atlas/Claude Code → Hermes: POST /task 派任务
+- Hermes → Claude Code: POST /message 发消息, GET /inbox 收件箱
+
+端口: 8898
+"""
+import json
+import os
+import re
+import subprocess
+import threading
+import uuid
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from pathlib import Path
+from datetime import datetime
+
+BRIDGE_DIR = Path(r"C:\tower-of-babel\hermes-bridge")
+TASKS_DIR = BRIDGE_DIR / "tasks"
+RESULTS_DIR = BRIDGE_DIR / "results"
+INBOX_DIR = BRIDGE_DIR / "inbox"
+
+TASKS_DIR.mkdir(parents=True, exist_ok=True)
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+INBOX_DIR.mkdir(parents=True, exist_ok=True)
+
+HERMES_CMD_TEMPLATE = r'wsl -d Ubuntu -e bash -c "source ~/hermes-venv/bin/activate && hermes chat -q \"{query}\" -Q"'
+
+
+def run_hermes(task_id: str, query: str):
+    """Run hermes chat with query, save result"""
+    result_file = RESULTS_DIR / f"{task_id}.json"
+    try:
+        # Update status to running
+        result_file.write_text(json.dumps({
+            "task_id": task_id,
+            "status": "running",
+            "started": datetime.now().isoformat(),
+        }, ensure_ascii=False), encoding="utf-8")
+
+        # Build command - use double quotes for the query
+        cmd = HERMES_CMD_TEMPLATE.format(query=query.replace('"', '\\"'))
+
+        proc = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True, timeout=120,
+            cwd=str(BRIDGE_DIR)
+        )
+        # Combine stdout and stderr, then clean up
+        raw_output = (proc.stdout or "") + (proc.stderr or "")
+        # Debug: log raw output length
+        debug_info = f"stdout_len={len(proc.stdout or '')}, stderr_len={len(proc.stderr or '')}, rc={proc.returncode}"
+        # Remove ANSI escape sequences
+        clean = re.sub(r'\x1b\[[0-9;]*m', '', raw_output)
+        # Remove session_id lines
+        lines = []
+        for line in clean.split('\n'):
+            line = line.strip()
+            if line and not line.startswith('session_id:'):
+                lines.append(line)
+        output = '\n'.join(lines).strip()
+
+        result_file.write_text(json.dumps({
+            "task_id": task_id,
+            "status": "done" if proc.returncode == 0 else "error",
+            "output": output,
+            "debug": debug_info,
+            "error": "" if proc.returncode == 0 else output,
+            "returncode": proc.returncode,
+            "completed": datetime.now().isoformat(),
+        }, ensure_ascii=False), encoding="utf-8")
+
+    except subprocess.TimeoutExpired:
+        result_file.write_text(json.dumps({
+            "task_id": task_id,
+            "status": "timeout",
+            "error": "Hermes timed out after 120s",
+            "completed": datetime.now().isoformat(),
+        }, ensure_ascii=False), encoding="utf-8")
+    except Exception as e:
+        result_file.write_text(json.dumps({
+            "task_id": task_id,
+            "status": "error",
+            "error": str(e),
+            "completed": datetime.now().isoformat(),
+        }, ensure_ascii=False))
+
+
+class BridgeHandler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        if self.path == "/task":
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
+            try:
+                data = json.loads(body)
+                query = data.get("query", "")
+                source = data.get("from", "unknown")
+                task_id = data.get("task_id", str(uuid.uuid4())[:8])
+
+                # Save task
+                (TASKS_DIR / f"{task_id}.json").write_text(json.dumps({
+                    "task_id": task_id,
+                    "query": query,
+                    "from": source,
+                    "created": datetime.now().isoformat(),
+                }, ensure_ascii=False), encoding="utf-8")
+
+                # Run in background thread
+                t = threading.Thread(target=run_hermes, args=(task_id, query), daemon=True)
+                t.start()
+
+                self.send_response(202)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "task_id": task_id,
+                    "status": "running",
+                }).encode())
+
+            except Exception as e:
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+        elif self.path == "/message":
+            # Hermes → Claude Code: push message to inbox
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
+            try:
+                data = json.loads(body)
+                msg_id = data.get("id", str(uuid.uuid4())[:8])
+                msg = {
+                    "id": msg_id,
+                    "from": data.get("from", "hermes"),
+                    "subject": data.get("subject", ""),
+                    "body": data.get("body", ""),
+                    "created": datetime.now().isoformat(),
+                    "read": False,
+                }
+                (INBOX_DIR / f"{msg_id}.json").write_text(
+                    json.dumps(msg, ensure_ascii=False), encoding="utf-8"
+                )
+                self.send_response(201)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"id": msg_id, "status": "delivered"}).encode())
+            except Exception as e:
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def do_DELETE(self):
+        if self.path.startswith("/inbox/"):
+            msg_id = self.path.split("/")[-1]
+            msg_file = INBOX_DIR / f"{msg_id}.json"
+            if msg_file.exists():
+                msg_file.unlink()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"id": msg_id, "status": "deleted"}).encode())
+            else:
+                self.send_response(404)
+                self.end_headers()
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def do_GET(self):
+        if self.path == "/result":
+            # List all results
+            results = []
+            for f in RESULTS_DIR.glob("*.json"):
+                try:
+                    results.append(json.loads(f.read_text(encoding="utf-8")))
+                except:
+                    pass
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(results, ensure_ascii=False).encode())
+
+        elif self.path.startswith("/result/"):
+            task_id = self.path.split("/")[-1]
+            result_file = RESULTS_DIR / f"{task_id}.json"
+            if result_file.exists():
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(result_file.read_bytes())
+            else:
+                self.send_response(404)
+                self.end_headers()
+        elif self.path == "/inbox":
+            # List inbox messages
+            messages = []
+            for f in sorted(INBOX_DIR.glob("*.json")):
+                try:
+                    messages.append(json.loads(f.read_text(encoding="utf-8")))
+                except:
+                    pass
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(messages, ensure_ascii=False).encode())
+
+        elif self.path.startswith("/inbox/"):
+            msg_id = self.path.split("/")[-1]
+            msg_file = INBOX_DIR / f"{msg_id}.json"
+            if msg_file.exists():
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(msg_file.read_bytes())
+            else:
+                self.send_response(404)
+                self.end_headers()
+
+        elif self.path == "/status":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "bridge": "hermes-bridge",
+                "status": "running",
+                "tasks": len(list(TASKS_DIR.glob("*.json"))),
+                "results": len(list(RESULTS_DIR.glob("*.json"))),
+            }).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def log_message(self, format, *args):
+        pass
+
+
+if __name__ == "__main__":
+    port = 8898
+    server = HTTPServer(("0.0.0.0", port), BridgeHandler)
+    print(f"Hermes Bridge running at http://localhost:{port}")
+    print(f"  POST /task      - submit task to Hermes")
+    print(f"  POST /message   - push message to Claude Code inbox")
+    print(f"  GET  /result/<id> - get task result")
+    print(f"  GET  /result    - list all results")
+    print(f"  GET  /inbox     - list inbox messages")
+    print(f"  GET  /inbox/<id> - read single message")
+    print(f"  DELETE /inbox/<id> - delete message")
+    print(f"  GET  /status    - bridge status")
+    server.serve_forever()

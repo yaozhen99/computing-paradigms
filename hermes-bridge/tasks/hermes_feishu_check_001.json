@@ -1,0 +1,1 @@
+{"task_id": "hermes_feishu_check_001", "query": "检查你的飞书配置状态并详细汇报：1.你的飞书机器人app_id是什么 2.长连接WSClient是否在运行 3.事件订阅配了哪些 4.nanobot是怎么通过你的通道进来的 5.你之前发的那条消息发到哪了 6.你现在能收发飞书群消息吗", "type": "hermes", "from": "unknown", "created": "2026-04-28T23:19:06.001529"}

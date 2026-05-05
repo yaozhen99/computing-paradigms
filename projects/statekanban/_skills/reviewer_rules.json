@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "RR-001",
+      "category": "security",
+      "severity": "medium",
+      "title": "No TOCTOU in file operations",
+      "description": "Do not use os.path.exists() or os.path.isdir() before open(). Directly attempt open() and catch FileNotFoundError/IsADirectoryError. Check-then-operate is a race condition vulnerability.",
+      "source_finding": "S-1",
+      "source_module": "tools/read_file.py",
+      "added": "2026-05-05T14:30:00Z"
+    },
+    {
+      "id": "RR-002",
+      "category": "error_handling",
+      "severity": "low",
+      "title": "Error codes must derive from type, not message text",
+      "description": "Error codes in ErrorSignal must be determined by the validator type or a defined mapping, not by string matching on error_detail messages. String-based derivation produces undefined codes when messages change.",
+      "source_finding": "S-2",
+      "source_module": "core/valve.py",
+      "added": "2026-05-05T14:30:00Z"
+    },
+    {
+      "id": "RR-003",
+      "category": "data_integrity",
+      "severity": "medium",
+      "title": "Index-keyed containers must maintain list-index consistency on overwrite",
+      "description": "When a signal/artifact with the same index key is overwritten, the backing list must not retain stale entries. Inconsistent list-index state causes false positive collision detection and stale reads.",
+      "source_finding": "D-1",
+      "source_module": "core/kanban.py",
+      "added": "2026-05-05T14:30:00Z"
+    }
+  ]
+}

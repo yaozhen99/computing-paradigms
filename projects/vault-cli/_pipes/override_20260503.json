@@ -1,0 +1,51 @@
+{
+  "_meta": {
+    "status": "override",
+    "cause": "CODE_REJECTED",
+    "signed_by": "reviewer",
+    "timestamp": "2026-05-03T23:58:00+08:00"
+  },
+  "payload": {
+    "verdict": "REJECTED",
+    "reason": "API 契约偏差：文件删除失败时的退出码不符合契约定义",
+    "details": [
+      {
+        "contract_ref": "api_contracts.md Section 2 - vault lock 错误码",
+        "contract_requirement": "退出码 1 (GENERAL_ERROR) 涵盖「原文件删除失败」场景",
+        "actual_behavior": "cmd_lock 中 VaultFileIO.remove_original() 抛出异常时，被通用 except Exception 捕获，返回退出码 3 (CRYPTO_ERROR) 或 2 (ARGUMENT_ERROR)，而非契约要求的 1 (GENERAL_ERROR)",
+        "file": "03_source/backend/src/vault_cli/cli/commands/lock.py",
+        "lines": "82-100"
+      },
+      {
+        "contract_ref": "api_contracts.md Section 3 - vault unlock 错误码",
+        "contract_requirement": "退出码 1 (GENERAL_ERROR) 涵盖「.vault 文件删除失败」场景",
+        "actual_behavior": "cmd_unlock 中 VaultFileIO.remove_original() 抛出异常时，被通用 except Exception 捕获，返回退出码 3 (CRYPTO_ERROR)，而非契约要求的 1 (GENERAL_ERROR)",
+        "file": "03_source/backend/src/vault_cli/cli/commands/unlock.py",
+        "lines": "78-103"
+      }
+    ],
+    "rework_instructions": [
+      "1. 在 cmd_lock 和 cmd_unlock 中，将文件删除操作（remove_original）移至 try 块之外，或为删除失败单独捕获异常并返回 GENERAL_ERROR (1)",
+      "2. 建议重构方式：在 lock.py 的 try 块中仅处理加密相关操作，删除操作放在 try 块之后用独立的 try/except 包裹，捕获 OSError 后返回 ExitCode.GENERAL_ERROR",
+      "3. 同理处理 unlock.py 中 .vault 文件删除失败的场景",
+      "4. 补充对应的单元测试用例，验证文件删除失败时返回退出码 1 而非 3"
+    ],
+    "security_review": {
+      "result": "PASS",
+      "notes": [
+        "口令处理安全：使用 getpass 不回显，不在命令行参数暴露",
+        "密钥派生安全：PBKDF2-SHA256 600000 迭代，符合 OWASP 2023 推荐",
+        "加密实现安全：AES-256-GCM 认证加密，IV 由 os.urandom 生成",
+        "盐值管理安全：16 字节 os.urandom 生成，Linux 权限 600",
+        "原子写入：采用临时文件 + os.replace 防止数据损坏",
+        "密钥不在内存中持久化：每次操作即时派生",
+        "无硬编码凭据或密钥"
+      ]
+    },
+    "test_report_review": {
+      "total_cases": 101,
+      "all_passed": true,
+      "coverage_gap": "测试未覆盖文件删除失败场景的退出码验证，导致契约偏差未被检出"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "role": "architect",
+  "title": "系统架构师",
+  "inputs": ["01_requirements/prd_final.md"],
+  "outputs": ["02_design/architecture.md", "02_design/api_contracts.md"],
+  "lock": "_pipes/lock_architect.json"
+}

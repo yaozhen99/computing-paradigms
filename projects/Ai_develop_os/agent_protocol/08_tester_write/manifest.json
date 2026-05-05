@@ -1,0 +1,7 @@
+{
+  "role": "tester_write",
+  "title": "测试用例编写",
+  "inputs": ["02_design/api_contracts.md", "02_design/db_schema.sql"],
+  "outputs": ["04_testing/test_cases.md", "04_testing/test_scripts"],
+  "lock": "_pipes/lock_tester_write.json"
+}

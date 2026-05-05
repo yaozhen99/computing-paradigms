@@ -1,0 +1,1 @@
+{"task_id": "pytest_bb_create_001", "status": "done", "output": "/usr/bin/python3: No module named pytest", "debug": "stdout_len=41, stderr_len=0, rc=0", "error": "", "returncode": 0, "completed": "2026-04-25T16:46:06.846447"}

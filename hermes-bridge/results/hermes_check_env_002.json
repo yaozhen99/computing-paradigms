@@ -1,0 +1,1 @@
+{"task_id": "hermes_check_env_002", "status": "done", "output": "/home/yz01/hermes-venv/bin/pytest\n9.0.3", "debug": "stdout_len=40, stderr_len=0, rc=0", "error": "", "returncode": 0, "completed": "2026-04-25T22:18:39.309257"}

@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "statekanban"
+version = "0.1.0"
+description = "StateKanban -- Instruction-level development engine"
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.1",
+    "anthropic>=0.30",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+]
+
+[project.scripts]
+statekanban = "statekanban.cli.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["statekanban*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

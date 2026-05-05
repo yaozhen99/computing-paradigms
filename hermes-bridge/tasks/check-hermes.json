@@ -1,0 +1,1 @@
+{"task_id": "check-hermes", "query": "which hermes && hermes --version", "type": "shell", "from": "unknown", "created": "2026-04-29T00:04:38.103866"}

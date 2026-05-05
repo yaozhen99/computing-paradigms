@@ -1,0 +1,1 @@
+{"task_id": "1bb72898", "status": "error", "output": "/bin/sh: 1: source: not found", "debug": "stdout_len=0, stderr_len=30, rc=127", "error": "/bin/sh: 1: source: not found", "returncode": 127, "completed": "2026-04-24T09:03:50.002757"}

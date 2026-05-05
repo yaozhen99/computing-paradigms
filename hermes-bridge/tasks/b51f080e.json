@@ -1,0 +1,1 @@
+{"task_id": "b51f080e", "query": "测试 file_exists 插件。输入目录: /mnt/c/civibbs/pipeline/workspace_test/input。触发器: exists.yaml, not_exists.yaml。输出测试报告到: /mnt/c/civibbs/pipeline/workspace_test/output/test_report.md", "from": "atlas", "created": "2026-04-24T09:16:49.110886"}

@@ -1,0 +1,7 @@
+{
+  "role": "dba",
+  "title": "数据库架构师",
+  "inputs": ["02_design/architecture.md"],
+  "outputs": ["02_design/db_schema.sql", "02_design/data_dict.md"],
+  "lock": "_pipes/lock_dba.json"
+}

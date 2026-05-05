@@ -1,0 +1,1 @@
+{"task_id": "comm-test-004", "status": "error", "output": "/bin/sh: 1: wsl: not found", "debug": "stdout_len=0, stderr_len=27, rc=127", "error": "/bin/sh: 1: wsl: not found", "returncode": 127, "completed": "2026-04-30T20:49:17.762626"}

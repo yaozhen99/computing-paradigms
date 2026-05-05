@@ -1,0 +1,7 @@
+{
+  "role": "pm",
+  "title": "产品经理",
+  "inputs": ["_system/user_input.md"],
+  "outputs": ["01_requirements/prd_final.md"],
+  "lock": "_pipes/lock_pm.json"
+}

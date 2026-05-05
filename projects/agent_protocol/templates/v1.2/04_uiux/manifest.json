@@ -1,0 +1,7 @@
+{
+  "role": "uiux",
+  "title": "UIUX 设计师",
+  "inputs": ["01_requirements/prd_final.md", "02_design/architecture.md"],
+  "outputs": ["02_design/ui_spec.md"],
+  "lock": "_pipes/lock_uiux.json"
+}

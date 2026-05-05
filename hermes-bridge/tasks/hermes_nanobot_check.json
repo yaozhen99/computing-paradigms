@@ -1,0 +1,1 @@
+{"task_id": "hermes_nanobot_check", "query": "cat ~/.hermes/.env 2>/dev/null; echo \"===NANOBOT===\"; cat ~/.hermes-nanobot/.env 2>/dev/null; echo \"===PROCS===\"; ps aux | grep -i \"hermes\\|nanobot\\|feishu\\|wsclient\" | grep -v grep", "type": "shell", "from": "unknown", "created": "2026-04-28T23:26:25.359690"}

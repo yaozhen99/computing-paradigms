@@ -1,0 +1,1 @@
+{"task_id": "test_001", "query": "bash -c 'source ~/hermes-venv/bin/activate && cd /mnt/c/civibbs/pipeline/done_claude_opus/bb/create_bbs_data_dir && python -m pytest test_execute.py -v --tb=short 2>&1 | tail -5'", "type": "shell", "from": "atlas", "created": "2026-04-25T16:49:22.936109"}

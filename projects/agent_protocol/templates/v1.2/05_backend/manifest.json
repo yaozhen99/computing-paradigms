@@ -1,0 +1,7 @@
+{
+  "role": "backend",
+  "title": "后端开发",
+  "inputs": ["02_design/architecture.md", "02_design/api_contracts.md", "02_design/db_schema.sql"],
+  "outputs": ["03_source/backend"],
+  "lock": "_pipes/lock_backend.json"
+}

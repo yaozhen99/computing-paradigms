@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "hermes-bridge": {
+      "command": "python",
+      "args": ["C:\\tower-of-babel\\hermes-bridge\\mcp_server.py"]
+    }
+  }
+}

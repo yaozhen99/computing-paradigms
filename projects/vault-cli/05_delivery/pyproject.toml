@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vault-cli"
+version = "1.0.0"
+description = "纯 CLI 离线文件加密工具"
+requires-python = ">=3.11"
+dependencies = [
+    "cryptography",
+]
+
+[project.scripts]
+vault = "vault_cli.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

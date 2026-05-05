@@ -1,0 +1,1 @@
+{"task_id": "verify-env", "query": "cat ~/.hermes-puck/.env", "type": "shell", "from": "unknown", "created": "2026-04-29T00:04:03.142849"}

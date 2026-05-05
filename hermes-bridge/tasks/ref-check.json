@@ -1,0 +1,1 @@
+{"task_id": "ref-check", "query": "cat ~/.hermes-nanobot/.env", "type": "shell", "from": "unknown", "created": "2026-04-29T00:00:58.327725"}

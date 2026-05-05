@@ -1,0 +1,7 @@
+{
+  "role": "security",
+  "title": "安全审计员",
+  "inputs": ["03_source/backend", "03_source/infra"],
+  "outputs": ["04_testing/report_security.md"],
+  "lock": "_pipes/lock_security.json"
+}

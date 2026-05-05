@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "updatedAt": "2026-04-25T15:11:45.000Z",
+  "entries": {
+    "memory:memory/2026-04-24.md:30:72": {
+      "key": "memory:memory/2026-04-24.md:30:72",
+      "path": "memory/2026-04-24.md",
+      "startLine": 30,
+      "endLine": 72,
+      "source": "memory",
+      "snippet": "| 审核报告 | `docs/reviews/[模块名]_审核报告.md` | review.md | ### 三、目录驻留文档 - 每个一级、二级子目录必须有 `README.md` - 修改代码后必须同步更新 README - 更新记录格式：`## [YYYY-MM-DD HH:MM] 更新说明` ### 四、自我演化机制 **差异分析（强制）**： - 完成开发总结后，立即对比计划与实际 - 在总结末尾追加 `## 计划与实际差异分析` **技能沉淀（自动）**： - 项目特定经验 → `docs/skills/project_specific.md` - 通用模式 → `docs/skills/general_patterns.md` - 无新增知识也需追加 `## [日期] 本次任务无新增通用技能` **协议修正建议**： - 连续两次相似差异 → 提出协议修正建议 - 建议 → `docs/proposals/protocol_change_[日期].md` - **严禁直接修改 AGENTS.md** --- ## 审核岗职责 作为审核岗，后续审核必须检查： 1. **文档完整性**：9类文档是否齐全 2. **格式规范性**：是否符合模板要求 3. **README更新**：代码修改后是否同步更新 4. **差异分析**：开发总结是否包含差异分析章节 5. **技能沉淀**：是否有技能更新记录 --- ## ML组当前状态 已审核9个插件，发现文档缺失： - 仅 atomic_take 有需求/计划/测试需求文档 - 其他8个插件缺少完整",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.5081152100814261,
+      "maxScore": 0.5081152100814261,
+      "firstRecalledAt": "2026-04-25T15:11:45.000Z",
+      "lastRecalledAt": "2026-04-25T15:11:45.000Z",
+      "queryHashes": [
+        "a05bc4e43328"
+      ],
+      "recallDays": [
+        "2026-04-25"
+      ],
+      "conceptTags": [
+        "docs/reviews",
+        "审核报告.md",
+        "review.md",
+        "readme.md",
+        "yyyy-mm-dd",
+        "docs/skills/project-specific.md",
+        "docs/skills/general-patterns.md",
+        "docs/proposals/protocol-change"
+      ]
+    }
+  }
+}

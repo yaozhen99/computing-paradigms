@@ -1,0 +1,10 @@
+{
+  "status": "RUNNING",
+  "mode": "v2_agent",
+  "stage_reached": 3,
+  "round": 2,
+  "active_nodes": [],
+  "completed_nodes": ["pm", "architect", "backend"],
+  "blocked_nodes": [],
+  "last_updated": "2026-05-05T14:08:39Z"
+}

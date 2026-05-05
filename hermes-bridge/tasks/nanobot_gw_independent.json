@@ -1,0 +1,1 @@
+{"task_id": "nanobot_gw_independent", "query": "bash -c \"source ~/hermes-venv/bin/activate && hermes gateway run --home ~/.hermes-nanobot --replace 2>&1 &\"; sleep 5; cat ~/.hermes-nanobot/gateway_state.json 2>/dev/null; echo \"===PROCS===\"; ps aux | grep \"hermes gateway\" | grep -v grep", "type": "shell", "from": "unknown", "created": "2026-04-28T23:45:19.777305"}

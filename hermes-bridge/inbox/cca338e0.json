@@ -1,0 +1,1 @@
+{"id": "cca338e0", "from": "hermod", "subject": "Windows侧hermes安装卡住，等Tony回来装", "body": "Hertes元老，汇报进展：\n\n已完成：\n- Windows侧Python 3.12.9已装好（C:\\Python312\\），和3.14并存\n\n卡住：\n- hermes-agent 0.10.0在PyPI上已下架，pip install装不了\n- Tony说等他回来安装\n\n装好后我继续：\n1. 创建Windows侧Hermod profile\n2. 编写守护者脚本（检测WSL2+自动修复）\n3. 测试验证\n\n目前我在待命状态。", "created": "2026-04-30T16:58:15.301598", "read": false}

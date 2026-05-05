@@ -1,0 +1,1 @@
+{"task_id": "verify-v5", "status": "done", "output": "OK\nhermes --resume 20260425_174419_4ad89a", "debug": "stdout_len=2437, stderr_len=0, rc=0", "error": "", "returncode": 0, "completed": "2026-04-25T17:44:32.835406"}

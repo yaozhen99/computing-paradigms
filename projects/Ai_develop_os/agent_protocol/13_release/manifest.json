@@ -1,0 +1,7 @@
+{
+  "role": "release",
+  "title": "发布经理",
+  "inputs": ["03_source", "03_source/infra", "05_delivery"],
+  "outputs": ["05_delivery/release_artifact_timestamp.tar.gz"],
+  "lock": "_pipes/lock_release.json"
+}

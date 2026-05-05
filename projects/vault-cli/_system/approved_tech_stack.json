@@ -1,0 +1,26 @@
+{
+  "project_name": "vault-cli",
+  "project_space": "C:\\tower-of-babel\\projects\\vault-cli\\",
+  "roles": [
+    {"role": "pm", "platform": "claude", "model": "default"},
+    {"role": "architect", "platform": "claude", "model": "default"},
+    {"role": "backend", "platform": "claude", "model": "default"},
+    {"role": "tester_write", "platform": "claude", "model": "default"},
+    {"role": "tester_run", "platform": "claude", "model": "default"},
+    {"role": "reviewer", "platform": "claude", "model": "default"},
+    {"role": "integration", "platform": "claude", "model": "default"}
+  ],
+  "pipeline_flow": ["pm", "architect", "backend", "tester_write", "tester_run", "reviewer", "integration"],
+  "rationale": {
+    "skipped_roles": {
+      "03_dba": "无数据库，文件系统即存储",
+      "04_uiux": "纯 CLI 工具，无图形界面",
+      "06_frontend": "无前端",
+      "07_devops": "本地工具，无需容器化部署",
+      "10_security": "小型项目，安全审查由审核员兼任",
+      "12_doc": "CLI 工具文档由后端开发自带 --help，无需独立文档岗",
+      "14_release": "v1 本地工具，无需正式 CI/CD 分发"
+    },
+    "platform_note": "所有岗位统一使用 claude 命令（讯飞 MaaS / astron-code-latest），无需指定模型"
+  }
+}

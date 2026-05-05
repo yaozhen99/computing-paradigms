@@ -1,0 +1,1 @@
+{"task_id": "bridge_test_chat_001", "status": "done", "output": "OK\nhermes --resume 20260425_195420_e73581", "debug": "stdout_len=2447, stderr_len=0, rc=0", "error": "", "returncode": 0, "completed": "2026-04-25T19:54:36.493161"}

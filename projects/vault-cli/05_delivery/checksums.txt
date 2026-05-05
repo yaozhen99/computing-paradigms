@@ -1,0 +1,4 @@
+SHA256 checksums for vault-cli v1.0.0 build artifacts
+
+96a46e7cdd3cea349350d3935e1481cd7dd9a520b492e7b1e7a65beacc7793ab  vault_cli-1.0.0-py3-none-any.whl
+09bbca01cd4e1a200d231efa69b440e973d099afa041aab8e87fcd2f3c8fa9d6  vault_cli-1.0.0.tar.gz

@@ -1,0 +1,23 @@
+{
+  "project": "statekanban",
+  "round": 2,
+  "language": "Python 3.11+",
+  "frameworks": {
+    "async": "asyncio",
+    "llm_sdk": "anthropic",
+    "codex_cli": "openai-codex",
+    "serialization": "JSON",
+    "testing": "pytest",
+    "cli": "click"
+  },
+  "roles": {
+    "pm": {"platform": "claude"},
+    "architect": {"platform": "claude"},
+    "backend": {"platform": "claude"},
+    "tester_write": {"platform": "claude"},
+    "tester_run": {"platform": "claude"},
+    "reviewer": {"platform": "claude"},
+    "integration": {"platform": "claude"},
+    "doc": {"platform": "claude"}
+  }
+}

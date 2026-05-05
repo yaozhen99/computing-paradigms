@@ -1,0 +1,70 @@
+{
+  "project_name": "vault-cli",
+  "pipeline_flow": ["pm", "architect", "backend", "tester_write", "tester_run", "reviewer", "integration"],
+  "stages": [
+    {
+      "stage": 1,
+      "role": "pm",
+      "depends_on": [],
+      "lock_file": "_pipes/lock_pm.json",
+      "script": "_scripts/run_node_pm",
+      "prompt": "_prompts_active/active_prompt_pm.md"
+    },
+    {
+      "stage": 2,
+      "role": "architect",
+      "depends_on": ["pm"],
+      "lock_file": "_pipes/lock_architect.json",
+      "script": "_scripts/run_node_architect",
+      "prompt": "_prompts_active/active_prompt_architect.md"
+    },
+    {
+      "stage": 3,
+      "role": "backend",
+      "depends_on": ["architect"],
+      "lock_file": "_pipes/lock_backend.json",
+      "script": "_scripts/run_node_backend",
+      "prompt": "_prompts_active/active_prompt_backend.md"
+    },
+    {
+      "stage": 4,
+      "role": "tester_write",
+      "depends_on": ["backend"],
+      "lock_file": "_pipes/lock_tester_write.json",
+      "script": "_scripts/run_node_tester_write",
+      "prompt": "_prompts_active/active_prompt_tester_write.md"
+    },
+    {
+      "stage": 5,
+      "role": "tester_run",
+      "depends_on": ["tester_write"],
+      "lock_file": "_pipes/lock_tester_run.json",
+      "script": "_scripts/run_node_tester_run",
+      "prompt": "_prompts_active/active_prompt_tester_run.md"
+    },
+    {
+      "stage": 6,
+      "role": "reviewer",
+      "depends_on": ["tester_run"],
+      "lock_file": "_pipes/lock_reviewer.json",
+      "script": "_scripts/run_node_reviewer",
+      "prompt": "_prompts_active/active_prompt_reviewer.md"
+    },
+    {
+      "stage": 7,
+      "role": "integration",
+      "depends_on": ["reviewer"],
+      "inputs": ["02_design/", "03_source/", "04_testing/", "05_review/"],
+      "outputs": "05_delivery/",
+      "lock_file": "_pipes/lock_integration.json",
+      "script": "_scripts/run_node_integration",
+      "prompt": "_prompts_active/active_prompt_integration.md"
+    }
+  ],
+  "global_manager": {
+    "script": "_scripts/run_global_manager",
+    "prompt": "_prompts_active/active_prompt_global_manager.md",
+    "mode": "loop",
+    "interval_seconds": 60
+  }
+}

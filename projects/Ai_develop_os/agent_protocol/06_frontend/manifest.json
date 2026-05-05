@@ -1,0 +1,7 @@
+{
+  "role": "frontend",
+  "title": "前端开发",
+  "inputs": ["02_design/ui_spec.md", "02_design/api_contracts.md"],
+  "outputs": ["03_source/frontend"],
+  "lock": "_pipes/lock_frontend.json"
+}

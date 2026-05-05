@@ -1,0 +1,317 @@
+如何利用claudecode多智能体并行开发项目
+已阅读 9 个网页
+要实现 Claude Code 的多智能体并行开发，本质上是将单体 AI 助手扩展为“1 个 orchestrator + N 个 specialized agents”的协作架构。结合最新的生态发展，目前主要有三种成熟的实现路径，你可以根据项目复杂度灵活选择：
+
+路径一：官方内置 Agent Teams 功能（最简单，零配置）
+如果你使用的是 Claude Code v2.1.32 及以上版本，Anthropic 已经内置了实验性的 Agent Teams 功能。这是开启并行开发最快捷的方式，无需安装额外包。
+
+核心机制：主 Session（Leader）负责拆解任务，并召唤多个独立进程的后台 Agent 并行执行。它们通过共享任务列表进行自我协调，而不是依赖主控的串行调度 。
+
+启用步骤：
+
+开启实验性 Flag：修改 ~/.claude/settings.json，加入环境变量。
+json
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  }
+}
+自然语言触发：在对话中直接要求组建团队。例如：“请组建一个 3 人团队来审查 users.py，包括安全专家、性能专家和测试专家。”
+监控交互：启用后，终端会分屏显示不同 Agent 的进度。你可以使用 @security-expert 直接对特定成员下达指令 。
+适用场景：适合需要多角度审查、并行调研或复杂逻辑设计的单一代码库任务。
+
+路径二：多智能体编排器（最强大，适合复杂工作流）
+对于希望构建类似“AI 产品经理 + AI 架构师 + AI 工程师”流水线的场景，社区推出了专门的多智能体编排器。以 orchestrator-agents-skill 为例：
+
+核心机制：它会自动分析你的任务关键词，智能路由给最合适的 1-3 个 Agent，让它们同时运行，最后综合各方的报告给出结论 。
+
+四大运行模式：
+
+Auto：全自动，适合日常开发。
+
+Review：并行调用 codex 和 gemini 进行交叉代码审查。
+
+Challenge：让两个 Agent 进行对抗性辩论（如架构选型），暴露潜在盲点。
+
+Consult：手动指定特定 Agent（如 kilo + cline）处理特定模块。
+
+使用示例：
+
+安全审计：输入 /agents review，系统会并行启动 codex（代码质量）和 cline（实现细节），输出包含“共识点”、“分歧点”和“盲点”的综合报告。
+
+架构设计：输入 /agents consult kilo,gemini，专注于逻辑设计和设计模式的探讨。
+
+效果：相较于单次对话，这种模式能大幅降低因单一 Agent 陷入“第一假设”而产生的偏见 。
+
+路径三：OpenClaw 编排层 + MCP 协议（最适合大型项目与产品级维护）
+这是目前独立开发者用来支撑 B2B 产品迭代的“核武器”级架构。它通过 OpenClaw 作为大脑，管理多个 Claude Code / Codex 实例。
+
+双层架构：
+
+编排层 (OpenClaw)：持有客户需求、会议记录、业务上下文。负责拆解任务、动态生成 Prompt 并分发给执行层。
+
+执行层 (Codex/Claude Code)：只持有代码库的最小上下文，专注于“写代码、跑测试、提 PR” 。
+
+关键机制：
+
+改进版 Ralph Loop：当 Agent 执行失败时，OpenClaw 会根据失败原因动态调整指令并重试，而不是简单地重复同样的错误。
+
+智能路由：多文件重构交给 Codex（占 90% 任务），前端交互交给 Claude Code，架构设计由 Gemini 生成规范。
+
+自动化闭环：从需求拆解、代码生成、CI 测试到 PR 合并，全流程自动化，仅需最终的人工 Review。
+
+部署：支持在阿里云轻量服务器上一键部署（2核4GB起步），实现 24 小时无人值守运行 。
+
+总结：如何选择？
+维度	路径一：Agent Teams	路径二：编排器	路径三：OpenClaw 集群
+实施成本	最低（改配置即可）	中（安装 Skill）	高（需部署服务）
+并行效率	高（系统级并行）	中（脚本级并行）	极高（分布式任务）
+上下文管理	成员独立上下文	主控汇总上下文	严格的业务/代码分离
+最佳姿势	针对单一任务的快速并行审查	代码审查、架构辩论	长期运行的产品开发、自动化运维
+一句话建议：如果只是想提高代码审查效率，直接在 Claude Code 中开启 Agent Teams；如果想构建自动化的开发流水线（AI + CI/CD），投入时间研究 OpenClaw 架构会带来数倍的效率回报。
+
+路径三：OpenClaw 编排层 + MCP 协议（最适合大型项目与产品级维护）
+具体怎么做?
+已阅读 9 个网页
+要落地“OpenClaw编排层 + MCP协议”这套架构，核心思路是把编排大脑（OpenClaw）与执行团队（多个Claude Code/Codex实例）通过MCP协议连接起来，形成一个可并行、可扩展的开发集群。
+
+以下是具体的实施步骤：
+
+第一步：部署OpenClaw编排层（大脑）
+首先需要一个7x24小时运行的OpenClaw中枢，推荐使用云服务器（如阿里云ECS）部署。
+
+1.1 环境准备（以Ubuntu为例）
+bash
+# 更新系统并安装Node.js 22+
+sudo apt update && sudo apt install -y nodejs git
+
+# 安装OpenClaw
+npm install -g openclaw-cn
+
+# 初始化系统服务（开机自启）
+openclaw onboard --install-daemon
+
+# 启动服务
+openclaw start
+1.2 配置大模型API
+编辑配置文件 ~/.openclaw/openclaw.json，接入模型能力：
+
+json
+{
+  "llm": {
+    "provider": "aliyun-bailian",
+    "api_key": "你的API Key",
+    "model": "qwen3-max",
+    "temperature": 0.3
+  }
+}
+1.3 开放HTTP API（供其他Agent调用）
+在同一配置文件中开启网关的HTTP接口：
+
+json
+{
+  "gateway": {
+    "http": {
+      "endpoints": {
+        "chatCompletions": { "enabled": true }
+      }
+    }
+  }
+}
+第二步：安装MCP协议桥接层（MCPorter）
+OpenClaw默认不支持直接调用MCP服务，需要通过MCPorter作为中间层进行协议转换。
+
+bash
+# 安装MCPorter
+npm i -g mcporter
+
+# 安装UV运行环境（MCP依赖）
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source ~/.bashrc
+
+# 验证安装
+mcporter --version
+第三步：添加执行Agent（Claude Code/Codex实例）
+这是并行开发的关键：每个Agent作为一个独立的MCP服务注册到OpenClaw。
+
+3.1 添加Claude Code执行Agent
+bash
+npx mcporter config add claude-executor \
+  --stdio "claude-code --serve" \
+  --env API_KEY=你的Claude_API_Key
+3.2 添加Codex执行Agent
+bash
+npx mcporter config add codex-executor \
+  --stdio "codex --mcp-mode" \
+  --env OPENAI_API_KEY=你的OpenAI_Key
+3.3 验证注册成功
+bash
+mcporter list
+此时会看到两个MCP服务都已注册，状态为running。
+
+第四步：编排并行任务（核心工作流）
+现在你可以让OpenClaw像项目经理一样拆解任务并分发给多个Agent并行执行。
+
+4.1 基础并行调用
+在OpenClaw对话界面输入：
+
+text
+请同时调用claude-executor和codex-executor，对src/modules/目录下的所有Python文件进行代码审查，分别输出安全漏洞清单和性能优化建议。
+4.2 异步长任务（适合大型重构）
+对于耗时的开发任务，使用异步模式避免阻塞：
+
+bash
+# 提交异步任务
+mcporter call codex-executor.chat_async \
+  task="重构整个认证模块，从JWT迁移到OAuth2" \
+  project_path="/workspace/auth-service"
+
+# 获取task_id后，轮询任务状态
+mcporter call codex-executor.task_status task_id="xxx"
+4.3 多Agent协作工作流示例
+bash
+# Step 1: Claude分析架构
+mcporter call claude-executor.chat \
+  task="分析当前代码架构，输出模块拆分建议"
+
+# Step 2: 并行执行重构（基于Step 1的结果）
+mcporter call codex-executor.chat_async module="user-service"
+mcporter call codex-executor.chat_async module="payment-service"
+mcporter call claude-executor.chat_async module="notification-service"
+
+# Step 3: 汇总结果
+# OpenClaw会自动收集所有任务结果并生成合并报告
+第五步：持久化配置与记忆固化
+首次成功调用后，OpenClaw会将MCP调用规则存入长期记忆，后续可以简化指令：
+
+text
+# 第一次需要完整说明
+"通过mcporter调用claude-executor服务，分析登录模块的安全性"
+
+# 后续可以直接说
+"安全审计登录模块"
+# 或直接发链接
+https://github.com/your-repo/login-module
+架构效果示意
+text
+┌─────────────────────────────────────────────────────────┐
+│                    你的指令/需求                          │
+└─────────────────────────┬───────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│              OpenClaw 编排层（大脑）                       │
+│  - 拆解任务                                              │
+│  - 路由分发                                              │
+│  - 结果汇总                                              │
+└───────┬─────────────────────────────────────┬───────────┘
+        │ MCP协议（通过MCPorter）                │
+        ▼                                        ▼
+┌──────────────────┐                  ┌──────────────────┐
+│ Claude Code Agent│                  │   Codex Agent    │
+│  - 架构分析       │                  │  - 代码实现       │
+│  - 安全审计       │                  │  - 大规模重构     │
+│  - 文档生成       │                  │  - 单元测试       │
+└──────────────────┘                  └──────────────────┘
+        │                                        │
+        └─────────────┬──────────────────────────┘
+                      ▼
+              ┌───────────────┐
+              │   代码仓库     │
+              │   CI/CD管线    │
+              └───────────────┘
+避坑指南
+问题	解决方案
+MCP服务连接失败	执行 mcporter restart 服务名 重启
+Agent响应超时	增加超时配置：--env OPENCLAW_TIMEOUT_MS=300000
+上下文过长导致token浪费	让每个Agent只加载项目最小上下文，业务上下文由OpenClaw持有
+多Agent产生冲突的代码修改	在OpenClaw层面加锁，同一时间只允许一个Agent写同一文件
+这套架构一旦跑通，可以实现“一个需求 → OpenClaw拆解 → 3个Agent并行开发 → 自动合并 → 提PR”的全自动流程，真正把多智能体并行开发落地到日常工作中。
+
+这个必须linux还是windows也可以部署?hermes能做openclaw的角色吗?
+已阅读 9 个网页
+系统兼容性：Windows 完全可以部署
+OpenClaw 支持 Windows、macOS 和 Linux 全平台，不是必须用 Linux。
+
+Windows 部署方式
+根据 2026 年最新版本的部署教程，Windows 用户有两种选择：
+
+方式一：一键部署包（推荐小白用户）
+
+下载集成式一键安装包（约 43-361MB）
+
+双击 Openclaw Windows 一键启动.exe 即可
+
+自动检测并安装 Git、Node.js、Python 等依赖
+
+整个过程 3-5 分钟，无需输入任何命令
+
+方式二：命令行安装
+
+以管理员身份运行 PowerShell
+
+执行官方安装脚本
+
+Windows 系统要求
+项目	要求
+系统版本	Windows 10/11 64位（专业版/企业版/家庭版均可）
+内存	最低 4GB，推荐 8GB+
+磁盘空间	至少 5GB
+权限	需要管理员权限运行
+Windows 部署注意事项
+安装前必须关闭杀毒软件（360、腾讯管家、火绒、Windows Defender 实时防护），因为 OpenClaw 的系统调用行为容易被误判为病毒
+
+安装路径必须为纯英文，不能有中文或空格，推荐 D:\OpenClaw
+
+首次启动较慢（需初始化依赖），Gateway 显示"在线"即部署成功
+
+Hermes Agent 能否替代 OpenClaw？
+可以部分替代，取决于你的使用场景。两者在功能上高度重合，但定位完全不同。
+
+核心定位差异
+维度	Hermes Agent	OpenClaw
+技术栈	Python（轻量）	TypeScript（重量级）
+定位	单核心智能体，像"会自进化的员工"	控制中枢，像"管理多员工的调度中心"
+代码量	更轻量，易于理解	约 40 万行，复杂度高
+Skill 机制	自动生成+自我进化，Agent 自己写技能	手动创建+安装，需要人工介入
+记忆系统	高频主动反思写入 + 全文检索	被动触发 + 长期挂载文件
+多智能体	子代理最多 3 个并行，侧重单智能体长期运行	原生多智能体路由，深度编排
+功能重合度惊人
+根据社区对比，Hermes 和 OpenClaw 在以下功能上完全重合：
+
+定时调度（cron 表达式）
+
+子 Agent 委派与隔离执行
+
+浏览器自动化、TTS、视觉能力、图像生成
+
+20+ 个 IM 平台集成（Telegram、飞书、钉钉、微信等）
+
+选择建议
+选 Hermes Agent，如果你：
+
+想要一个"越用越聪明"、能自己积累经验的智能体
+
+偏好 Python 生态，希望代码轻量、易于二次开发
+
+做长时无人值守任务（实测可稳定跑 2 小时+）
+
+个人使用，不需要复杂的多账号管理
+
+选 OpenClaw，如果你：
+
+需要管理多个 Agent、多账号、多 IM 渠道的团队级平台
+
+需要企业级稳定性：故障转移、模型热切换、权限体系
+
+看重成熟的 Skills 生态（ClawHub 一键安装）
+
+做 7×24 小时生产环境运营
+
+能否用 Hermes 替代 OpenClaw 做编排层？
+如果你的目标是"编排多个 Claude Code/Codex 实例并行开发"：
+
+短期可行：Hermes 支持最多 3 个子 Agent 并行执行，能满足小规模并行开发需求
+
+长期建议保留 OpenClaw：因为你需要的是"编排层"而非"单智能体"。OpenClaw 原生支持多智能体路由、会话分叉/恢复、深度编排，这些都是 Hermes 的弱项
+
+一个务实的选择：两者不是非此即彼的关系。可以用 Hermes 做执行层（负责具体编码任务，利用其自进化能力越用越顺手），用 OpenClaw 做编排层（负责任务拆解和调度，利用其多智能体路由能力）——两者通过 MCP 协议互通，形成互补架构。

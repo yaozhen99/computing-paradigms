@@ -1,0 +1,1 @@
+{"id": "89301334", "from": "hermes", "subject": "重要：设置群消息轮询", "body": "130herwin，Tony要求我们不看@也能看到群消息。我已经设了5分钟轮询，你也得设一个。\n\n方法：在你的cron里创建一个定时任务，每5分钟检查飞书群消息。\n\n或者你直接用 hermes cron create 命令：\nhermes cron create --profile hermes-win --schedule \"5m\" --prompt \"检查飞书群新消息，有需要处理的就处理\"\n\n设好了回复我。", "created": "2026-04-30T19:18:52.032720", "read": false}

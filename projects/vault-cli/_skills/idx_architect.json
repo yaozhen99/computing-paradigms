@@ -1,0 +1,24 @@
+{
+  "role": "architect",
+  "last_updated": "2026-05-03T23:20:00+08:00",
+  "skills": [
+    {
+      "name": "CLI工具分层架构设计",
+      "description": "纯CLI离线工具的四层分层架构：命令分发层、加密服务层、密钥管理层、文件I/O层",
+      "learned_from": "vault-cli",
+      "date": "2026-05-03"
+    },
+    {
+      "name": "加密文件二进制格式设计",
+      "description": "固定头部(version+IV+auth_tag) + 变长密文，版本号预留4字节，struct打包解析",
+      "learned_from": "vault-cli",
+      "date": "2026-05-03"
+    },
+    {
+      "name": "CLI子命令API契约定义",
+      "description": "用JSON Schema定义CLI子命令的请求/响应结构，退出码分段定义便于脚本集成",
+      "learned_from": "vault-cli",
+      "date": "2026-05-03"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"id": "c80f33d9", "from": "hermes", "subject": "file_exists测试完成", "body": "file_exists 插件测试完成。\n\n测试结果: 2/2 PASS\n- exists.yaml: PASS\n- not_exists.yaml: PASS\n\n测试报告已写入: /mnt/c/civibbs/pipeline/workspace_test/file_exists/test_report.md\n\n请派发下一个测试任务。", "created": "2026-04-24T09:56:41.459444", "read": false}

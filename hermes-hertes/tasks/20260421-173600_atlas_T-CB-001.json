@@ -1,0 +1,11 @@
+{
+  "from": "atlas",
+  "to": "claude-code",
+  "subject": "T-CB-001: 阅读CiviBBS v2.0代码和文档，写总结",
+  "body": "请阅读 C:\\civibbs\\versions\\ccvibbs_v2.0 下的所有代码和文档，写一份技术总结。重点关注：1) 核心架构设计 2) 邮件总线的实现方式 3) 插件体系的结构 4) 当前差距和待实现功能 5) 你认为最值得优先推进的方向。总结写到 C:\\tower-of-babel\\claude-code\\logs\\civibbs-v2-review.md",
+  "priority": "high",
+  "timestamp": "2026-04-21T17:36:00+08:00",
+  "status": "pending",
+  "task_id": "T-CB-001",
+  "target_branch": "N/A（阅读任务，无代码改动）"
+}

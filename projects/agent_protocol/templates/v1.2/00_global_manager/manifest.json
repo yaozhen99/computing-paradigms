@@ -1,0 +1,14 @@
+{
+  "role": "global_manager",
+  "title": "全局 AI",
+  "inputs": [
+    "_system/system_state.json",
+    "_heartbeats/",
+    "_pipes/"
+  ],
+  "outputs": [
+    "_system/system_state.json",
+    "_pipes/override_*.json"
+  ],
+  "lock": null
+}

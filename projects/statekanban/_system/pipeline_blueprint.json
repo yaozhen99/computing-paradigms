@@ -1,0 +1,63 @@
+{
+  "project": "statekanban",
+  "round": 2,
+  "mode": "v2_agent",
+  "nodes": [
+    {
+      "role": "pm",
+      "depends_on": [],
+      "inputs": ["_system/user_input.md", "_system/approved_tech_stack.json"],
+      "outputs": "01_requirements/",
+      "lock_file": "_pipes/lock_pm.json"
+    },
+    {
+      "role": "architect",
+      "depends_on": ["pm"],
+      "inputs": ["01_requirements/", "_system/approved_tech_stack.json", "02_design/", "03_source/"],
+      "outputs": "02_design/",
+      "lock_file": "_pipes/lock_architect.json"
+    },
+    {
+      "role": "backend",
+      "depends_on": ["architect"],
+      "inputs": ["02_design/", "_system/approved_tech_stack.json", "03_source/"],
+      "outputs": "03_source/backend/",
+      "lock_file": "_pipes/lock_backend.json"
+    },
+    {
+      "role": "tester_write",
+      "depends_on": ["architect", "backend"],
+      "inputs": ["02_design/", "03_source/"],
+      "outputs": "04_testing/",
+      "lock_file": "_pipes/lock_tester_write.json"
+    },
+    {
+      "role": "tester_run",
+      "depends_on": ["tester_write"],
+      "inputs": ["04_testing/", "03_source/"],
+      "outputs": "04_testing/",
+      "lock_file": "_pipes/lock_tester_run.json"
+    },
+    {
+      "role": "reviewer",
+      "depends_on": ["tester_run"],
+      "inputs": ["01_requirements/", "02_design/", "03_source/", "04_testing/"],
+      "outputs": "05_review/",
+      "lock_file": "_pipes/lock_reviewer.json"
+    },
+    {
+      "role": "integration",
+      "depends_on": ["reviewer"],
+      "inputs": ["02_design/", "03_source/", "04_testing/", "05_review/"],
+      "outputs": "05_delivery/",
+      "lock_file": "_pipes/lock_integration.json"
+    },
+    {
+      "role": "doc",
+      "depends_on": ["integration"],
+      "inputs": ["01_requirements/", "02_design/", "03_source/", "04_testing/"],
+      "outputs": "docs/",
+      "lock_file": "_pipes/lock_doc.json"
+    }
+  ]
+}

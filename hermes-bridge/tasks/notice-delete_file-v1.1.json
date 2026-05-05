@@ -1,0 +1,1 @@
+{"task_id": "notice-delete_file-v1.1", "query": "Atlas通知：delete_file插件评审发现TOCTOU竞态问题，即将升级到v1.1.0。主要改动：1) 去掉exists()检查直接unlink()捕获异常 2) 补目录/符号链接处理 3) definition.yaml的logic.steps改为行为契约。你后续测试时注意用新版本。", "created": "2026-04-22T19:35:34.364235"}

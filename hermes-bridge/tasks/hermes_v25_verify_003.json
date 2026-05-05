@@ -1,0 +1,1 @@
+{"task_id": "hermes_v25_verify_003", "query": "bash -c \"source ~/hermes-venv/bin/activate && cd /mnt/c/civibbs/v2.5/lib/small/ml && python3 verify_v25.py 2>&1\"", "type": "shell", "from": "unknown", "created": "2026-04-25T23:13:14.363346"}

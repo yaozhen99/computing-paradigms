@@ -1,0 +1,1 @@
+{"task_id": "concurrent_001", "status": "done", "output": "............................                                             [100%]\n28 passed in 0.32s", "debug": "stdout_len=99, stderr_len=0, rc=0", "error": "", "returncode": 0, "completed": "2026-04-25T19:55:29.673959"}

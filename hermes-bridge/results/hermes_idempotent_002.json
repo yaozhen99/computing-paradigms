@@ -1,0 +1,1 @@
+{"task_id": "hermes_idempotent_002", "status": "done", "output": "1st call: created=True, error_code=None\n2nd call: created=True, error_code=None", "debug": "stdout_len=80, stderr_len=0, rc=0", "error": "", "returncode": 0, "completed": "2026-04-25T22:46:56.312805"}

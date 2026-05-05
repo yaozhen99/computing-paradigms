@@ -1,0 +1,1 @@
+{"task_id": "nanobot_gw_status", "query": "cat /home/yz01/.hermes-nanobot/gateway_state.json 2>/dev/null", "type": "shell", "from": "unknown", "created": "2026-04-28T23:47:42.511241"}

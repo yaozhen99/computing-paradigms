@@ -1,0 +1,1 @@
+{"task_id": "comm-test-006", "status": "done", "output": "bridge test OK", "debug": "stdout_len=15, stderr_len=36, rc=0", "error": "", "returncode": 0, "completed": "2026-04-30T20:52:12.869865"}

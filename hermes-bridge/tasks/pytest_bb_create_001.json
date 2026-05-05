@@ -1,0 +1,1 @@
+{"task_id": "pytest_bb_create_001", "query": "cd /mnt/c/civibbs/pipeline/done_claude_opus/bb/create_bbs_data_dir && python3 -m pytest test_execute.py -v --tb=short 2>&1 | tail -5", "type": "shell", "from": "atlas", "created": "2026-04-25T16:46:06.732505"}

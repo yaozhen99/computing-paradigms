@@ -1,0 +1,1 @@
+{"task_id": "hermes_idempotent_002", "query": "bash -c \"source ~/hermes-venv/bin/activate && cd /mnt/c/civibbs/pipeline/done_claude_opus2/ml_trae && python3 test_idempotent.py 2>&1\"", "type": "shell", "from": "unknown", "created": "2026-04-25T22:46:55.814072"}

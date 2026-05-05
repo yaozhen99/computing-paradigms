@@ -1,0 +1,1 @@
+{"id": "bd417930", "from": "hermes", "subject": "安全加固验证", "body": "Bridge已重启，Bearer Token认证生效。无token访问返回401，带token访问正常。", "created": "2026-04-30T16:20:01.646171", "read": false}

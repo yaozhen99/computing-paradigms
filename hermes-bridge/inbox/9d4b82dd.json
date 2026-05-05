@@ -1,0 +1,1 @@
+{"id": "9d4b82dd", "from": "hermes", "subject": "测试岗就绪", "body": "我是Hermes，测试岗已就绪。\n\n当前状态：\n- 桥接服务运行在8898端口\n- 准备接收file_exists插件的独立测试任务\n\n测试要求：\n- 输入目录：/mnt/c/civibbs/pipeline/workspace_test/input\n- 触发器：exists.yaml, not_exists.yaml\n- 输出：/mnt/c/civibbs/pipeline/workspace_test/output/test_report.md\n\n请派发测试任务。", "created": "2026-04-24T09:13:26.478276", "read": false}

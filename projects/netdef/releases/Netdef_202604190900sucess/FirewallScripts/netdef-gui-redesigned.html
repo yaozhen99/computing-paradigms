@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Netdef Security Suite</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #0a0a1a;
+            color: #e0e0e0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+
+        .app {
+            width: 1140px;
+            height: 720px;
+            margin: 0 auto;
+            position: relative;
+            background: #0d1025;
+            border: 2px solid #2a5a8a;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .topbar {
+            height: 60px;
+            background: linear-gradient(to bottom, #1a2a4a, #0d1a30);
+            border-bottom: 2px solid #2a5a8a;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .topbar-logo {
+            width: 36px;
+            height: 36px;
+            margin-right: 12px;
+        }
+
+        .topbar-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #5aafef;
+            letter-spacing: 1px;
+        }
+
+        .topbar-ver {
+            font-size: 11px;
+            color: #6a8aaa;
+            margin-left: 8px;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+        }
+
+        .topbar-status {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: #8ab;
+            margin-left: 20px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .dot-green { background: #3c3; box-shadow: 0 0 6px #3c3; }
+        .dot-blue { background: #4a90d9; box-shadow: 0 0 6px #4a90d9; }
+        .dot-red { background: #c44; box-shadow: 0 0 6px #c44; }
+        .dot-yellow { background: #cc4; box-shadow: 0 0 6px #cc4; }
+
+        .body-wrap {
+            display: flex;
+            height: 600px;
+        }
+
+        .sidebar {
+            width: 370px;
+            min-width: 370px;
+            background: linear-gradient(to bottom, #0a1628, #0d1a30);
+            border-right: 1px solid #1a3a5a;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sidebar-logo {
+            width: 290px;
+            height: 290px;
+            object-fit: contain;
+            margin-bottom: 16px;
+        }
+
+        .sidebar-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #5aafef;
+            text-align: center;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .sidebar-version {
+            font-size: 11px;
+            color: #5a7a9a;
+            margin-bottom: 24px;
+        }
+
+        .sec-box {
+            width: 100%;
+            background: #0f1e36;
+            border: 1px solid #1a3a5a;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .sec-label {
+            font-size: 11px;
+            color: #6a8aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .sec-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: #1a2a3a;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .sec-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(to right, #2a6abf, #3c3);
+            transition: width 0.6s ease;
+        }
+
+        .sec-text {
+            font-size: 12px;
+            color: #8ab;
+            text-align: center;
+        }
+
+        .shield-info {
+            width: 100%;
+            background: #0f1e36;
+            border: 1px solid #1a3a5a;
+            border-radius: 8px;
+            padding: 14px;
+        }
+
+        .shield-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            margin-bottom: 6px;
+            color: #8ab;
+        }
+
+        .shield-row:last-child { margin-bottom: 0; }
+
+        .shield-val {
+            color: #5aafef;
+            font-weight: 600;
+        }
+
+        .shield-val.on { color: #3c3; }
+        .shield-val.off { color: #c44; }
+
+        .main {
+            flex: 1 1 auto;
+            padding: 24px 28px;
+            overflow-y: auto;
+            background: linear-gradient(to bottom, #0d1025, #0a0e1e);
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #5aafef;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #1a2a4a;
+            letter-spacing: 1px;
+        }
+
+        .profiles {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+
+        .p-card {
+            width: calc(50% - 8px);
+            background: #111a30;
+            border: 2px solid #1a2a4a;
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .p-card:nth-child(odd) { margin-right: 16px; }
+
+        .p-card:hover {
+            border-color: #3a6a9a;
+            background: #152040;
+            transform: translateY(-2px);
+        }
+
+        .p-card.active {
+            border-color: #4a90d9;
+            background: #142848;
+            box-shadow: 0 0 15px rgba(74, 144, 217, 0.3);
+        }
+
+        .p-card.active .p-indicator { display: block; }
+
+        .p-indicator {
+            display: none;
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #3c3;
+            box-shadow: 0 0 8px #3c3;
+        }
+
+        .p-icon { font-size: 28px; margin-bottom: 10px; }
+
+        .p-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #e0e8f0;
+            margin-bottom: 6px;
+        }
+
+        .p-desc {
+            font-size: 12px;
+            color: #6a8aaa;
+            line-height: 1.4;
+        }
+
+        .p-card.card-travel { border-color: #5a2a3a; }
+        .p-card.card-travel:hover { border-color: #a53a4c; }
+        .p-card.card-travel.active { border-color: #d95a72; box-shadow: 0 0 15px rgba(217, 90, 114, 0.3); }
+
+        .actions {
+            display: flex;
+            margin-bottom: 28px;
+        }
+
+        .a-btn {
+            flex: 1 1 auto;
+            background: #111a30;
+            border: 1px solid #1a2a4a;
+            border-radius: 8px;
+            padding: 14px 10px;
+            color: #c0d0e0;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-right: 12px;
+        }
+
+        .a-btn:last-child { margin-right: 0; }
+
+        .a-btn:hover {
+            background: #1a2a4a;
+            border-color: #3a6a9a;
+            transform: translateY(-2px);
+        }
+
+        .a-btn-icon { font-size: 18px; margin-bottom: 6px; }
+
+        .a-btn.w2b { border-color: #2a4a3a; }
+        .a-btn.w2b:hover { border-color: #3c3; background: #1a2a2a; }
+        .a-btn.clean { border-color: #4a3a1a; }
+        .a-btn.clean:hover { border-color: #c90; background: #2a2a1a; }
+        .a-btn.cfg { border-color: #2a2a4a; }
+        .a-btn.cfg:hover { border-color: #88c; background: #1a1a2a; }
+        .a-btn.ref { border-color: #1a4a4a; }
+        .a-btn.ref:hover { border-color: #4aa; background: #1a2a2a; }
+
+        .log-box {
+            background: #080e1a;
+            border: 1px solid #1a2a4a;
+            border-radius: 8px;
+            padding: 16px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .log-title {
+            font-size: 11px;
+            color: #5a7a9a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .log-entry {
+            font-size: 11px;
+            color: #8aa;
+            margin-bottom: 4px;
+            line-height: 1.4;
+            padding: 2px 0;
+            border-bottom: 1px solid #0a1420;
+        }
+
+        .log-t { color: #4a6a8a; margin-right: 8px; }
+        .log-ok { color: #3c3; }
+        .log-err { color: #c44; }
+        .log-info { color: #8aa; }
+        .log-warn { color: #cc4; }
+
+        .bottombar {
+            height: 48px;
+            background: #080e1a;
+            border-top: 1px solid #1a2a4a;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .b-item {
+            display: flex;
+            align-items: center;
+            font-size: 11px;
+            color: #5a7a9a;
+            margin-right: 20px;
+        }
+
+        .b-item:last-child { margin-right: 0; }
+
+        .b-val {
+            font-weight: 700;
+            color: #5aafef;
+            margin-left: 6px;
+        }
+
+        .b-val.on { color: #3c3; }
+        .b-val.off { color: #c44; }
+
+        .b-link {
+            color: #5aafef;
+            text-decoration: underline;
+            cursor: pointer;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+
+        .b-link:hover { color: #8cf; }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1a3a2a;
+            border: 2px solid #3c3;
+            color: #cfc;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 999;
+            max-width: 360px;
+        }
+
+        .toast.show { transform: translateX(0); opacity: 1; }
+        .toast.error { background: #3a1a1a; border-color: #c44; color: #fcc; }
+        .toast.exec { background: #1a2a4a; border-color: #4a90d9; color: #def; }
+
+        .exec-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            flex-direction: column;
+        }
+
+        .exec-overlay.show { display: flex; }
+
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 4px solid #1a2a4a;
+            border-top: 4px solid #4a90d9;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .exec-text {
+            color: #5aafef;
+            margin-top: 14px;
+            font-size: 13px;
+            letter-spacing: 1px;
+        }
+
+        .main::-webkit-scrollbar, .log-box::-webkit-scrollbar { width: 6px; }
+        .main::-webkit-scrollbar-track, .log-box::-webkit-scrollbar-track { background: #0a0e1a; }
+        .main::-webkit-scrollbar-thumb, .log-box::-webkit-scrollbar-thumb { background: #2a4a6a; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <div class="topbar">
+        <div class="topbar-left">
+            <img src="tests/netdef-resized.png" class="topbar-logo" onerror="this.style.display='none'">
+            <span class="topbar-title">NETDEF SECURITY SUITE</span>
+            <span class="topbar-ver">v1.0</span>
+        </div>
+        <div class="topbar-right">
+            <div class="topbar-status">
+                <span class="dot dot-green" id="dotFw"></span>
+                <span id="dotFwLabel">实时防护</span>
+            </div>
+            <div class="topbar-status">
+                <span class="dot dot-blue" id="dotW2b"></span>
+                <span id="dotW2bLabel">Wail2Ban</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="body-wrap">
+        <div class="sidebar">
+            <img src="tests/netdef-resized.png" class="sidebar-logo" onerror="this.outerHTML='<div style=\'width:120px;height:120px;display:flex;align-items:center;justify-content:center;font-size:80px\'>🦏</div>'">
+            <div class="sidebar-name">&#x7F51;&#x7EDC;&#x5B9A;&#x4E49;&#x8005;<br>Network Definer v1.0</div>
+            <div class="sidebar-version"></div>
+
+            <div class="sec-box">
+                <div class="sec-label">安全级别</div>
+                <div class="sec-bar-bg">
+                    <div class="sec-bar-fill" id="secFill" style="width: 60%;"></div>
+                </div>
+                <div class="sec-text" id="secText">当前等级: 中</div>
+            </div>
+
+            <div class="shield-info">
+                <div class="shield-row">
+                    <span>防火墙</span>
+                    <span class="shield-val on" id="sFw">● 检测中...</span>
+                </div>
+                <div class="shield-row">
+                    <span>Wail2Ban</span>
+                    <span class="shield-val" id="sW2b">● 检测中...</span>
+                </div>
+                <div class="shield-row">
+                    <span>当前配置</span>
+                    <span class="shield-val" id="sProfile">--</span>
+                </div>
+                <div class="shield-row">
+                    <span>连接状态</span>
+                    <span class="shield-val" id="sConn">● 连接中...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="section-title">🎯 选择安全配置</div>
+            <div class="profiles">
+                <div class="p-card card-home" onclick="applyProfile('home', this)" id="cardHome">
+                    <div class="p-indicator"></div>
+                    <div class="p-icon">🏠</div>
+                    <div class="p-name">家庭网络</div>
+                    <div class="p-desc">受信任的局域网环境<br>标准安全防护</div>
+                </div>
+                <div class="p-card card-office" onclick="applyProfile('office', this)" id="cardOffice">
+                    <div class="p-indicator"></div>
+                    <div class="p-icon">💼</div>
+                    <div class="p-name">办公模式</div>
+                    <div class="p-desc">企业网络环境<br>平衡安全与效率</div>
+                </div>
+                <div class="p-card card-travel" onclick="applyProfile('travel', this)" id="cardTravel">
+                    <div class="p-indicator"></div>
+                    <div class="p-icon">✈️</div>
+                    <div class="p-name">旅行模式 ⭐</div>
+                    <div class="p-desc">公共WiFi环境<br>高级安全防护</div>
+                </div>
+                <div class="p-card card-lockdown" onclick="applyProfile('lockdown', this)" id="cardLockdown">
+                    <div class="p-indicator"></div>
+                    <div class="p-icon">🔒</div>
+                    <div class="p-name">锁定模式</div>
+                    <div class="p-desc">最大隔离<br>最高安全级别</div>
+                </div>
+            </div>
+
+            <div class="section-title">⚡ 快速操作</div>
+            <div class="actions">
+                <button class="a-btn w2b" id="btnW2b" onclick="toggleWail2Ban(this)">
+                    <span class="a-btn-icon">🦏</span>
+                    <span>Wail2Ban</span>
+                </button>
+                <button class="a-btn clean" onclick="cleanupRules()">
+                    <span class="a-btn-icon">🧹</span>
+                    <span>清理规则</span>
+                </button>
+                <button class="a-btn cfg" onclick="editConfig()">
+                    <span class="a-btn-icon">⚙</span>
+                    <span>配置</span>
+                </button>
+                <button class="a-btn ref" onclick="refreshStatus()">
+                    <span class="a-btn-icon">🔄</span>
+                    <span>刷新状态</span>
+                </button>
+            </div>
+
+            <div class="section-title">📋 活动日志</div>
+            <div class="log-box" id="activityLog">
+                <div class="log-title">系统活动</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottombar">
+        <div class="b-item">
+            <span>🛡️ 防火墙:</span>
+            <span class="b-val" id="fwStatus">检测中...</span>
+        </div>
+        <div class="b-item">
+            <span>🦏 Wail2Ban:</span>
+            <span class="b-val" id="w2bStatus">检测中...</span>
+        </div>
+        <div class="b-item">
+            <span>📁 配置:</span>
+            <span class="b-val" id="curProfile">--</span>
+        </div>
+        <div class="b-item">
+            <span>日志:</span>
+            <span class="b-link" onclick="openLogs()">打开文件夹 →</span>
+        </div>
+    </div>
+</div>
+
+<div class="exec-overlay" id="execOverlay">
+    <div class="spinner"></div>
+    <div class="exec-text" id="execText">执行安全配置...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    // ===== JSON2 Polyfill for IE (Douglas Crockford) =====
+    if (typeof JSON === 'undefined') {
+        JSON = {};
+    }
+    if (typeof JSON.parse !== 'function') {
+        JSON.parse = function(text) {
+            if (typeof text !== 'string') { return text; }
+            text = text.replace(/^\s+|\s+$/g, '');
+            if (!text) { return null; }
+            return (new Function('return ' + text))();
+        };
+    }
+    if (typeof JSON.stringify !== 'function') {
+        JSON.stringify = function(obj) {
+            if (obj === null) return 'null';
+            if (typeof obj === 'boolean' || typeof obj === 'number') return String(obj);
+            if (typeof obj === 'string') return '"' + obj.replace(/"/g, '\\"') + '"';
+            if (obj instanceof Array) {
+                var arr = [];
+                for (var i = 0; i < obj.length; i++) arr.push(JSON.stringify(obj[i]));
+                return '[' + arr.join(',') + ']';
+            }
+            if (typeof obj === 'object') {
+                var pairs = [];
+                for (var key in obj) {
+                    if (obj.hasOwnProperty(key)) pairs.push('"' + key + '":' + JSON.stringify(obj[key]));
+                }
+                return '{' + pairs.join(',') + '}';
+            }
+            return String(obj);
+        };
+    }
+
+    var wail2banRunning = false;
+    var currentProfile = '';
+    var isEmbedded = false;
+
+    window.netdefCommandQueue = [];
+
+    // ===== PS->HTML: PowerShell calls this to set embedded flag =====
+    window.setEmbeddedMode = function() {
+        isEmbedded = true;
+        document.getElementById('sConn').textContent = '\u25CF \u5DF2\u8FDE\u63A5';
+        document.getElementById('sConn').className = 'shield-val on';
+        log('PowerShell \u5D4C\u5165\u5F0F\u8FDE\u63A5\u5DF2\u5EFA\u7ACB', 'success');
+    };
+
+    // ===== PS->HTML: Simple callback - NO JSON parsing needed =====
+    // PowerShell calls this with individual string parameters
+    window.onResult = function(action, successStr, message, extra) {
+        try {
+            var success = (successStr === 'true' || successStr === 'True' || successStr === '1');
+            var msg = translateMsg(message || '');
+
+            if (success) {
+                log('\u2705 ' + msg, 'success');
+                showToast('\u2705 ' + msg);
+            } else {
+                log('\u274C ' + msg, 'error');
+                showToast('\u274C ' + msg, 'error');
+            }
+
+            hideExec();
+
+            if (action === 'execute' && success) {
+                setProfileUI(extra || currentProfile);
+            }
+            if (action === 'wail2ban') {
+                setWail2BanUI(success && extra === 'true');
+            }
+            if (action === 'cleanup' && success) {
+                currentProfile = '';
+                document.getElementById('curProfile').textContent = '\u5DF2\u6E05\u7406';
+                document.getElementById('sProfile').textContent = '\u5DF2\u6E05\u7406';
+                updateSecurityBar('');
+            }
+        } catch (e) {
+            log('callback error: ' + e.message, 'error');
+        }
+    };
+
+    // ===== PS->HTML: Legacy JSON callback (with polyfill) =====
+    window.onCommandResult = function(resultJson) {
+        try {
+            var r;
+            if (typeof resultJson === 'string') {
+                r = JSON.parse(resultJson);
+            } else if (typeof resultJson === 'object' && resultJson !== null) {
+                r = resultJson;
+            } else {
+                log('callback: unexpected type ' + typeof resultJson, 'warn');
+                return;
+            }
+            var action = r.action || '';
+            var success = (r.success === true || r.success === 'true' || r.success === 1);
+            var msg = translateMsg(r.message || '');
+
+            if (success) {
+                log('\u2705 ' + msg, 'success');
+                showToast('\u2705 ' + msg);
+            } else {
+                log('\u274C ' + msg, 'error');
+                showToast('\u274C ' + msg, 'error');
+            }
+
+            hideExec();
+
+            if (action === 'execute' && success) {
+                setProfileUI(r.profile || currentProfile);
+            }
+            if (action === 'wail2ban') {
+                setWail2BanUI(r.running === true || r.running === 'true');
+            }
+            if (action === 'cleanup' && success) {
+                currentProfile = '';
+                document.getElementById('curProfile').textContent = '\u5DF2\u6E05\u7406';
+                document.getElementById('sProfile').textContent = '\u5DF2\u6E05\u7406';
+                updateSecurityBar('');
+            }
+        } catch (e) {
+            log('callback error: ' + e.message, 'error');
+        }
+    };
+
+    var msgZh = {
+        'Home profile execution started': '\u5BB6\u5EAD\u7F51\u7EDC\u914D\u7F6E\u5DF2\u542F\u52A8\u6267\u884C',
+        'Office profile execution started': '\u529E\u516C\u6A21\u5F0F\u914D\u7F6E\u5DF2\u542F\u52A8\u6267\u884C',
+        'Travel profile execution started': '\u65C5\u884C\u6A21\u5F0F\u914D\u7F6E\u5DF2\u542F\u52A8\u6267\u884C',
+        'Lockdown profile execution started': '\u9501\u5B9A\u6A21\u5F0F\u914D\u7F6E\u5DF2\u542F\u52A8\u6267\u884C',
+        'Wail2Ban start command sent': 'Wail2Ban \u542F\u52A8\u547D\u4EE4\u5DF2\u53D1\u9001',
+        'Wail2Ban stop command sent': 'Wail2Ban \u505C\u6B62\u547D\u4EE4\u5DF2\u53D1\u9001',
+        'Firewall cleanup started': '\u9632\u706B\u5899\u89C4\u5219\u6E05\u7406\u5DF2\u542F\u52A8',
+        'Config file opened': '\u914D\u7F6E\u6587\u4EF6\u5DF2\u6253\u5F00',
+        'Logs folder opened': '\u65E5\u5FD7\u6587\u4EF6\u5939\u5DF2\u6253\u5F00',
+        'System status sync complete': '\u7CFB\u7EDF\u72B6\u6001\u540C\u6B65\u5B8C\u6210',
+        'Status refresh complete': '\u72B6\u6001\u5237\u65B0\u5B8C\u6210',
+        'Script not found: lan-config.bat': '\u811A\u672C\u4E0D\u5B58\u5728: lan-config.bat',
+        'Script not found: outdoor-config.bat': '\u811A\u672C\u4E0D\u5B58\u5728: outdoor-config.bat',
+        'Wail2Ban manager script not found': 'Wail2Ban\u7BA1\u7406\u811A\u672C\u4E0D\u5B58\u5728',
+        'Cleanup script not found': '\u6E05\u7406\u811A\u672C\u4E0D\u5B58\u5728',
+        'Config file not found: setting.ini': '\u914D\u7F6E\u6587\u4EF6\u4E0D\u5B58\u5728: setting.ini',
+        'Unknown profile': '\u672A\u77E5\u914D\u7F6E',
+        'Start failed': '\u542F\u52A8\u5931\u8D25',
+        'Wail2Ban operation failed': 'Wail2Ban\u64CD\u4F5C\u5931\u8D25',
+        'Cleanup failed': '\u6E05\u7406\u5931\u8D25',
+        'Command failed': '\u547D\u4EE4\u6267\u884C\u5931\u8D25'
+    };
+
+    function translateMsg(msg) {
+        if (!msg) return '';
+        for (var en in msgZh) {
+            if (msg.indexOf(en) >= 0) return msgZh[en];
+        }
+        return msg;
+    }
+
+    // ===== PS→HTML: PowerShell calls this to update firewall status =====
+    window.updateFirewallStatus = function(isActive) {
+        var fwEl = document.getElementById('fwStatus');
+        var sFw = document.getElementById('sFw');
+        var dotFw = document.getElementById('dotFw');
+        if (isActive === true || isActive === 'true' || isActive === 1) {
+            fwEl.textContent = '活跃';
+            fwEl.className = 'b-val on';
+            sFw.textContent = '● 活跃';
+            sFw.className = 'shield-val on';
+            dotFw.className = 'dot dot-green';
+        } else {
+            fwEl.textContent = '未激活';
+            fwEl.className = 'b-val off';
+            sFw.textContent = '● 未激活';
+            sFw.className = 'shield-val off';
+            dotFw.className = 'dot dot-red';
+        }
+    };
+
+    // ===== PS→HTML: PowerShell calls this to update Wail2Ban status =====
+    window.updateWail2BanStatus = function(isRunning) {
+        setWail2BanUI(isRunning === true || isRunning === 'true' || isRunning === 1);
+    };
+
+    // ===== PS→HTML: PowerShell calls this to set current profile =====
+    window.setCurrentProfile = function(profile) {
+        setProfileUI(profile);
+    };
+
+    // ===== PS→HTML: PowerShell calls this to push log message =====
+    window.pushLog = function(message, type) {
+        log(message, type || 'info');
+    };
+
+    // ===== Command Queue (HTML→PS) =====
+    window.getPendingCommands = function() {
+        if (window.netdefCommandQueue.length > 0) {
+            return JSON.stringify(window.netdefCommandQueue.shift());
+        }
+        return '';
+    };
+
+    window.clearCommandQueue = function() {
+        window.netdefCommandQueue = [];
+    };
+
+    function queueCommand(action, params) {
+        var cmd = { action: action };
+        if (params) {
+            for (var key in params) {
+                if (params.hasOwnProperty(key)) cmd[key] = params[key];
+            }
+        }
+        window.netdefCommandQueue.push(cmd);
+    }
+
+    // ===== Internal UI Helpers =====
+    function log(message, type) {
+        type = type || 'info';
+        var logEl = document.getElementById('activityLog');
+        var now = new Date();
+        var h = (now.getHours() < 10 ? '0' : '') + now.getHours();
+        var m = (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+        var s = (now.getSeconds() < 10 ? '0' : '') + now.getSeconds();
+        var time = h + ':' + m + ':' + s;
+
+        var cls = 'log-info';
+        if (type === 'success') cls = 'log-ok';
+        if (type === 'error') cls = 'log-err';
+        if (type === 'warn') cls = 'log-warn';
+
+        var entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = '<span class="log-t">[' + time + ']</span><span class="' + cls + '">' + message + '</span>';
+        logEl.appendChild(entry);
+        logEl.scrollTop = logEl.scrollHeight;
+
+        while (logEl.childNodes.length > 60) {
+            logEl.removeChild(logEl.firstChild);
+        }
+    }
+
+    function showToast(message, type) {
+        var toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = 'toast show';
+        if (type === 'error') toast.className = 'toast show error';
+        if (type === 'exec') toast.className = 'toast show exec';
+        setTimeout(function() { toast.className = 'toast'; }, 3500);
+    }
+
+    function showExec(text) {
+        document.getElementById('execText').textContent = text || '执行中...';
+        document.getElementById('execOverlay').className = 'exec-overlay show';
+    }
+
+    function hideExec() {
+        document.getElementById('execOverlay').className = 'exec-overlay';
+    }
+
+    function updateSecurityBar(profile) {
+        var fill = document.getElementById('secFill');
+        var text = document.getElementById('secText');
+        var levels = {
+            'home': { width: '60%', label: '当前等级: 中' },
+            'office': { width: '75%', label: '当前等级: 中高' },
+            'travel': { width: '90%', label: '当前等级: 高' },
+            'lockdown': { width: '100%', label: '当前等级: 最高' }
+        };
+        var lv = levels[profile] || { width: '30%', label: '当前等级: 未配置' };
+        fill.style.width = lv.width;
+        text.textContent = lv.label;
+    }
+
+    function setProfileUI(profile) {
+        var profileNames = {
+            'home': '家庭网络',
+            'office': '办公模式',
+            'travel': '旅行模式 ⭐',
+            'lockdown': '锁定模式'
+        };
+        var name = profileNames[profile] || profile;
+        currentProfile = profile;
+        document.getElementById('curProfile').textContent = name;
+        document.getElementById('sProfile').textContent = name;
+        updateSecurityBar(profile);
+
+        var cards = document.querySelectorAll('.p-card');
+        for (var i = 0; i < cards.length; i++) {
+            cards[i].className = cards[i].className.replace(' active', '');
+        }
+        var card = document.getElementById('card' + profile.charAt(0).toUpperCase() + profile.slice(1));
+        if (card) card.className = card.className + ' active';
+    }
+
+    function setWail2BanUI(running) {
+        wail2banRunning = running;
+        var w2bEl = document.getElementById('w2bStatus');
+        var sW2b = document.getElementById('sW2b');
+        var dotW2b = document.getElementById('dotW2b');
+        var btn = document.getElementById('btnW2b');
+
+        if (running) {
+            w2bEl.textContent = '运行中';
+            w2bEl.className = 'b-val on';
+            sW2b.textContent = '● 运行中';
+            sW2b.className = 'shield-val on';
+            dotW2b.className = 'dot dot-green';
+            btn.innerHTML = '<span class="a-btn-icon">⏹</span><span>停止 Wail2Ban</span>';
+        } else {
+            w2bEl.textContent = '已停止';
+            w2bEl.className = 'b-val off';
+            sW2b.textContent = '● 已停止';
+            sW2b.className = 'shield-val off';
+            dotW2b.className = 'dot dot-yellow';
+            btn.innerHTML = '<span class="a-btn-icon">▶</span><span>启动 Wail2Ban</span>';
+        }
+    }
+
+    // ===== User Actions (always queue, PS will handle) =====
+    function applyProfile(profile, element) {
+        if (profile === 'lockdown') {
+            if (!confirm('⚠️ 锁定模式将阻止所有出站流量！\n\n确定继续？')) {
+                return;
+            }
+        }
+
+        var profileNames = {
+            'home': '家庭网络',
+            'office': '办公模式',
+            'travel': '旅行模式 ⭐',
+            'lockdown': '锁定模式'
+        };
+        var name = profileNames[profile] || profile;
+
+        // Optimistic UI update
+        setProfileUI(profile);
+        log('正在应用安全配置: ' + name + ' ...', 'info');
+        showToast('⏳ 正在应用 ' + name + ' ...', 'exec');
+        showExec('应用 ' + name + ' 配置...');
+
+        // Queue command for PS - ALWAYS queue
+        queueCommand('execute', { profile: profile });
+
+        // Auto-hide overlay after 3s (PS callback will update final status)
+        setTimeout(hideExec, 3000);
+    }
+
+    function toggleWail2Ban(btn) {
+        var wantStart = !wail2banRunning;
+        var label = wantStart ? '启动' : '停止';
+
+        log('正在' + label + ' Wail2Ban ...', 'info');
+        showToast('⏳ 正在' + label + ' Wail2Ban ...', 'exec');
+
+        // Optimistic UI update
+        setWail2BanUI(wantStart);
+
+        // Queue command for PS
+        queueCommand('wail2ban', { start: wantStart });
+    }
+
+    function cleanupRules() {
+        if (!confirm('🧹 确定要移除所有自定义防火墙规则吗？\n\n此操作无法轻易撤销。')) {
+            return;
+        }
+        log('正在清理防火墙规则 ...', 'warn');
+        showToast('⏳ 正在清理规则...', 'exec');
+        showExec('清理防火墙规则...');
+        queueCommand('cleanup', {});
+        setTimeout(hideExec, 3000);
+    }
+
+    function editConfig() {
+        log('打开配置文件 setting.ini ...', 'info');
+        showToast('打开 setting.ini ...');
+        queueCommand('config', {});
+    }
+
+    function refreshStatus() {
+        log('刷新系统状态 ...', 'info');
+        showToast('🔄 刷新状态...');
+        queueCommand('refresh', {});
+    }
+
+    function openLogs() {
+        log('打开日志文件夹 ...', 'info');
+        showToast('打开日志文件夹...');
+        queueCommand('logs', {});
+    }
+
+    // ===== Init =====
+    document.addEventListener('DOMContentLoaded', function() {
+        log('Netdef 安全卫士启动中...', 'info');
+
+        // If PS doesn't call setEmbeddedMode within 3s, show demo mode
+        setTimeout(function() {
+            if (!isEmbedded) {
+                document.getElementById('sConn').textContent = '● 演示模式';
+                document.getElementById('sConn').className = 'shield-val off';
+                document.getElementById('fwStatus').textContent = '演示';
+                document.getElementById('fwStatus').className = 'b-val off';
+                document.getElementById('sFw').textContent = '● 演示';
+                document.getElementById('sFw').className = 'shield-val off';
+                setWail2BanUI(false);
+                log('未检测到PowerShell连接，运行在演示模式', 'warn');
+                log('请通过 netdef-gui-launcher.ps1 启动以获得完整功能', 'warn');
+            }
+        }, 3000);
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === '1') applyProfile('home', document.getElementById('cardHome'));
+        if (e.key === '2') applyProfile('office', document.getElementById('cardOffice'));
+        if (e.key === '3') applyProfile('travel', document.getElementById('cardTravel'));
+        if (e.key === '4') applyProfile('lockdown', document.getElementById('cardLockdown'));
+        if (e.key === 'r' || e.key === 'R') refreshStatus();
+        if (e.key === 'l' || e.key === 'L') openLogs();
+        if (e.key === 'Escape') {
+            document.getElementById('toast').className = 'toast';
+            hideExec();
+        }
+    });
+</script>
+
+</body>
+</html>

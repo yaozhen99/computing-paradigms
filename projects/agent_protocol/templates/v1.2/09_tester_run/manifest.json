@@ -1,0 +1,7 @@
+{
+  "role": "tester_run",
+  "title": "测试执行",
+  "inputs": ["04_testing/test_scripts", "03_source"],
+  "outputs": ["04_testing/report_execution_raw.md"],
+  "lock": "_pipes/lock_tester_run.json"
+}

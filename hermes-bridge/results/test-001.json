@@ -1,0 +1,1 @@
+{"task_id": "test-001", "status": "done", "output": "Hello World\n测试岗Hermes收到，通信正常。", "debug": "stdout_len=31, stderr_len=36, rc=0", "error": "", "returncode": 0, "completed": "2026-04-24T20:36:36.488053"}
