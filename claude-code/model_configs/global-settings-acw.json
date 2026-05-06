@@ -1,0 +1,10 @@
+{
+  "env": {
+    "ANTHROPIC_API_KEY": "sk-acw-901a135d-16d3bff2fdaa7d86",
+    "ANTHROPIC_BASE_URL": "https://api.aicodewith.com",
+    "ANTHROPIC_MODEL": "claude-sonnet-4-6",
+    "ANTHROPIC_SMALL_FAST_MODEL": "claude-haiku-4-5-20251001",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "API_TIMEOUT_MS": "600000"
+  }
+}
