@@ -1,0 +1,23 @@
+#!/bin/bash
+# AI Code With — Claude 家族模型
+# 用法: claude-acw [模型名] [claude参数...]
+#   claude-acw                  → 默认 claude-sonnet-4-6
+#   claude-acw claude-opus-4-7  → 指定 Opus
+#   claude-acw claude-haiku-4-5-20251001 → 指定 Haiku
+#   claude-acw -p "问题"        → 不指定模型，直接传参给 claude
+export ANTHROPIC_API_KEY="sk-acw-901a135d-16d3bff2fdaa7d86"
+export ANTHROPIC_BASE_URL="https://api.aicodewith.com"
+export ANTHROPIC_SMALL_FAST_MODEL="claude-haiku-4-5-20251001"
+export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+export API_TIMEOUT_MS=600000
+
+# 如果第一个参数不是 - 开头，视为模型名；否则用默认模型
+if [[ $# -gt 0 && ! "$1" =~ ^- ]]; then
+  export ANTHROPIC_MODEL="$1"
+  shift
+else
+  export ANTHROPIC_MODEL="claude-sonnet-4-6"
+fi
+
+echo "[acw] $ANTHROPIC_MODEL"
+claude "$@"
