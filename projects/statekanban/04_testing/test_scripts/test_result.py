@@ -28,10 +28,10 @@ from statekanban.core.message_bus import MessageBus
 from statekanban.core.process import ProcessManager
 from statekanban.engine.result import EngineResult, ResultSummarizer
 
-
 # ---------------------------------------------------------------------------
 # TC-RS-001: Summarize converged
 # ---------------------------------------------------------------------------
+
 
 class TestResultSummarizerConverged:
     """TC-RS-001."""
@@ -46,6 +46,7 @@ class TestResultSummarizerConverged:
 # ---------------------------------------------------------------------------
 # TC-RS-002: Summarize forced terminate
 # ---------------------------------------------------------------------------
+
 
 class TestResultSummarizerForcedTerminate:
     """TC-RS-002."""
@@ -65,64 +66,77 @@ class TestResultSummarizerForcedTerminate:
 # TC-RS-003: Signal counts
 # ---------------------------------------------------------------------------
 
+
 class TestResultSummarizerSignalCounts:
     """TC-RS-003."""
 
     def test_signal_counts_with_signals(self, kanban, pm, summarizer):
         # Write some signals
-        kanban.fluid.write_signal(IntentSignal(
-            signal_id=make_signal_id(),
-            author_role="coder",
-            target_id="t1",
-            payload={},
-            timestamp=now_utc(),
-            round_number=1,
-        ))
-        kanban.fluid.write_signal(IntentSignal(
-            signal_id=make_signal_id(),
-            author_role="reviewer",
-            target_id="t1",
-            payload={},
-            timestamp=now_utc(),
-            round_number=1,
-        ))
-        kanban.fluid.write_signal(IntentSignal(
-            signal_id=make_signal_id(),
-            author_role="coder",
-            target_id="t2",
-            payload={},
-            timestamp=now_utc(),
-            round_number=2,
-        ))
-        kanban.fluid.write_signal(VetoSignal(
-            signal_id=make_signal_id(),
-            author_role="reviewer",
-            target_id="t1",
-            payload={},
-            timestamp=now_utc(),
-            round_number=1,
-            reason="bad",
-        ))
-        kanban.fluid.write_signal(ErrorSignal(
-            signal_id=make_signal_id(),
-            author_role="OutputValve",
-            target_id="output.py",
-            payload={},
-            timestamp=now_utc(),
-            round_number=1,
-            error_code="SK_OV_001",
-            error_detail="syntax error",
-        ))
-        kanban.fluid.write_signal(ErrorSignal(
-            signal_id=make_signal_id(),
-            author_role="ResponseParser",
-            target_id="parse_failure",
-            payload={},
-            timestamp=now_utc(),
-            round_number=1,
-            error_code="SK_EN_003",
-            error_detail="parse error",
-        ))
+        kanban.fluid.write_signal(
+            IntentSignal(
+                signal_id=make_signal_id(),
+                author_role="coder",
+                target_id="t1",
+                payload={},
+                timestamp=now_utc(),
+                round_number=1,
+            )
+        )
+        kanban.fluid.write_signal(
+            IntentSignal(
+                signal_id=make_signal_id(),
+                author_role="reviewer",
+                target_id="t1",
+                payload={},
+                timestamp=now_utc(),
+                round_number=1,
+            )
+        )
+        kanban.fluid.write_signal(
+            IntentSignal(
+                signal_id=make_signal_id(),
+                author_role="coder",
+                target_id="t2",
+                payload={},
+                timestamp=now_utc(),
+                round_number=2,
+            )
+        )
+        kanban.fluid.write_signal(
+            VetoSignal(
+                signal_id=make_signal_id(),
+                author_role="reviewer",
+                target_id="t1",
+                payload={},
+                timestamp=now_utc(),
+                round_number=1,
+                reason="bad",
+            )
+        )
+        kanban.fluid.write_signal(
+            ErrorSignal(
+                signal_id=make_signal_id(),
+                author_role="OutputValve",
+                target_id="output.py",
+                payload={},
+                timestamp=now_utc(),
+                round_number=1,
+                error_code="SK_OV_001",
+                error_detail="syntax error",
+            )
+        )
+        kanban.fluid.write_signal(
+            ErrorSignal(
+                signal_id=make_signal_id(),
+                author_role="ResponseParser",
+                target_id="parse_failure",
+                payload={},
+                timestamp=now_utc(),
+                round_number=1,
+                error_code="SK_EN_003",
+                error_detail="parse error",
+            )
+        )
 
         result = summarizer.summarize(total_rounds=2, converged=True)
         assert result.signal_summary["intent"] == 3
@@ -134,28 +148,33 @@ class TestResultSummarizerSignalCounts:
 # TC-RS-004: Artifact files
 # ---------------------------------------------------------------------------
 
+
 class TestResultSummarizerArtifactFiles:
     """TC-RS-004."""
 
     def test_artifact_files_with_artifacts(self, kanban, pm, summarizer):
-        kanban.crystal.append(Artifact(
-            seq_no=0,
-            artifact_type=ArtifactType.CODE,
-            path="src/output.py",
-            content="x = 1",
-            checksum=compute_checksum("x = 1"),
-            author_role="coder",
-            created_at=now_utc(),
-        ))
-        kanban.crystal.append(Artifact(
-            seq_no=0,
-            artifact_type=ArtifactType.CODE,
-            path="src/helper.py",
-            content="def help(): pass",
-            checksum=compute_checksum("def help(): pass"),
-            author_role="coder",
-            created_at=now_utc(),
-        ))
+        kanban.crystal.append(
+            Artifact(
+                seq_no=0,
+                artifact_type=ArtifactType.CODE,
+                path="src/output.py",
+                content="x = 1",
+                checksum=compute_checksum("x = 1"),
+                author_role="coder",
+                created_at=now_utc(),
+            )
+        )
+        kanban.crystal.append(
+            Artifact(
+                seq_no=0,
+                artifact_type=ArtifactType.CODE,
+                path="src/helper.py",
+                content="def help(): pass",
+                checksum=compute_checksum("def help(): pass"),
+                author_role="coder",
+                created_at=now_utc(),
+            )
+        )
 
         result = summarizer.summarize(total_rounds=1, converged=True)
         assert "src/output.py" in result.artifact_files
@@ -165,6 +184,7 @@ class TestResultSummarizerArtifactFiles:
 # ---------------------------------------------------------------------------
 # TC-RS-005: Empty (no signals, no artifacts)
 # ---------------------------------------------------------------------------
+
 
 class TestResultSummarizerEmpty:
     """TC-RS-005."""
@@ -180,6 +200,7 @@ class TestResultSummarizerEmpty:
 # ---------------------------------------------------------------------------
 # TC-RS-006: Duration calculation
 # ---------------------------------------------------------------------------
+
 
 class TestResultSummarizerDuration:
     """TC-RS-006."""
@@ -201,6 +222,7 @@ class TestResultSummarizerDuration:
 # ---------------------------------------------------------------------------
 # EngineResult contract
 # ---------------------------------------------------------------------------
+
 
 class TestEngineResultContract:
     """Verify all fields of EngineResult exist."""

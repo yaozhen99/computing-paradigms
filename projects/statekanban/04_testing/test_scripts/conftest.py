@@ -24,7 +24,8 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     """Register the live_api marker."""
     config.addinivalue_line(
-        "markers", "live_api: marks tests as live API smoke tests (deselect with '-m \"not live_api\"')"
+        "markers",
+        "live_api: marks tests as live API smoke tests (deselect with '-m \"not live_api\"')",
     )
 
 
@@ -36,6 +37,7 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "live_api" in item.keywords:
             item.add_marker(skip_live)
+
 
 from statekanban.core.kanban import (
     Artifact,
@@ -72,43 +74,59 @@ from statekanban.adapters.mock_adapter import (
 )
 from statekanban.tools.call_llm import create_call_llm_tool
 
-
 # ---------------------------------------------------------------------------
 # Core fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def kanban():
     """Fresh StateKanban instance with standard viewports."""
     k = StateKanban()
-    k.register_viewport(ViewportSpec(
-        role="coder",
-        visible_signal_types=[SignalType.INTENT, SignalType.ERROR],
-        visible_artifact_types=[ArtifactType.CODE, ArtifactType.CONFIG],
-        visible_target_patterns=["*"],
-        max_tokens=4000,
-    ))
-    k.register_viewport(ViewportSpec(
-        role="reviewer",
-        visible_signal_types=[SignalType.INTENT, SignalType.VETO, SignalType.ERROR],
-        visible_artifact_types=[ArtifactType.CODE, ArtifactType.CONFIG, ArtifactType.DOC],
-        visible_target_patterns=["*"],
-        max_tokens=4000,
-    ))
-    k.register_viewport(ViewportSpec(
-        role="tester",
-        visible_signal_types=[SignalType.INTENT, SignalType.ERROR],
-        visible_artifact_types=[ArtifactType.CODE, ArtifactType.TEST],
-        visible_target_patterns=["*"],
-        max_tokens=4000,
-    ))
-    k.register_viewport(ViewportSpec(
-        role="integrator",
-        visible_signal_types=[SignalType.INTENT, SignalType.VETO, SignalType.ERROR],
-        visible_artifact_types=[ArtifactType.CODE, ArtifactType.CONFIG, ArtifactType.TEST],
-        visible_target_patterns=["*"],
-        max_tokens=4000,
-    ))
+    k.register_viewport(
+        ViewportSpec(
+            role="coder",
+            visible_signal_types=[SignalType.INTENT, SignalType.ERROR],
+            visible_artifact_types=[ArtifactType.CODE, ArtifactType.CONFIG],
+            visible_target_patterns=["*"],
+            max_tokens=4000,
+        )
+    )
+    k.register_viewport(
+        ViewportSpec(
+            role="reviewer",
+            visible_signal_types=[SignalType.INTENT, SignalType.VETO, SignalType.ERROR],
+            visible_artifact_types=[
+                ArtifactType.CODE,
+                ArtifactType.CONFIG,
+                ArtifactType.DOC,
+            ],
+            visible_target_patterns=["*"],
+            max_tokens=4000,
+        )
+    )
+    k.register_viewport(
+        ViewportSpec(
+            role="tester",
+            visible_signal_types=[SignalType.INTENT, SignalType.ERROR],
+            visible_artifact_types=[ArtifactType.CODE, ArtifactType.TEST],
+            visible_target_patterns=["*"],
+            max_tokens=4000,
+        )
+    )
+    k.register_viewport(
+        ViewportSpec(
+            role="integrator",
+            visible_signal_types=[SignalType.INTENT, SignalType.VETO, SignalType.ERROR],
+            visible_artifact_types=[
+                ArtifactType.CODE,
+                ArtifactType.CONFIG,
+                ArtifactType.TEST,
+            ],
+            visible_target_patterns=["*"],
+            max_tokens=4000,
+        )
+    )
     return k
 
 
@@ -188,6 +206,7 @@ def engine(kanban, bus, registry, valve, slicer, pm, adapter, config):
 # R1/R2 engine component fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def breaker():
     """CircuitBreaker with default max_rounds=10."""
@@ -240,6 +259,7 @@ def fluid(kanban):
 def crystal():
     """Fresh CrystalZone instance."""
     from statekanban.core.kanban import CrystalZone
+
     return CrystalZone()
 
 
@@ -247,6 +267,7 @@ def crystal():
 def audit():
     """Fresh AuditZone instance."""
     from statekanban.core.kanban import AuditZone
+
     return AuditZone()
 
 
@@ -261,12 +282,22 @@ def tmp_dir():
 # Signal factory fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def make_intent():
     """Factory for creating IntentSignal instances."""
-    def _make(role=None, target="task_root", payload=None, round_num=0,
-              target_id=None, author_role=None, signal_id=None, reason=None,
-              round_number=None):
+
+    def _make(
+        role=None,
+        target="task_root",
+        payload=None,
+        round_num=0,
+        target_id=None,
+        author_role=None,
+        signal_id=None,
+        reason=None,
+        round_number=None,
+    ):
         # R1/R2 compat: target_id -> target, author_role -> role, round_number -> round_num
         effective_target = target_id if target_id is not None else target
         effective_role = author_role if author_role is not None else (role or "user")
@@ -280,17 +311,28 @@ def make_intent():
             timestamp=now_utc(),
             round_number=effective_round,
         )
+
     return _make
 
 
 @pytest.fixture
 def make_veto():
     """Factory for creating VetoSignal instances."""
-    def _make(role=None, target="task_root", reason="rejected", round_num=1,
-              target_id=None, author_role=None, round_number=None):
+
+    def _make(
+        role=None,
+        target="task_root",
+        reason="rejected",
+        round_num=1,
+        target_id=None,
+        author_role=None,
+        round_number=None,
+    ):
         # R1/R2 compat: target_id -> target, author_role -> role, round_number -> round_num
         effective_target = target_id if target_id is not None else target
-        effective_role = author_role if author_role is not None else (role or "reviewer")
+        effective_role = (
+            author_role if author_role is not None else (role or "reviewer")
+        )
         effective_round = round_number if round_number is not None else round_num
         return VetoSignal(
             signal_id=make_signal_id(),
@@ -301,12 +343,14 @@ def make_veto():
             round_number=effective_round,
             reason=reason,
         )
+
     return _make
 
 
 @pytest.fixture
 def make_error():
     """Factory for creating ErrorSignal instances."""
+
     def _make(role="coder", target="task_root", error_code="SK_TEST_001", round_num=1):
         return ErrorSignal(
             signal_id=make_signal_id(),
@@ -317,14 +361,21 @@ def make_error():
             round_number=round_num,
             error_code=error_code,
         )
+
     return _make
 
 
 @pytest.fixture
 def make_error_signal():
     """Factory for creating ErrorSignal instances (R1/R2 compat, error_code=SK_OV_001)."""
-    def _make(role="coder", target="task_root", error_code="SK_OV_001", round_num=1,
-              round_number=None):
+
+    def _make(
+        role="coder",
+        target="task_root",
+        error_code="SK_OV_001",
+        round_num=1,
+        round_number=None,
+    ):
         effective_round = round_number if round_number is not None else round_num
         return ErrorSignal(
             signal_id=make_signal_id(),
@@ -335,6 +386,7 @@ def make_error_signal():
             round_number=effective_round,
             error_code=error_code,
         )
+
     return _make
 
 
@@ -342,9 +394,11 @@ def make_error_signal():
 # Artifact factory fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def make_code_artifact():
     """Factory for creating Artifact instances."""
+
     def _make(content="x = 1", path="test.py", role="coder"):
         return Artifact(
             seq_no=0,
@@ -355,14 +409,22 @@ def make_code_artifact():
             author_role=role,
             created_at=now_utc(),
         )
+
     return _make
 
 
 @pytest.fixture
 def make_artifact():
     """Factory for creating Artifact instances for CrystalZone (R1/R2 compat)."""
-    def _make(content="x = 1", path="test.py", role="coder", artifact_type=ArtifactType.CODE,
-              seq_no=-1, author_role=None):
+
+    def _make(
+        content="x = 1",
+        path="test.py",
+        role="coder",
+        artifact_type=ArtifactType.CODE,
+        seq_no=-1,
+        author_role=None,
+    ):
         effective_role = author_role if author_role is not None else role
         return Artifact(
             seq_no=seq_no,
@@ -373,4 +435,5 @@ def make_artifact():
             author_role=effective_role,
             created_at=now_utc(),
         )
+
     return _make

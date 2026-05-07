@@ -23,10 +23,10 @@ from statekanban.core.kanban import (
     StateKanban,
 )
 
-
 # ---------------------------------------------------------------------------
 # ParsedResponse types
 # ---------------------------------------------------------------------------
+
 
 class ParsedResponseType(Enum):
     """Types of parsed LLM responses."""
@@ -44,21 +44,19 @@ class ParsedResponse:
     response_type: ParsedResponseType
     target_id: str
     payload: dict[str, Any] = field(default_factory=dict)
-    reason: str = ""                     # for veto
-    artifact_path: str = ""              # for artifact
-    artifact_content: str = ""           # for artifact
-    artifact_type: str = "code"          # for artifact
+    reason: str = ""  # for veto
+    artifact_path: str = ""  # for artifact
+    artifact_content: str = ""  # for artifact
+    artifact_type: str = "code"  # for artifact
     parse_success: bool = True
-    parse_error: str = ""                # if parse_success is False
+    parse_error: str = ""  # if parse_success is False
 
 
 # ---------------------------------------------------------------------------
 # Regex for fenced code blocks
 # ---------------------------------------------------------------------------
 
-_CODE_BLOCK_RE = re.compile(
-    r"```(\w+)?\s*\n([\s\S]*?)\n```"
-)
+_CODE_BLOCK_RE = re.compile(r"```(\w+)?\s*\n([\s\S]*?)\n```")
 
 # Language tag -> artifact_type mapping
 _LANG_ARTIFACT_TYPE: dict[str, str] = {
@@ -115,7 +113,9 @@ class ResponseParser:
 
         # Strategy 3: Unstructured -- error signal
         error_resp = self._make_error_response(
-            content, author_role, round_number,
+            content,
+            author_role,
+            round_number,
             "Response is not structured JSON or code block",
         )
 
@@ -218,13 +218,15 @@ class ResponseParser:
 
         artifact_type = _LANG_ARTIFACT_TYPE.get(lang_tag.lower(), "code")
 
-        return [ParsedResponse(
-            response_type=ParsedResponseType.ARTIFACT,
-            target_id="codex_output",
-            payload={"language": lang_tag, "author_role": author_role},
-            artifact_content=code_content,
-            artifact_type=artifact_type,
-        )]
+        return [
+            ParsedResponse(
+                response_type=ParsedResponseType.ARTIFACT,
+                target_id="codex_output",
+                payload={"language": lang_tag, "author_role": author_role},
+                artifact_content=code_content,
+                artifact_type=artifact_type,
+            )
+        ]
 
     def _make_error_response(
         self,

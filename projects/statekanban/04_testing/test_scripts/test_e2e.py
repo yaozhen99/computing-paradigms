@@ -50,10 +50,10 @@ from statekanban.adapters.mock_adapter import (
 from statekanban.tools.call_llm import create_call_llm_tool
 from statekanban.snapshot import save_snapshot, load_snapshot
 
-
 # ---------------------------------------------------------------------------
 # Helper: build a complete system with all 4 viewports
 # ---------------------------------------------------------------------------
+
 
 def _make_viewports() -> dict:
     """Standard 4-role viewport specs."""
@@ -68,7 +68,11 @@ def _make_viewports() -> dict:
         "reviewer": ViewportSpec(
             role="reviewer",
             visible_signal_types=[SignalType.INTENT, SignalType.VETO, SignalType.ERROR],
-            visible_artifact_types=[ArtifactType.CODE, ArtifactType.CONFIG, ArtifactType.DOC],
+            visible_artifact_types=[
+                ArtifactType.CODE,
+                ArtifactType.CONFIG,
+                ArtifactType.DOC,
+            ],
             visible_target_patterns=["*"],
             max_tokens=4000,
         ),
@@ -82,7 +86,11 @@ def _make_viewports() -> dict:
         "integrator": ViewportSpec(
             role="integrator",
             visible_signal_types=[SignalType.INTENT, SignalType.VETO, SignalType.ERROR],
-            visible_artifact_types=[ArtifactType.CODE, ArtifactType.CONFIG, ArtifactType.TEST],
+            visible_artifact_types=[
+                ArtifactType.CODE,
+                ArtifactType.CONFIG,
+                ArtifactType.TEST,
+            ],
             visible_target_patterns=["*"],
             max_tokens=4000,
         ),
@@ -92,6 +100,7 @@ def _make_viewports() -> dict:
 # ---------------------------------------------------------------------------
 # TC-E2E-01: Happy Path -- Engine.drive() with mock adapter
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_e2e_01_happy_path():
@@ -108,7 +117,10 @@ async def test_e2e_01_happy_path():
 
     pm = ProcessManager(kanban, bus)
     adapter = MockLLMAdapter()
-    adapter.set_behavior_mode("coder", "generate_simple")
+    adapter.set_behavior_mode(
+        reviewer_behavior=MockReviewerBehavior.ALWAYS_APPROVE,
+        coder_behavior=MockCoderBehavior.GENERATE_SIMPLE,
+    )
 
     config = Config()
     config.convergence_max_rounds = 5
@@ -117,7 +129,11 @@ async def test_e2e_01_happy_path():
         ToolDef(
             name="call_llm",
             description="Invoke LLM via adapter",
-            param_schema={"type": "object", "properties": {"messages": {"type": "array"}}, "required": ["messages"]},
+            param_schema={
+                "type": "object",
+                "properties": {"messages": {"type": "array"}},
+                "required": ["messages"],
+            },
             required_permissions={"all_roles"},
             timeout_seconds=120.0,
         ),
@@ -125,8 +141,14 @@ async def test_e2e_01_happy_path():
     )
 
     engine = Engine(
-        kanban=kanban, bus=bus, registry=registry, valve=valve,
-        slicer=slicer, pm=pm, adapter=adapter, config=config,
+        kanban=kanban,
+        bus=bus,
+        registry=registry,
+        valve=valve,
+        slicer=slicer,
+        pm=pm,
+        adapter=adapter,
+        config=config,
     )
 
     result = await engine.drive("Implement feature X")
@@ -141,6 +163,7 @@ async def test_e2e_01_happy_path():
 # ---------------------------------------------------------------------------
 # TC-E2E-02: Collision Resolution -- Engine.drive() with reject-then-approve
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_e2e_02_collision_convergence():
@@ -157,8 +180,10 @@ async def test_e2e_02_collision_convergence():
 
     pm = ProcessManager(kanban, bus)
     adapter = MockLLMAdapter()
-    adapter.set_behavior_mode("coder", "generate_simple")
-    adapter.set_behavior_mode("reviewer", "reject_then_approve")
+    adapter.set_behavior_mode(
+        reviewer_behavior=MockReviewerBehavior.REJECT_THEN_APPROVE,
+        coder_behavior=MockCoderBehavior.GENERATE_SIMPLE,
+    )
 
     config = Config()
     config.convergence_max_rounds = 5
@@ -167,7 +192,11 @@ async def test_e2e_02_collision_convergence():
         ToolDef(
             name="call_llm",
             description="Invoke LLM via adapter",
-            param_schema={"type": "object", "properties": {"messages": {"type": "array"}}, "required": ["messages"]},
+            param_schema={
+                "type": "object",
+                "properties": {"messages": {"type": "array"}},
+                "required": ["messages"],
+            },
             required_permissions={"all_roles"},
             timeout_seconds=120.0,
         ),
@@ -175,8 +204,14 @@ async def test_e2e_02_collision_convergence():
     )
 
     engine = Engine(
-        kanban=kanban, bus=bus, registry=registry, valve=valve,
-        slicer=slicer, pm=pm, adapter=adapter, config=config,
+        kanban=kanban,
+        bus=bus,
+        registry=registry,
+        valve=valve,
+        slicer=slicer,
+        pm=pm,
+        adapter=adapter,
+        config=config,
     )
 
     result = await engine.drive("Implement feature with review cycle")
@@ -186,10 +221,18 @@ async def test_e2e_02_collision_convergence():
     assert isinstance(result.converged, bool)
     assert result.total_rounds > 0
 
+    # REQ-505: Assert at least 1 VetoSignal in FluidZone (collision evidence)
+    all_signals = kanban.fluid.read_signals()
+    veto_signals = [s for s in all_signals if s.signal_type == SignalType.VETO]
+    assert (
+        len(veto_signals) >= 1
+    ), "Expected at least 1 VetoSignal in FluidZone for collision convergence scenario"
+
 
 # ---------------------------------------------------------------------------
 # TC-E2E-03: Circuit Breaker -- Engine.drive() with persistent rejection
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_e2e_03_circuit_breaker():
@@ -206,8 +249,10 @@ async def test_e2e_03_circuit_breaker():
 
     pm = ProcessManager(kanban, bus)
     adapter = MockLLMAdapter()
-    adapter.set_behavior_mode("coder", "generate_simple")
-    adapter.set_behavior_mode("reviewer", "always_reject")
+    adapter.set_behavior_mode(
+        reviewer_behavior=MockReviewerBehavior.ALWAYS_REJECT,
+        coder_behavior=MockCoderBehavior.GENERATE_WITH_BUG,
+    )
 
     config = Config()
     config.convergence_max_rounds = 3
@@ -216,7 +261,11 @@ async def test_e2e_03_circuit_breaker():
         ToolDef(
             name="call_llm",
             description="Invoke LLM via adapter",
-            param_schema={"type": "object", "properties": {"messages": {"type": "array"}}, "required": ["messages"]},
+            param_schema={
+                "type": "object",
+                "properties": {"messages": {"type": "array"}},
+                "required": ["messages"],
+            },
             required_permissions={"all_roles"},
             timeout_seconds=120.0,
         ),
@@ -224,8 +273,14 @@ async def test_e2e_03_circuit_breaker():
     )
 
     engine = Engine(
-        kanban=kanban, bus=bus, registry=registry, valve=valve,
-        slicer=slicer, pm=pm, adapter=adapter, config=config,
+        kanban=kanban,
+        bus=bus,
+        registry=registry,
+        valve=valve,
+        slicer=slicer,
+        pm=pm,
+        adapter=adapter,
+        config=config,
     )
 
     result = await engine.drive("Implement feature with persistent veto")
@@ -234,10 +289,17 @@ async def test_e2e_03_circuit_breaker():
     assert result is not None
     assert result.converged is False
 
+    # REQ-505: Assert no artifact in CrystalZone (circuit break means no approved output)
+    crystal_artifacts = kanban.crystal.read_artifacts()
+    assert (
+        len(crystal_artifacts) == 0
+    ), "Circuit break should produce no CrystalZone artifacts"
+
 
 # ---------------------------------------------------------------------------
 # TC-E2E-04: Viewport Isolation -- Coder viewport excludes VETO signals
 # ---------------------------------------------------------------------------
+
 
 def test_e2e_04_viewport_isolation():
     """TC-E2E-04: Coder viewport does not include reviewer VETO signals."""
@@ -248,40 +310,47 @@ def test_e2e_04_viewport_isolation():
     slicer = ViewportSlicer(kanban, vp)
 
     # Seed intent + veto
-    kanban.fluid.write_signal(IntentSignal(
-        signal_id=make_signal_id(),
-        author_role="user",
-        target_id="task_root",
-        payload={"intent": "Test viewport isolation"},
-        timestamp=now_utc(),
-        round_number=0,
-    ))
-    kanban.fluid.write_signal(VetoSignal(
-        signal_id=make_signal_id(),
-        author_role="reviewer",
-        target_id="task_root",
-        payload={"action": "reject"},
-        timestamp=now_utc(),
-        round_number=1,
-        reason="bug found",
-    ))
+    kanban.fluid.write_signal(
+        IntentSignal(
+            signal_id=make_signal_id(),
+            author_role="user",
+            target_id="task_root",
+            payload={"intent": "Test viewport isolation"},
+            timestamp=now_utc(),
+            round_number=0,
+        )
+    )
+    kanban.fluid.write_signal(
+        VetoSignal(
+            signal_id=make_signal_id(),
+            author_role="reviewer",
+            target_id="task_root",
+            payload={"action": "reject"},
+            timestamp=now_utc(),
+            round_number=1,
+            reason="bug found",
+        )
+    )
 
     # Coder slice should NOT contain VETO
     coder_slice = slicer.slice("coder")
     signal_types_in_coder = [s.signal_type for s in coder_slice.signals]
-    assert SignalType.VETO not in signal_types_in_coder, \
-        f"Coder viewport should not contain VETO signals, found: {signal_types_in_coder}"
+    assert (
+        SignalType.VETO not in signal_types_in_coder
+    ), f"Coder viewport should not contain VETO signals, found: {signal_types_in_coder}"
 
     # Reviewer slice SHOULD contain VETO
     reviewer_slice = slicer.slice("reviewer")
     signal_types_in_reviewer = [s.signal_type for s in reviewer_slice.signals]
-    assert SignalType.VETO in signal_types_in_reviewer, \
-        "Reviewer viewport should contain VETO signals"
+    assert (
+        SignalType.VETO in signal_types_in_reviewer
+    ), "Reviewer viewport should contain VETO signals"
 
 
 # ---------------------------------------------------------------------------
 # TC-E2E-05: Snapshot Save/Restore
 # ---------------------------------------------------------------------------
+
 
 def test_e2e_05_snapshot_save_restore_continue(tmp_path):
     """TC-E2E-05: Snapshot save/load preserves state."""
@@ -291,14 +360,16 @@ def test_e2e_05_snapshot_save_restore_continue(tmp_path):
         kanban.register_viewport(spec)
 
     # Seed intent
-    kanban.fluid.write_signal(IntentSignal(
-        signal_id=make_signal_id(),
-        author_role="user",
-        target_id="task_root",
-        payload={"intent": "Test snapshot round-trip"},
-        timestamp=now_utc(),
-        round_number=0,
-    ))
+    kanban.fluid.write_signal(
+        IntentSignal(
+            signal_id=make_signal_id(),
+            author_role="user",
+            target_id="task_root",
+            payload={"intent": "Test snapshot round-trip"},
+            timestamp=now_utc(),
+            round_number=0,
+        )
+    )
 
     # Save snapshot
     snap_path = str(tmp_path / "mid_run.json")
@@ -312,17 +383,23 @@ def test_e2e_05_snapshot_save_restore_continue(tmp_path):
 
     # Verify state matches
     fluid_signals_after = list(kanban2.fluid.read_signals())
-    assert len(fluid_signals_after) == len(fluid_signals_before), \
-        f"Signal count mismatch after restore: {len(fluid_signals_after)} vs {len(fluid_signals_before)}"
+    assert len(fluid_signals_after) == len(
+        fluid_signals_before
+    ), f"Signal count mismatch after restore: {len(fluid_signals_after)} vs {len(fluid_signals_before)}"
 
 
 # ---------------------------------------------------------------------------
 # TC-E2E-06: ValveReworkLoopError (SK_EN_004)
 # ---------------------------------------------------------------------------
 
+
 def test_e2e_06_valve_rework_loop_error():
     """TC-E2E-06: ValveReworkLoopError raised after consecutive valve failures."""
-    from statekanban.core.errors import ValveReworkLoopError, EngineError, StateKanbanError
+    from statekanban.core.errors import (
+        ValveReworkLoopError,
+        EngineError,
+        StateKanbanError,
+    )
 
     err = ValveReworkLoopError("3 consecutive valve failures")
     assert err.error_code == "SK_EN_004"
@@ -335,6 +412,7 @@ def test_e2e_06_valve_rework_loop_error():
 # TC-PAP-01: Convergence rate >= 80% (via StateKanban.run_convergence)
 # ---------------------------------------------------------------------------
 
+
 def test_paper_convergence_rate():
     """TC-PAP-01: Convergence rate across multiple targets should be >= 80%."""
     converged = 0
@@ -342,38 +420,45 @@ def test_paper_convergence_rate():
 
     for i in range(total):
         kanban = StateKanban()
-        kanban.fluid.write_signal(IntentSignal(
-            signal_id=make_signal_id(),
-            author_role="coder",
-            target_id=f"target_{i}",
-            payload={"action": "approve"},
-            timestamp=now_utc(),
-            round_number=1,
-        ))
+        kanban.fluid.write_signal(
+            IntentSignal(
+                signal_id=make_signal_id(),
+                author_role="coder",
+                target_id=f"target_{i}",
+                payload={"action": "approve"},
+                timestamp=now_utc(),
+                round_number=1,
+            )
+        )
         # 8 out of 10 have no veto (should converge)
         # 2 out of 10 have veto (should not converge)
         if i >= 8:
-            kanban.fluid.write_signal(VetoSignal(
-                signal_id=make_signal_id(),
-                author_role="reviewer",
-                target_id=f"target_{i}",
-                payload={"action": "reject"},
-                timestamp=now_utc(),
-                round_number=1,
-                reason="bad",
-            ))
+            kanban.fluid.write_signal(
+                VetoSignal(
+                    signal_id=make_signal_id(),
+                    author_role="reviewer",
+                    target_id=f"target_{i}",
+                    payload={"action": "reject"},
+                    timestamp=now_utc(),
+                    round_number=1,
+                    reason="bad",
+                )
+            )
 
         result = kanban.run_convergence(f"target_{i}")
         if result.converged:
             converged += 1
 
     rate = converged / total
-    assert rate >= 0.8, f"Convergence rate {rate:.0%} is below 80% ({converged}/{total})"
+    assert (
+        rate >= 0.8
+    ), f"Convergence rate {rate:.0%} is below 80% ({converged}/{total})"
 
 
 # ---------------------------------------------------------------------------
 # TC-PAP-02: Interception rate = 100%
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_paper_interception_rate(tmp_path):
@@ -416,25 +501,30 @@ async def test_paper_interception_rate(tmp_path):
 # TC-PAP-03: Lossless handoff -- snapshot restore preserves state
 # ---------------------------------------------------------------------------
 
+
 def test_paper_lossless_handoff():
     """TC-PAP-03: Snapshot save/load produces identical state."""
     kanban = StateKanban()
-    kanban.register_viewport(ViewportSpec(
-        role="coder",
-        visible_signal_types=[SignalType.INTENT, SignalType.ERROR],
-        visible_artifact_types=[ArtifactType.CODE],
-        visible_target_patterns=["*"],
-        max_tokens=4000,
-    ))
+    kanban.register_viewport(
+        ViewportSpec(
+            role="coder",
+            visible_signal_types=[SignalType.INTENT, SignalType.ERROR],
+            visible_artifact_types=[ArtifactType.CODE],
+            visible_target_patterns=["*"],
+            max_tokens=4000,
+        )
+    )
 
-    kanban.fluid.write_signal(IntentSignal(
-        signal_id=make_signal_id(),
-        author_role="user",
-        target_id="task_root",
-        payload={"intent": "test"},
-        timestamp=now_utc(),
-        round_number=1,
-    ))
+    kanban.fluid.write_signal(
+        IntentSignal(
+            signal_id=make_signal_id(),
+            author_role="user",
+            target_id="task_root",
+            payload={"intent": "test"},
+            timestamp=now_utc(),
+            round_number=1,
+        )
+    )
 
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, "handoff.json")
@@ -443,8 +533,9 @@ def test_paper_lossless_handoff():
 
     orig_signals = list(kanban.fluid.read_signals())
     loaded_signals = list(loaded.fluid.read_signals())
-    assert len(loaded_signals) == len(orig_signals), \
-        "Signal count should match after lossless handoff"
+    assert len(loaded_signals) == len(
+        orig_signals
+    ), "Signal count should match after lossless handoff"
 
     orig_spec = kanban.get_viewport_spec("coder")
     loaded_spec = loaded.get_viewport_spec("coder")

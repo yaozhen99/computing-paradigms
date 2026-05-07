@@ -20,10 +20,10 @@ from statekanban.core.registry import ToolRegistry
 from statekanban.adapters.mock_adapter import MockLLMAdapter
 from statekanban.tools.call_llm import create_call_llm_tool
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def adapter():
@@ -49,14 +49,17 @@ def call_llm_tool(adapter):
 # TC-CLL-01: Valid call returns structured result
 # ---------------------------------------------------------------------------
 
+
 class TestCallLLMSuccess:
 
     @pytest.mark.asyncio
     async def test_valid_call_returns_structured_result(self, call_llm_tool):
         """TC-CLL-01: Valid call returns success dict."""
-        result = await call_llm_tool({
-            "messages": [{"role": "user", "content": "hello"}],
-        })
+        result = await call_llm_tool(
+            {
+                "messages": [{"role": "user", "content": "hello"}],
+            }
+        )
         assert result["success"] is True
         assert "output" in result
         assert "content" in result["output"]
@@ -64,9 +67,11 @@ class TestCallLLMSuccess:
     @pytest.mark.asyncio
     async def test_valid_call_with_llm_messages(self, call_llm_tool):
         """Valid call with LLMMessage objects."""
-        result = await call_llm_tool({
-            "messages": [LLMMessage(role="user", content="write code")],
-        })
+        result = await call_llm_tool(
+            {
+                "messages": [LLMMessage(role="user", content="write code")],
+            }
+        )
         assert result["success"] is True
 
 
@@ -74,11 +79,13 @@ class TestCallLLMSuccess:
 # TC-CLL-02: Adapter exception returns error dict
 # ---------------------------------------------------------------------------
 
+
 class TestCallLLMError:
 
     @pytest.mark.asyncio
     async def test_adapter_exception_returns_error_dict(self):
         """TC-CLL-02: Adapter exception returns error dict."""
+
         class FailingAdapter:
             async def complete(self, messages, **kwargs):
                 raise RuntimeError("LLM service unavailable")
@@ -95,31 +102,37 @@ class TestCallLLMError:
 # TC-CLL-03..04: Null bytes
 # ---------------------------------------------------------------------------
 
+
 class TestCallLLMNullBytes:
 
     @pytest.mark.asyncio
     async def test_null_bytes_in_message_content_rejected(self, call_llm_tool):
         """TC-CLL-03: Null bytes in message content rejected."""
         with pytest.raises(ToolRegistryError) as exc_info:
-            await call_llm_tool({
-                "messages": [{"role": "user", "content": "hello\x00world"}],
-            })
+            await call_llm_tool(
+                {
+                    "messages": [{"role": "user", "content": "hello\x00world"}],
+                }
+            )
         assert exc_info.value.error_code == "SK_TR_004"
 
     @pytest.mark.asyncio
     async def test_null_bytes_in_nested_dict_rejected(self, call_llm_tool):
         """TC-CLL-04: Null bytes in nested structures rejected."""
         with pytest.raises(ToolRegistryError) as exc_info:
-            await call_llm_tool({
-                "messages": [{"role": "user", "content": "ok"}],
-                "extra_data": {"key": "val\x00ue"},
-            })
+            await call_llm_tool(
+                {
+                    "messages": [{"role": "user", "content": "ok"}],
+                    "extra_data": {"key": "val\x00ue"},
+                }
+            )
         assert exc_info.value.error_code == "SK_TR_004"
 
 
 # ---------------------------------------------------------------------------
 # TC-CLL-05: Audit log
 # ---------------------------------------------------------------------------
+
 
 class TestCallLLMAudit:
 
@@ -131,7 +144,11 @@ class TestCallLLMAudit:
             ToolDef(
                 name="call_llm",
                 description="Invoke LLM",
-                param_schema={"type": "object", "properties": {"messages": {"type": "array"}}, "required": ["messages"]},
+                param_schema={
+                    "type": "object",
+                    "properties": {"messages": {"type": "array"}},
+                    "required": ["messages"],
+                },
                 required_permissions={"all_roles"},
                 timeout_seconds=30.0,
             ),
@@ -154,34 +171,40 @@ class TestCallLLMAudit:
 # TC-CLL-06: Message conversion
 # ---------------------------------------------------------------------------
 
+
 class TestCallLLMMessageConversion:
 
     @pytest.mark.asyncio
     async def test_raw_dict_messages_converted(self, call_llm_tool):
         """TC-CLL-06: Raw dict messages are converted to LLMMessage."""
-        result = await call_llm_tool({
-            "messages": [
-                {"role": "system", "content": "You are a coder."},
-                {"role": "user", "content": "Write a function"},
-            ],
-        })
+        result = await call_llm_tool(
+            {
+                "messages": [
+                    {"role": "system", "content": "You are a coder."},
+                    {"role": "user", "content": "Write a function"},
+                ],
+            }
+        )
         assert result["success"] is True
 
     @pytest.mark.asyncio
     async def test_mixed_message_types(self, call_llm_tool):
         """Mixed LLMMessage and dict messages are handled."""
-        result = await call_llm_tool({
-            "messages": [
-                LLMMessage(role="system", content="You are a reviewer."),
-                {"role": "user", "content": "Review this code"},
-            ],
-        })
+        result = await call_llm_tool(
+            {
+                "messages": [
+                    LLMMessage(role="system", content="You are a reviewer."),
+                    {"role": "user", "content": "Review this code"},
+                ],
+            }
+        )
         assert result["success"] is True
 
 
 # ---------------------------------------------------------------------------
 # TC-CLL-07: Factory
 # ---------------------------------------------------------------------------
+
 
 class TestCallLLMFactory:
 

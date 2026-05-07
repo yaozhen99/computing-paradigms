@@ -35,7 +35,9 @@ def _make_code_artifact(path: str = "output.py", content: str = "x = 1") -> Arti
     )
 
 
-def _make_config_artifact(path: str = "config.json", content: str = '{"a":1}') -> Artifact:
+def _make_config_artifact(
+    path: str = "config.json", content: str = '{"a":1}'
+) -> Artifact:
     return Artifact(
         seq_no=0,
         artifact_type=ArtifactType.CONFIG,

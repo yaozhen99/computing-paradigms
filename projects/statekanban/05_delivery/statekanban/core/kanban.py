@@ -24,10 +24,10 @@ from statekanban.core.errors import (
     SnapshotIntegrityError,
 )
 
-
 # ---------------------------------------------------------------------------
 # Enumerations
 # ---------------------------------------------------------------------------
+
 
 class SignalType(Enum):
     INTENT = "intent"
@@ -52,6 +52,7 @@ class ProcessState(Enum):
 # ---------------------------------------------------------------------------
 # Signal dataclasses
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class Signal:
@@ -153,6 +154,7 @@ class ErrorSignal(Signal):
 # Artifact
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class Artifact:
     """Immutable artifact stored in CrystalZone."""
@@ -196,6 +198,7 @@ class Artifact:
 # AuditEntry
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class AuditEntry:
     """Append-only audit log entry."""
@@ -233,6 +236,7 @@ class AuditEntry:
 # ViewportSpec
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class ViewportSpec:
     """Defines what a role can see in the kanban."""
@@ -242,9 +246,13 @@ class ViewportSpec:
     visible_artifact_types: list[ArtifactType]
     visible_target_patterns: list[str]
     max_tokens: int = 2000
-    priority_order: list[str] = field(default_factory=lambda: [
-        "role_relevant", "dependency_upstream", "global_summary",
-    ])
+    priority_order: list[str] = field(
+        default_factory=lambda: [
+            "role_relevant",
+            "dependency_upstream",
+            "global_summary",
+        ]
+    )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -261,18 +269,26 @@ class ViewportSpec:
         return cls(
             role=data["role"],
             visible_signal_types=[SignalType(v) for v in data["visible_signal_types"]],
-            visible_artifact_types=[ArtifactType(v) for v in data["visible_artifact_types"]],
+            visible_artifact_types=[
+                ArtifactType(v) for v in data["visible_artifact_types"]
+            ],
             visible_target_patterns=data["visible_target_patterns"],
             max_tokens=data.get("max_tokens", 2000),
-            priority_order=data.get("priority_order", [
-                "role_relevant", "dependency_upstream", "global_summary",
-            ]),
+            priority_order=data.get(
+                "priority_order",
+                [
+                    "role_relevant",
+                    "dependency_upstream",
+                    "global_summary",
+                ],
+            ),
         )
 
 
 # ---------------------------------------------------------------------------
 # ProcessInfo
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ProcessInfo:
@@ -293,7 +309,9 @@ class ProcessInfo:
             "state": self.state.value,
             "tool_permits": sorted(self.tool_permits),
             "viewport_spec": self.viewport_spec.to_dict(),
-            "heartbeat_at": self.heartbeat_at.isoformat() if self.heartbeat_at else None,
+            "heartbeat_at": (
+                self.heartbeat_at.isoformat() if self.heartbeat_at else None
+            ),
             "last_signal_id": self.last_signal_id,
         }
 
@@ -317,6 +335,7 @@ class ProcessInfo:
 # ---------------------------------------------------------------------------
 # ToolDef
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class ToolDef:
@@ -344,6 +363,7 @@ class ToolDef:
 # LLM types
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class LLMMessage:
     """A single message in an LLM conversation."""
@@ -369,6 +389,7 @@ class LLMResponse:
 # CollisionResult
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class CollisionResult:
     """Result of a collision detection check."""
@@ -381,6 +402,7 @@ class CollisionResult:
 # ---------------------------------------------------------------------------
 # ConvergenceResult
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ConvergenceResult:
@@ -396,6 +418,7 @@ class ConvergenceResult:
 # ---------------------------------------------------------------------------
 # FluidZone
 # ---------------------------------------------------------------------------
+
 
 class FluidZone:
     """Mutable signal area with collision detection.
@@ -468,7 +491,9 @@ class FluidZone:
         if not target_signals:
             return CollisionResult(has_collision=False, signals=[], is_resolved=True)
 
-        intent_signals = [s for s in target_signals if s.signal_type == SignalType.INTENT]
+        intent_signals = [
+            s for s in target_signals if s.signal_type == SignalType.INTENT
+        ]
         veto_signals = [s for s in target_signals if s.signal_type == SignalType.VETO]
 
         if not veto_signals:
@@ -493,13 +518,13 @@ class FluidZone:
         Used during convergence to clear stale signals before re-injection.
         """
         self._signals = [
-            s for s in self._signals
+            s
+            for s in self._signals
             if not (s.target_id == target_id and s.round_number >= round_number_ge)
         ]
         # Rebuild index
         self._signal_index = {
-            (s.target_id, s.signal_type.value, s.author_role): s
-            for s in self._signals
+            (s.target_id, s.signal_type.value, s.author_role): s for s in self._signals
         }
 
     def _validate_signal(self, signal: Signal) -> None:
@@ -541,6 +566,7 @@ class FluidZone:
 # ---------------------------------------------------------------------------
 # CrystalZone
 # ---------------------------------------------------------------------------
+
 
 class CrystalZone:
     """Append-only artifact store.
@@ -634,12 +660,15 @@ class CrystalZone:
         for item in data["artifacts"]:
             artifact = Artifact.from_dict(item)
             self._artifacts[artifact.seq_no] = artifact
-        self._next_seq_no = data.get("next_seq_no", max(self._artifacts.keys(), default=0) + 1)
+        self._next_seq_no = data.get(
+            "next_seq_no", max(self._artifacts.keys(), default=0) + 1
+        )
 
 
 # ---------------------------------------------------------------------------
 # AuditZone
 # ---------------------------------------------------------------------------
+
 
 class AuditZone:
     """Append-only audit log."""
@@ -714,6 +743,7 @@ class AuditZone:
 # ---------------------------------------------------------------------------
 # StateKanban (facade)
 # ---------------------------------------------------------------------------
+
 
 class StateKanban:
     """Facade over FluidZone + CrystalZone + AuditZone + ViewportIndex."""
@@ -853,6 +883,7 @@ class StateKanban:
 # ---------------------------------------------------------------------------
 # Utility: create signals
 # ---------------------------------------------------------------------------
+
 
 def make_signal_id() -> str:
     """Generate a new UUID4 signal ID."""

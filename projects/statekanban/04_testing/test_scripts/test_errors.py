@@ -77,47 +77,50 @@ from statekanban.core.errors import (
 from statekanban.core.kanban import LLMMessage
 from statekanban.adapters.codex_adapter import CodexAdapter
 
-
 # ---------------------------------------------------------------------------
 # R1/R2 Error Codes (regression)
 # ---------------------------------------------------------------------------
 
+
 class TestR1R2ErrorCodes:
     """Regression: R1/R2 error codes."""
 
-    @pytest.mark.parametrize("error_class,expected_code", [
-        (InvalidSignalError, "SK_FZ_001"),
-        (SignalCollisionError, "SK_FZ_002"),
-        (ConvergenceTimeoutError, "SK_FZ_003"),
-        (ArtifactConflictError, "SK_CZ_001"),
-        (AppendOnlyViolationError, "SK_CZ_002"),
-        (AuditWriteError, "SK_AZ_001"),
-        (InvalidViewportSpecError, "SK_VS_001"),
-        (SliceOverflowError, "SK_VS_002"),
-        (SyntaxCheckError, "SK_OV_001"),
-        (TypeCheckError, "SK_OV_002"),
-        (AtomicWriteError, "SK_OV_004"),
-        (HumanGateRejectedError, "SK_OV_005"),
-        (PermissionDeniedError, "SK_TR_001"),
-        (ToolNotFoundError, "SK_TR_002"),
-        (ToolTimeoutError, "SK_TR_003"),
-        (InvalidStateTransitionError, "SK_PM_001"),
-        (SelfTerminationError, "SK_PM_002"),
-        (HeartbeatTimeoutError, "SK_PM_003"),
-        (HandoffError, "SK_PM_004"),
-        (SubscriptionError, "SK_MB_001"),
-        (SyncCallTimeoutError, "SK_MB_002"),
-        (LLMRateLimitError, "SK_LLM_001"),
-        (LLMAuthError, "SK_LLM_002"),
-        (LLMResponseParseError, "SK_LLM_003"),
-        (SnapshotIntegrityError, "SK_SN_001"),
-        (SnapshotWriteError, "SK_SN_002"),
-        (CircuitBreakerError, "SK_EN_001"),
-        (SignalRoutingError, "SK_EN_002"),
-        (ParseRecoveryError, "SK_EN_003"),
-        (CodexNotAvailableError, "SK_CX_001"),
-        (CodexExecutionError, "SK_CX_002"),
-    ])
+    @pytest.mark.parametrize(
+        "error_class,expected_code",
+        [
+            (InvalidSignalError, "SK_FZ_001"),
+            (SignalCollisionError, "SK_FZ_002"),
+            (ConvergenceTimeoutError, "SK_FZ_003"),
+            (ArtifactConflictError, "SK_CZ_001"),
+            (AppendOnlyViolationError, "SK_CZ_002"),
+            (AuditWriteError, "SK_AZ_001"),
+            (InvalidViewportSpecError, "SK_VS_001"),
+            (SliceOverflowError, "SK_VS_002"),
+            (SyntaxCheckError, "SK_OV_001"),
+            (TypeCheckError, "SK_OV_002"),
+            (AtomicWriteError, "SK_OV_004"),
+            (HumanGateRejectedError, "SK_OV_005"),
+            (PermissionDeniedError, "SK_TR_001"),
+            (ToolNotFoundError, "SK_TR_002"),
+            (ToolTimeoutError, "SK_TR_003"),
+            (InvalidStateTransitionError, "SK_PM_001"),
+            (SelfTerminationError, "SK_PM_002"),
+            (HeartbeatTimeoutError, "SK_PM_003"),
+            (HandoffError, "SK_PM_004"),
+            (SubscriptionError, "SK_MB_001"),
+            (SyncCallTimeoutError, "SK_MB_002"),
+            (LLMRateLimitError, "SK_LLM_001"),
+            (LLMAuthError, "SK_LLM_002"),
+            (LLMResponseParseError, "SK_LLM_003"),
+            (SnapshotIntegrityError, "SK_SN_001"),
+            (SnapshotWriteError, "SK_SN_002"),
+            (CircuitBreakerError, "SK_EN_001"),
+            (SignalRoutingError, "SK_EN_002"),
+            (ParseRecoveryError, "SK_EN_003"),
+            (CodexNotAvailableError, "SK_CX_001"),
+            (CodexExecutionError, "SK_CX_002"),
+        ],
+    )
     def test_error_code(self, error_class, expected_code):
         instance = error_class("test message")
         assert instance.error_code == expected_code
@@ -126,6 +129,7 @@ class TestR1R2ErrorCodes:
 # ---------------------------------------------------------------------------
 # TC-ERR-01..02: SK_CX_003 — CodexTimeoutError
 # ---------------------------------------------------------------------------
+
 
 class TestSKCX003:
 
@@ -149,6 +153,7 @@ class TestSKCX003:
 # TC-ERR-03..04: SK_EN_004 — ValveReworkLoopError
 # ---------------------------------------------------------------------------
 
+
 class TestSKEN004:
 
     def test_valve_rework_loop_error_code(self):
@@ -171,6 +176,7 @@ class TestSKEN004:
 # TC-ERR-05: SK_TR_004
 # ---------------------------------------------------------------------------
 
+
 class TestSKTR004:
 
     def test_tool_registry_error_sk_tr_004(self):
@@ -186,6 +192,7 @@ class TestSKTR004:
 # ---------------------------------------------------------------------------
 # TC-ERR-06: CodexAdapter null bytes
 # ---------------------------------------------------------------------------
+
 
 class TestCodexNullBytes:
 
@@ -216,12 +223,14 @@ class TestCodexNullBytes:
 # TC-ERR-07: call_codex null bytes
 # ---------------------------------------------------------------------------
 
+
 class TestCallCodexNullBytes:
 
     @pytest.mark.asyncio
     async def test_call_codex_null_bytes_returns_error(self):
         """TC-ERR-07: call_codex returns SK_TR_004 error dict."""
         from statekanban.tools.call_codex import create_call_codex_tool
+
         adapter = CodexAdapter()
         tool = create_call_codex_tool(adapter)
 
@@ -234,6 +243,7 @@ class TestCallCodexNullBytes:
 # Error code format validation
 # ---------------------------------------------------------------------------
 
+
 class TestErrorCodeFormat:
 
     def test_error_code_pattern(self):
@@ -245,7 +255,9 @@ class TestErrorCodeFormat:
             ToolRegistryError("test", error_code="SK_TR_004"),
         ]
         for err in test_errors:
-            assert pattern.match(err.error_code), f"Error code {err.error_code} doesn't match"
+            assert pattern.match(
+                err.error_code
+            ), f"Error code {err.error_code} doesn't match"
 
     def test_http_analogy_range(self):
         """HTTP analogies are valid status codes."""

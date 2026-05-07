@@ -25,10 +25,10 @@ from statekanban.core.message_bus import MessageBus
 from statekanban.core.process import ProcessManager
 from statekanban.engine.router import SignalRouter
 
-
 # ---------------------------------------------------------------------------
 # TC-SR-001: IntentSignal from "user" -> "coder"
 # ---------------------------------------------------------------------------
+
 
 class TestRouterIntentFromUser:
     """TC-SR-001."""
@@ -49,6 +49,7 @@ class TestRouterIntentFromUser:
 # TC-SR-002: IntentSignal from "coder" -> "reviewer"
 # ---------------------------------------------------------------------------
 
+
 class TestRouterIntentFromCoder:
     """TC-SR-002."""
 
@@ -67,6 +68,7 @@ class TestRouterIntentFromCoder:
 # ---------------------------------------------------------------------------
 # TC-SR-003: VetoSignal from "reviewer" -> "coder"
 # ---------------------------------------------------------------------------
+
 
 class TestRouterVetoFromReviewer:
     """TC-SR-003."""
@@ -87,6 +89,7 @@ class TestRouterVetoFromReviewer:
 # ---------------------------------------------------------------------------
 # TC-SR-004: ErrorSignal from "OutputValve" -> "coder"
 # ---------------------------------------------------------------------------
+
 
 class TestRouterErrorFromValve:
     """TC-SR-004."""
@@ -109,6 +112,7 @@ class TestRouterErrorFromValve:
 # TC-SR-005: ErrorSignal from "ResponseParser" -> "coder"
 # ---------------------------------------------------------------------------
 
+
 class TestRouterErrorFromParser:
     """TC-SR-005."""
 
@@ -129,6 +133,7 @@ class TestRouterErrorFromParser:
 # ---------------------------------------------------------------------------
 # TC-SR-006: ErrorSignal from "ToolRegistry" -> "coder"
 # ---------------------------------------------------------------------------
+
 
 class TestRouterErrorFromToolRegistry:
     """TC-SR-006."""
@@ -151,6 +156,7 @@ class TestRouterErrorFromToolRegistry:
 # TC-SR-007: IntentSignal from "reviewer" -> None
 # ---------------------------------------------------------------------------
 
+
 class TestRouterIntentFromReviewer:
     """TC-SR-007."""
 
@@ -169,6 +175,7 @@ class TestRouterIntentFromReviewer:
 # ---------------------------------------------------------------------------
 # TC-SR-008: Unknown combinations -> None
 # ---------------------------------------------------------------------------
+
 
 class TestRouterUnknownCombinations:
     """TC-SR-008."""
@@ -213,6 +220,7 @@ class TestRouterUnknownCombinations:
 # ---------------------------------------------------------------------------
 # get_pending_targets
 # ---------------------------------------------------------------------------
+
 
 class TestRouterGetPendingTargets:
     """get_pending_targets returns list."""

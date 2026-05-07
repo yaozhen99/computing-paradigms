@@ -37,7 +37,11 @@ from statekanban.adapters.mock_adapter import (
     MockCoderBehavior,
 )
 from statekanban.engine.engine import Engine
-from statekanban.engine.response_parser import ResponseParser, ParsedResponse, ParsedResponseType
+from statekanban.engine.response_parser import (
+    ResponseParser,
+    ParsedResponse,
+    ParsedResponseType,
+)
 from statekanban.engine.convergence import ConvergenceDetector, ConvergenceCheckResult
 from statekanban.engine.scheduler import RoleScheduler
 from statekanban.engine.circuit_breaker import CircuitBreaker
@@ -46,10 +50,10 @@ from statekanban.engine.router import SignalRouter
 from statekanban.config import Config
 from statekanban.tools.call_llm import create_call_llm_tool
 
-
 # ---------------------------------------------------------------------------
 # R2 Regression: Engine basic tests
 # ---------------------------------------------------------------------------
+
 
 class TestEngineBasicR2:
     """Regression: R2 engine lifecycle tests."""
@@ -72,6 +76,7 @@ class TestEngineBasicR2:
 # ---------------------------------------------------------------------------
 # TC-ENG-01..02: Registry dispatch vs direct fallback
 # ---------------------------------------------------------------------------
+
 
 class TestEngineRegistryDispatch:
 
@@ -118,19 +123,22 @@ class TestEngineRegistryDispatch:
 # TC-ENG-03: build_context
 # ---------------------------------------------------------------------------
 
+
 class TestEngineBuildContext:
 
     def test_build_context_formats_slice(self, engine, kanban):
         """TC-ENG-03: _build_context formats ViewportSlice correctly."""
         # Add some signals
-        kanban.fluid.write_signal(IntentSignal(
-            signal_id=make_signal_id(),
-            author_role="coder",
-            target_id="task_root",
-            payload={"action": "implement"},
-            timestamp=now_utc(),
-            round_number=0,
-        ))
+        kanban.fluid.write_signal(
+            IntentSignal(
+                signal_id=make_signal_id(),
+                author_role="coder",
+                target_id="task_root",
+                payload={"action": "implement"},
+                timestamp=now_utc(),
+                round_number=0,
+            )
+        )
 
         slice_data = engine._slicer.slice("coder")
         context = engine._build_context("coder", slice_data)
@@ -142,6 +150,7 @@ class TestEngineBuildContext:
 # ---------------------------------------------------------------------------
 # TC-ENG-04..05: Valve rework loop detection
 # ---------------------------------------------------------------------------
+
 
 class TestEngineReworkLoop:
 
@@ -155,12 +164,16 @@ class TestEngineReworkLoop:
         engine._consecutive_valve_failures = 3
         # When _crystalize_and_write encounters this condition, it raises
         # ValveReworkLoopError. We test the condition directly:
-        assert engine._consecutive_valve_failures >= engine._max_consecutive_valve_failures
+        assert (
+            engine._consecutive_valve_failures >= engine._max_consecutive_valve_failures
+        )
 
     def test_counter_below_threshold(self, engine):
         """TC-ENG-04c: Counter below 3 does not trigger."""
         engine._consecutive_valve_failures = 2
-        assert engine._consecutive_valve_failures < engine._max_consecutive_valve_failures
+        assert (
+            engine._consecutive_valve_failures < engine._max_consecutive_valve_failures
+        )
 
     def test_valve_success_resets_counter(self, engine):
         """TC-ENG-05: Valve success resets consecutive failure counter to 0."""
@@ -175,18 +188,21 @@ class TestEngineReworkLoop:
 # R2 Regression: Sub-component tests
 # ---------------------------------------------------------------------------
 
+
 class TestResponseParserR2:
 
     def test_parse_artifact_response(self, parser):
         """Parse artifact JSON response."""
         response = LLMResponse(
-            content=json.dumps({
-                "type": "artifact",
-                "target_id": "task_1",
-                "artifact_path": "output.py",
-                "artifact_content": "x = 1",
-                "artifact_type": "code",
-            }),
+            content=json.dumps(
+                {
+                    "type": "artifact",
+                    "target_id": "task_1",
+                    "artifact_path": "output.py",
+                    "artifact_content": "x = 1",
+                    "artifact_type": "code",
+                }
+            ),
             finish_reason="end_turn",
         )
 
@@ -196,11 +212,13 @@ class TestResponseParserR2:
     def test_parse_intent_response(self, parser):
         """Parse intent JSON response."""
         response = LLMResponse(
-            content=json.dumps({
-                "type": "intent",
-                "target_id": "task_1",
-                "payload": {"action": "approve"},
-            }),
+            content=json.dumps(
+                {
+                    "type": "intent",
+                    "target_id": "task_1",
+                    "payload": {"action": "approve"},
+                }
+            ),
             finish_reason="end_turn",
         )
 
@@ -210,11 +228,13 @@ class TestResponseParserR2:
     def test_parse_veto_response(self, parser):
         """Parse veto JSON response."""
         response = LLMResponse(
-            content=json.dumps({
-                "type": "veto",
-                "target_id": "task_1",
-                "reason": "bad code",
-            }),
+            content=json.dumps(
+                {
+                    "type": "veto",
+                    "target_id": "task_1",
+                    "reason": "bad code",
+                }
+            ),
             finish_reason="end_turn",
         )
 
@@ -236,14 +256,16 @@ class TestConvergenceDetectorR2:
         detector = ConvergenceDetector(kanban)
         # Write approve intents
         for i in range(3):
-            kanban.fluid.write_signal(IntentSignal(
-                signal_id=make_signal_id(),
-                author_role="reviewer",
-                target_id="task_1",
-                payload={"action": "approve"},
-                timestamp=now_utc(),
-                round_number=1,
-            ))
+            kanban.fluid.write_signal(
+                IntentSignal(
+                    signal_id=make_signal_id(),
+                    author_role="reviewer",
+                    target_id="task_1",
+                    payload={"action": "approve"},
+                    timestamp=now_utc(),
+                    round_number=1,
+                )
+            )
 
         result = detector.check("task_1", 1)
         assert isinstance(result, ConvergenceCheckResult)
@@ -252,23 +274,27 @@ class TestConvergenceDetectorR2:
         """Veto signal prevents consensus."""
         detector = ConvergenceDetector(kanban)
 
-        kanban.fluid.write_signal(IntentSignal(
-            signal_id=make_signal_id(),
-            author_role="reviewer",
-            target_id="task_1",
-            payload={"action": "approve"},
-            timestamp=now_utc(),
-            round_number=1,
-        ))
-        kanban.fluid.write_signal(VetoSignal(
-            signal_id=make_signal_id(),
-            author_role="reviewer",
-            target_id="task_1",
-            payload={"action": "reject"},
-            timestamp=now_utc(),
-            round_number=1,
-            reason="bad",
-        ))
+        kanban.fluid.write_signal(
+            IntentSignal(
+                signal_id=make_signal_id(),
+                author_role="reviewer",
+                target_id="task_1",
+                payload={"action": "approve"},
+                timestamp=now_utc(),
+                round_number=1,
+            )
+        )
+        kanban.fluid.write_signal(
+            VetoSignal(
+                signal_id=make_signal_id(),
+                author_role="reviewer",
+                target_id="task_1",
+                payload={"action": "reject"},
+                timestamp=now_utc(),
+                round_number=1,
+                reason="bad",
+            )
+        )
 
         result = detector.check("task_1", 1)
         assert not result.converged

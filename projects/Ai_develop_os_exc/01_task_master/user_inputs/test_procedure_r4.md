@@ -243,11 +243,11 @@ python -m statekanban.cli.main --help
 
 | 阶段 | 用例 | 结果 | 备注 |
 |------|------|------|------|
-| 一 | 自动化回归 | ⬜ | |
-| 二 | TC-MANUAL-001 正常收敛 | ⬜ | |
-| 二 | TC-MANUAL-002 碰撞收敛 | ⬜ | |
-| 二 | TC-MANUAL-003 拦截率 | ⬜ | |
-| 三 | TC-MANUAL-004 快照恢复 | ⬜ | |
-| 三 | TC-MANUAL-004b 损坏文件 | ⬜ | |
-| 四 | 讯飞 MaaS 烟雾 | ⬜ | |
-| 五 | CLI 验证 | ⬜ | |
+| 一 | 自动化回归 | ✅ | 381 项全部通过，0 failed |
+| 二 | TC-MANUAL-001 正常收敛 | ⚠️ | converged=False, rounds=5, forced_terminate=True。DEV-002 影响：tester/integrator 无专属预设，收敛检测无法通过 |
+| 二 | TC-MANUAL-002 碰撞收敛 | ⚠️ | converged=False, vetos=0。DEV-002 影响：第二次 set_behavior_mode 清除前一次状态；tester/integrator 无专属预设 |
+| 二 | TC-MANUAL-003 拦截率 | ✅ | converged=False, forced_terminate=True, artifacts=0。符合预期（持续否决→强制终止） |
+| 三 | TC-MANUAL-004 快照恢复 | ✅ | 信号数一致，保存/恢复正常 |
+| 三 | TC-MANUAL-004b 损坏文件 | ✅ | 正确抛出 SnapshotIntegrityError |
+| 四 | 讯飞 MaaS 烟雾 | ✅ | API 返回有效响应，finish_reason=end_turn |
+| 五 | CLI 验证 | ✅ | 输出帮助信息，无 ImportError |

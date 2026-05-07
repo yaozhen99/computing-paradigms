@@ -43,38 +43,44 @@ class TestFluidZoneWrite:
     def test_empty_signal_id_rejected(self, fluid):
         # TC-FZ-004
         with pytest.raises(InvalidSignalError):
-            fluid.write_signal(IntentSignal(
-                signal_id="",
-                author_role="coder",
-                target_id="t",
-                payload={},
-                timestamp=now_utc(),
-                round_number=0,
-            ))
+            fluid.write_signal(
+                IntentSignal(
+                    signal_id="",
+                    author_role="coder",
+                    target_id="t",
+                    payload={},
+                    timestamp=now_utc(),
+                    round_number=0,
+                )
+            )
 
     def test_empty_author_role_rejected(self, fluid):
         # TC-FZ-005
         with pytest.raises(InvalidSignalError):
-            fluid.write_signal(IntentSignal(
-                signal_id=make_signal_id(),
-                author_role="",
-                target_id="t",
-                payload={},
-                timestamp=now_utc(),
-                round_number=0,
-            ))
+            fluid.write_signal(
+                IntentSignal(
+                    signal_id=make_signal_id(),
+                    author_role="",
+                    target_id="t",
+                    payload={},
+                    timestamp=now_utc(),
+                    round_number=0,
+                )
+            )
 
     def test_empty_target_id_rejected(self, fluid):
         # TC-FZ-006
         with pytest.raises(InvalidSignalError):
-            fluid.write_signal(IntentSignal(
-                signal_id=make_signal_id(),
-                author_role="coder",
-                target_id="",
-                payload={},
-                timestamp=now_utc(),
-                round_number=0,
-            ))
+            fluid.write_signal(
+                IntentSignal(
+                    signal_id=make_signal_id(),
+                    author_role="coder",
+                    target_id="",
+                    payload={},
+                    timestamp=now_utc(),
+                    round_number=0,
+                )
+            )
 
     def test_invalid_signal_type_rejected(self):
         # TC-FZ-007
@@ -166,9 +172,15 @@ class TestFluidZoneClear:
         # TC-FZ-018
         # Use different author_roles so the TOCTOU-fix (index overwrite)
         # does not collapse signals into one entry.
-        fluid.write_signal(make_intent(target_id="A", round_number=0, author_role="coder"))
-        fluid.write_signal(make_intent(target_id="A", round_number=1, author_role="reviewer"))
-        fluid.write_signal(make_intent(target_id="A", round_number=2, author_role="tester"))
+        fluid.write_signal(
+            make_intent(target_id="A", round_number=0, author_role="coder")
+        )
+        fluid.write_signal(
+            make_intent(target_id="A", round_number=1, author_role="reviewer")
+        )
+        fluid.write_signal(
+            make_intent(target_id="A", round_number=2, author_role="tester")
+        )
         fluid.clear_signals("A", round_number_ge=2)
         signals = fluid.read_signals(target_id="A")
         rounds = {s.round_number for s in signals}

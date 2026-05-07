@@ -54,9 +54,7 @@ class ConvergenceDetector:
         intent_count = sum(
             1 for s in round_signals if s.signal_type == SignalType.INTENT
         )
-        veto_count = sum(
-            1 for s in round_signals if s.signal_type == SignalType.VETO
-        )
+        veto_count = sum(1 for s in round_signals if s.signal_type == SignalType.VETO)
 
         converged = intent_count > 0 and veto_count == 0
 
@@ -68,7 +66,9 @@ class ConvergenceDetector:
             veto_count=veto_count,
         )
 
-    def check_all_pending(self, current_round: int) -> dict[str, ConvergenceCheckResult]:
+    def check_all_pending(
+        self, current_round: int
+    ) -> dict[str, ConvergenceCheckResult]:
         """Check convergence for all targets that have signals in the current round.
 
         Returns:

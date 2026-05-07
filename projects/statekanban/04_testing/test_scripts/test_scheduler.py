@@ -9,10 +9,10 @@ import pytest
 
 from statekanban.engine.scheduler import RoleScheduler
 
-
 # ---------------------------------------------------------------------------
 # TC-RS-001: Default order
 # ---------------------------------------------------------------------------
+
 
 class TestSchedulerDefault:
     """TC-RS-001."""
@@ -30,6 +30,7 @@ class TestSchedulerDefault:
 # TC-RS-002: Custom order
 # ---------------------------------------------------------------------------
 
+
 class TestSchedulerCustom:
     """TC-RS-002."""
 
@@ -46,6 +47,7 @@ class TestSchedulerCustom:
 # TC-RS-003: order property returns copy
 # ---------------------------------------------------------------------------
 
+
 class TestSchedulerCopy:
     """TC-RS-003."""
 
@@ -58,6 +60,7 @@ class TestSchedulerCopy:
 # ---------------------------------------------------------------------------
 # TC-RS-004: iter_round yields all roles
 # ---------------------------------------------------------------------------
+
 
 class TestSchedulerIterRound:
     """TC-RS-004."""

@@ -62,9 +62,12 @@ class TestMockLLMAdapter:
     @pytest.mark.asyncio
     async def test_set_response(self):
         adapter = MockLLMAdapter()
-        adapter.set_response("coder", [
-            LLMResponse(content="code response", finish_reason="end_turn"),
-        ])
+        adapter.set_response(
+            "coder",
+            [
+                LLMResponse(content="code response", finish_reason="end_turn"),
+            ],
+        )
         msg = [LLMMessage(role="user", content="test")]
         r = await adapter.complete(msg)
         assert r.content == "code response"

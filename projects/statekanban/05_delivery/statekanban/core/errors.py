@@ -23,6 +23,7 @@ class StateKanbanError(Exception):
 # FluidZone errors
 # ---------------------------------------------------------------------------
 
+
 class FluidZoneError(StateKanbanError):
     """Base error for FluidZone operations."""
 
@@ -52,6 +53,7 @@ class ConvergenceTimeoutError(FluidZoneError):
 # CrystalZone errors
 # ---------------------------------------------------------------------------
 
+
 class CrystalZoneError(StateKanbanError):
     """Base error for CrystalZone operations."""
 
@@ -74,6 +76,7 @@ class AppendOnlyViolationError(CrystalZoneError):
 # AuditZone errors
 # ---------------------------------------------------------------------------
 
+
 class AuditZoneError(StateKanbanError):
     """Base error for AuditZone operations."""
 
@@ -88,6 +91,7 @@ class AuditWriteError(AuditZoneError):
 # ---------------------------------------------------------------------------
 # Viewport errors
 # ---------------------------------------------------------------------------
+
 
 class ViewportError(StateKanbanError):
     """Base error for ViewportSlicer operations."""
@@ -110,6 +114,7 @@ class SliceOverflowError(ViewportError):
 # ---------------------------------------------------------------------------
 # OutputValve errors
 # ---------------------------------------------------------------------------
+
 
 class OutputValveError(StateKanbanError):
     """Base error for OutputValve operations."""
@@ -158,6 +163,7 @@ class HumanGateRejectedError(OutputValveError):
 # ToolRegistry errors
 # ---------------------------------------------------------------------------
 
+
 class ToolRegistryError(StateKanbanError):
     """Base error for ToolRegistry operations."""
 
@@ -191,6 +197,7 @@ class ToolTimeoutError(ToolRegistryError):
 # ---------------------------------------------------------------------------
 # ProcessManager errors
 # ---------------------------------------------------------------------------
+
 
 class ProcessManagerError(StateKanbanError):
     """Base error for ProcessManager operations."""
@@ -228,6 +235,7 @@ class HandoffError(ProcessManagerError):
 # MessageBus errors
 # ---------------------------------------------------------------------------
 
+
 class MessageBusError(StateKanbanError):
     """Base error for MessageBus operations."""
 
@@ -249,6 +257,7 @@ class SyncCallTimeoutError(MessageBusError):
 # ---------------------------------------------------------------------------
 # LLM Adapter errors
 # ---------------------------------------------------------------------------
+
 
 class LLMAdapterError(StateKanbanError):
     """Base error for LLM adapter operations."""
@@ -279,6 +288,7 @@ class LLMResponseParseError(LLMAdapterError):
 # Snapshot errors
 # ---------------------------------------------------------------------------
 
+
 class SnapshotError(StateKanbanError):
     """Base error for snapshot operations."""
 
@@ -300,6 +310,7 @@ class SnapshotWriteError(SnapshotError):
 # ---------------------------------------------------------------------------
 # CodexAdapter errors (NEW)
 # ---------------------------------------------------------------------------
+
 
 class CodexAdapterError(StateKanbanError):
     """Base error for CodexAdapter operations."""
@@ -329,6 +340,7 @@ class CodexTimeoutError(CodexAdapterError):
 # ---------------------------------------------------------------------------
 # Engine errors (NEW)
 # ---------------------------------------------------------------------------
+
 
 class EngineError(StateKanbanError):
     """Base error for Engine operations."""

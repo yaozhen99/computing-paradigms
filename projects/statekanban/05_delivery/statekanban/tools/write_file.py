@@ -66,7 +66,11 @@ def create_write_file_tool(valve: OutputValve) -> Any:
                 "path": path,
                 "error": result.error,
                 "validation_results": [
-                    {"passed": v.passed, "validator": v.validator_name, "detail": v.error_detail}
+                    {
+                        "passed": v.passed,
+                        "validator": v.validator_name,
+                        "detail": v.error_detail,
+                    }
                     for v in result.validation_results
                 ],
             }

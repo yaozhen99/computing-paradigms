@@ -33,21 +33,23 @@ from statekanban.snapshot import (
     SnapshotIntegrityError,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
 
+
 def _make_kanban_with_data():
     """Create a StateKanban with some signals."""
     kanban = StateKanban()
-    kanban.register_viewport(ViewportSpec(
-        role="coder",
-        visible_signal_types=[SignalType.INTENT, SignalType.ERROR],
-        visible_artifact_types=[ArtifactType.CODE],
-        visible_target_patterns=["*"],
-        max_tokens=4000,
-    ))
+    kanban.register_viewport(
+        ViewportSpec(
+            role="coder",
+            visible_signal_types=[SignalType.INTENT, SignalType.ERROR],
+            visible_artifact_types=[ArtifactType.CODE],
+            visible_target_patterns=["*"],
+            max_tokens=4000,
+        )
+    )
 
     sig = IntentSignal(
         signal_id=make_signal_id(),
@@ -64,6 +66,7 @@ def _make_kanban_with_data():
 # ---------------------------------------------------------------------------
 # TC-SNP-01: Save to valid path creates file
 # ---------------------------------------------------------------------------
+
 
 def test_save_snapshot_creates_file(tmp_path):
     """TC-SNP-01: save_snapshot writes file to valid path."""
@@ -82,6 +85,7 @@ def test_save_snapshot_creates_file(tmp_path):
 # TC-SNP-02: Creates parent directories
 # ---------------------------------------------------------------------------
 
+
 def test_save_snapshot_creates_parent_dirs(tmp_path):
     """TC-SNP-02: save_snapshot creates missing parent directories."""
     kanban = _make_kanban_with_data()
@@ -95,6 +99,7 @@ def test_save_snapshot_creates_parent_dirs(tmp_path):
 # ---------------------------------------------------------------------------
 # TC-SNP-03: Atomic write (no partial files left)
 # ---------------------------------------------------------------------------
+
 
 def test_save_snapshot_atomic(tmp_path):
     """TC-SNP-03: save_snapshot uses atomic write (no leftover .tmp files)."""
@@ -117,6 +122,7 @@ def test_save_snapshot_atomic(tmp_path):
 # TC-SNP-04: Load valid snapshot
 # ---------------------------------------------------------------------------
 
+
 def test_load_snapshot_valid(tmp_path):
     """TC-SNP-04: load_snapshot reconstructs StateKanban from file."""
     kanban = _make_kanban_with_data()
@@ -129,13 +135,15 @@ def test_load_snapshot_valid(tmp_path):
     # Check signals are preserved
     loaded_signals = list(loaded.fluid.read_signals())
     original_signals = list(kanban.fluid.read_signals())
-    assert len(loaded_signals) == len(original_signals), \
-        f"Signal count mismatch: {len(loaded_signals)} vs {len(original_signals)}"
+    assert len(loaded_signals) == len(
+        original_signals
+    ), f"Signal count mismatch: {len(loaded_signals)} vs {len(original_signals)}"
 
 
 # ---------------------------------------------------------------------------
 # TC-SNP-05: Load missing file raises FileNotFoundError
 # ---------------------------------------------------------------------------
+
 
 def test_load_snapshot_missing_file(tmp_path):
     """TC-SNP-05: load_snapshot raises FileNotFoundError for missing file."""
@@ -148,6 +156,7 @@ def test_load_snapshot_missing_file(tmp_path):
 # ---------------------------------------------------------------------------
 # TC-SNP-06: Load invalid JSON raises SnapshotIntegrityError
 # ---------------------------------------------------------------------------
+
 
 def test_load_snapshot_invalid_json(tmp_path):
     """TC-SNP-06: load_snapshot raises SnapshotIntegrityError for invalid JSON."""
@@ -162,6 +171,7 @@ def test_load_snapshot_invalid_json(tmp_path):
 # ---------------------------------------------------------------------------
 # TC-SNP-07: Checksum mismatch raises SnapshotIntegrityError
 # ---------------------------------------------------------------------------
+
 
 def test_load_snapshot_checksum_mismatch(tmp_path):
     """TC-SNP-07: load_snapshot raises SnapshotIntegrityError for tampered content."""
@@ -189,6 +199,7 @@ def test_load_snapshot_checksum_mismatch(tmp_path):
 # ---------------------------------------------------------------------------
 # TC-SNP-08: Full save->load round-trip
 # ---------------------------------------------------------------------------
+
 
 def test_snapshot_round_trip(tmp_path):
     """TC-SNP-08: Full save->load round-trip preserves all zones."""
@@ -227,6 +238,7 @@ def test_snapshot_round_trip(tmp_path):
 # TC-SNP-09: list_snapshots returns sorted filenames
 # ---------------------------------------------------------------------------
 
+
 def test_list_snapshots_sorted(tmp_path):
     """TC-SNP-09: list_snapshots returns sorted .json filenames."""
     kanban = _make_kanban_with_data()
@@ -246,6 +258,7 @@ def test_list_snapshots_sorted(tmp_path):
 # TC-SNP-10: list_snapshots on missing dir returns empty
 # ---------------------------------------------------------------------------
 
+
 def test_list_snapshots_missing_dir(tmp_path):
     """TC-SNP-10: list_snapshots on missing directory returns empty list."""
     missing = str(tmp_path / "no_such_dir")
@@ -256,6 +269,7 @@ def test_list_snapshots_missing_dir(tmp_path):
 # ---------------------------------------------------------------------------
 # TC-SNP-11: delete_snapshot removes file
 # ---------------------------------------------------------------------------
+
 
 def test_delete_snapshot(tmp_path):
     """TC-SNP-11: delete_snapshot removes the file."""
@@ -273,6 +287,7 @@ def test_delete_snapshot(tmp_path):
 # TC-SNP-12: delete_snapshot on missing file raises
 # ---------------------------------------------------------------------------
 
+
 def test_delete_snapshot_missing(tmp_path):
     """TC-SNP-12: delete_snapshot on missing file raises FileNotFoundError."""
     path = str(tmp_path / "nonexistent.json")
@@ -284,6 +299,7 @@ def test_delete_snapshot_missing(tmp_path):
 # ---------------------------------------------------------------------------
 # TC-SNP-13: SnapshotManager save/load round-trip
 # ---------------------------------------------------------------------------
+
 
 def test_snapshot_manager_round_trip(tmp_path):
     """TC-SNP-13: SnapshotManager.save_snapshot + load_snapshot round-trip."""
@@ -306,9 +322,11 @@ def test_snapshot_manager_round_trip(tmp_path):
 # TC-SNP-14: Null bytes in snapshot path rejected
 # ---------------------------------------------------------------------------
 
+
 def test_snapshot_null_bytes_path(tmp_path):
     """TC-SNP-14: Null bytes in snapshot path should raise an error."""
     from statekanban.core.errors import SnapshotWriteError
+
     kanban = _make_kanban_with_data()
     bad_path = str(tmp_path / "test\x00bad.json")
 

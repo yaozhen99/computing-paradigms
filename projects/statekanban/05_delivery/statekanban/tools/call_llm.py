@@ -73,12 +73,14 @@ class CallLlmTool:
             if isinstance(msg, LLMMessage):
                 messages.append(msg)
             elif isinstance(msg, dict):
-                messages.append(LLMMessage(
-                    role=msg.get("role", "user"),
-                    content=msg.get("content"),
-                    tool_use=msg.get("tool_use"),
-                    tool_result=msg.get("tool_result"),
-                ))
+                messages.append(
+                    LLMMessage(
+                        role=msg.get("role", "user"),
+                        content=msg.get("content"),
+                        tool_use=msg.get("tool_use"),
+                        tool_result=msg.get("tool_result"),
+                    )
+                )
 
         # --- Audit logging ---
         timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -140,6 +142,7 @@ def create_call_llm_tool(adapter: LLMAdapter) -> Callable[[dict[str, Any]], Any]
 # ---------------------------------------------------------------------------
 # Null bytes validation helpers (REQ-008, RR-004)
 # ---------------------------------------------------------------------------
+
 
 def _validate_no_null_bytes(params: dict[str, Any]) -> None:
     """Validate that params contain no null bytes.

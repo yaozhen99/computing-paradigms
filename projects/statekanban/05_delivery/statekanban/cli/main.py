@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sys
 from typing import Any
 
@@ -84,6 +85,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Bypass ToolRegistry for LLM calls (direct adapter, for testing)",
     )
+    drive_p.add_argument(
+        "--project-root",
+        default=None,
+        help="Project root directory (default: current working directory)",
+    )
 
     # --- snapshot sub-command ---
     snap_p = sub.add_parser("snapshot", help="Snapshot management")
@@ -118,6 +124,17 @@ def cmd_drive(args: argparse.Namespace) -> int:
     if args.rounds is not None:
         config.convergence_max_rounds = args.rounds
 
+    # REQ-502: --project-root validation and propagation
+    if args.project_root is not None:
+        if "\x00" in args.project_root:
+            print("Error: --project-root contains null bytes", file=sys.stderr)
+            return 1
+        resolved = os.path.abspath(args.project_root)
+        if not os.path.isdir(resolved):
+            print(f"Project root does not exist: {resolved}")
+            return 1
+        config.project_root = resolved
+
     # Determine MockLLMAdapter mode
     adapter = _create_adapter(args)
 
@@ -125,7 +142,7 @@ def cmd_drive(args: argparse.Namespace) -> int:
     kanban = StateKanban()
     bus = MessageBus(kanban)
     registry = ToolRegistry(kanban)
-    valve = OutputValve(kanban=kanban)
+    valve = OutputValve(kanban=kanban, project_root=config.project_root)
 
     # Set up viewport specs
     specs = _default_viewport_specs()
@@ -259,6 +276,7 @@ def _create_adapter(args: argparse.Namespace) -> Any:
     """
     if args.adapter == "codex":
         from statekanban.adapters.codex_adapter import CodexAdapter
+
         return CodexAdapter()
 
     # Default: MockLLMAdapter
@@ -291,7 +309,11 @@ def _default_viewport_specs() -> dict[str, Any]:
         "reviewer": ViewportSpec(
             role="reviewer",
             visible_signal_types=[SignalType.INTENT, SignalType.VETO, SignalType.ERROR],
-            visible_artifact_types=[ArtifactType.CODE, ArtifactType.CONFIG, ArtifactType.DOC],
+            visible_artifact_types=[
+                ArtifactType.CODE,
+                ArtifactType.CONFIG,
+                ArtifactType.DOC,
+            ],
             visible_target_patterns=["*"],
             max_tokens=2000,
         ),
@@ -305,7 +327,11 @@ def _default_viewport_specs() -> dict[str, Any]:
         "integrator": ViewportSpec(
             role="integrator",
             visible_signal_types=[SignalType.INTENT, SignalType.VETO, SignalType.ERROR],
-            visible_artifact_types=[ArtifactType.CODE, ArtifactType.CONFIG, ArtifactType.TEST],
+            visible_artifact_types=[
+                ArtifactType.CODE,
+                ArtifactType.CONFIG,
+                ArtifactType.TEST,
+            ],
             visible_target_patterns=["*"],
             max_tokens=2000,
         ),

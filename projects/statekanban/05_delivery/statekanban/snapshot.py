@@ -21,10 +21,10 @@ from typing import Any
 from statekanban.core.errors import SnapshotIntegrityError, SnapshotWriteError
 from statekanban.core.kanban import StateKanban
 
-
 # ---------------------------------------------------------------------------
 # Module-level functions
 # ---------------------------------------------------------------------------
+
 
 def save_snapshot(kanban: StateKanban, path: str) -> None:
     """Atomically persist StateKanban to a JSON file.
@@ -107,6 +107,7 @@ def delete_snapshot(path: str) -> None:
 # SnapshotManager class
 # ---------------------------------------------------------------------------
 
+
 class SnapshotManager:
     """Manager for StateKanban snapshot operations.
 
@@ -121,12 +122,19 @@ class SnapshotManager:
         mgr.delete_snapshot("my_snapshot.json")
     """
 
-    def __init__(self, base_dir: str = ".statekanban/snapshots") -> None:
+    def __init__(
+        self,
+        base_dir: str = ".statekanban/snapshots",
+        project_root: str = "",  # REQ-503
+    ) -> None:
         """
         Args:
             base_dir: Directory where snapshots are stored.
+            project_root: Project space root for path resolution (REQ-503).
+                Empty string falls back to os.getcwd() at resolution time.
         """
         self._base_dir = base_dir
+        self._project_root = project_root
 
     def save_snapshot(self, kanban: StateKanban, path: str) -> None:
         """Atomically persist StateKanban to a JSON file.
@@ -163,7 +171,8 @@ class SnapshotManager:
         Returns:
             List of snapshot filenames (not full paths), sorted by name.
         """
-        return list_snapshots(self._base_dir)
+        resolved_base = self._resolve_path("")
+        return list_snapshots(resolved_base)
 
     def delete_snapshot(self, path: str) -> None:
         """Delete a snapshot file.
@@ -179,15 +188,23 @@ class SnapshotManager:
         delete_snapshot(full_path)
 
     def _resolve_path(self, path: str) -> str:
-        """Resolve a path relative to base_dir if not absolute."""
+        """Resolve a path relative to project_root + base_dir if not absolute.
+
+        REQ-503: When project_root is set, base_dir is resolved against
+        project_root first. When project_root is empty, falls back to
+        os.getcwd() for the same behavior as R4.
+        """
         if os.path.isabs(path):
             return path
-        return os.path.join(self._base_dir, path)
+        base = self._project_root if self._project_root else os.getcwd()
+        effective_base = os.path.join(base, self._base_dir)
+        return os.path.join(effective_base, path)
 
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _save_snapshot_atomic(kanban: StateKanban, path: str) -> None:
     """Atomic write of StateKanban to a JSON file.
@@ -237,12 +254,8 @@ def _load_snapshot_from_file(path: str) -> StateKanban:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
     except json.JSONDecodeError as exc:
-        raise SnapshotIntegrityError(
-            f"Snapshot file is not valid JSON: {exc}"
-        ) from exc
+        raise SnapshotIntegrityError(f"Snapshot file is not valid JSON: {exc}") from exc
     except OSError as exc:
-        raise SnapshotIntegrityError(
-            f"Failed to read snapshot file: {exc}"
-        ) from exc
+        raise SnapshotIntegrityError(f"Failed to read snapshot file: {exc}") from exc
 
     return StateKanban.from_json(data)

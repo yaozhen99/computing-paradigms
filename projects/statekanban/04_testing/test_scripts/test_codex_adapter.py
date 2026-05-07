@@ -16,10 +16,10 @@ from statekanban.core.errors import (
     CodexTimeoutError,
 )
 
-
 # ---------------------------------------------------------------------------
 # TC-CX-01..02: Null bytes guard
 # ---------------------------------------------------------------------------
+
 
 class TestCodexAdapterNullBytes:
 
@@ -66,6 +66,7 @@ class TestCodexAdapterNullBytes:
 # TC-CX-03: CodexTimeoutError
 # ---------------------------------------------------------------------------
 
+
 class TestCodexTimeoutError:
 
     def test_error_code_is_sk_cx_003(self):
@@ -86,18 +87,21 @@ class TestCodexTimeoutError:
 # TC-CX-04: Async interface
 # ---------------------------------------------------------------------------
 
+
 class TestCodexAdapterAsync:
 
     def test_complete_is_coroutine_function(self):
         """TC-CX-04: CodexAdapter.complete is an async method."""
         adapter = CodexAdapter()
         import asyncio
+
         assert asyncio.iscoroutinefunction(adapter.complete)
 
 
 # ---------------------------------------------------------------------------
 # TC-CX-05: CodexAdapter configuration
 # ---------------------------------------------------------------------------
+
 
 class TestCodexAdapterConfig:
 

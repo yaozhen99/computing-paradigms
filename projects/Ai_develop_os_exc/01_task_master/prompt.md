@@ -28,7 +28,11 @@
 
 ### 第2步：目录铸造
 
-在 $PROJECT_SPACE（默认 `./projects/<项目名>/`，相对于 `$TOWER_ROOT` 环境变量或当前工作目录）下创建：
+在 $PROJECT_SPACE 下创建。路径解析规则（唯一，无歧义）：
+
+1. 如果设置了环境变量 `$TOWER_ROOT`，则 `$PROJECT_SPACE = $TOWER_ROOT/projects/<项目名>/`
+2. 如果未设置 `$TOWER_ROOT`，则 `$PROJECT_SPACE = <当前工作目录>/projects/<项目名>/`
+3. 不存在其他回退路径。两个条件互斥，不会同时生效
 
 **V2 Agent 模式目录结构**：
 ```

@@ -10,10 +10,10 @@ import pytest
 from statekanban.engine.circuit_breaker import CircuitBreaker
 from statekanban.engine.result import EngineResult
 
-
 # ---------------------------------------------------------------------------
 # TC-CB-001: should_break True (round >= max)
 # ---------------------------------------------------------------------------
+
 
 class TestCircuitBreakerShouldBreak:
     """TC-CB-001."""
@@ -31,6 +31,7 @@ class TestCircuitBreakerShouldBreak:
 # ---------------------------------------------------------------------------
 # TC-CB-002: should_break False (round < max)
 # ---------------------------------------------------------------------------
+
 
 class TestCircuitBreakerShouldNotBreak:
     """TC-CB-002."""
@@ -51,6 +52,7 @@ class TestCircuitBreakerShouldNotBreak:
 # ---------------------------------------------------------------------------
 # TC-CB-003: report
 # ---------------------------------------------------------------------------
+
 
 class TestCircuitBreakerReport:
     """TC-CB-003."""
@@ -75,6 +77,7 @@ class TestCircuitBreakerReport:
 # TC-CB-004: Custom max_rounds
 # ---------------------------------------------------------------------------
 
+
 class TestCircuitBreakerCustomMax:
     """TC-CB-004."""
 
@@ -96,6 +99,7 @@ class TestCircuitBreakerCustomMax:
 # ---------------------------------------------------------------------------
 # TC-CB-005: max_rounds property
 # ---------------------------------------------------------------------------
+
 
 class TestCircuitBreakerProperty:
     """TC-CB-005."""

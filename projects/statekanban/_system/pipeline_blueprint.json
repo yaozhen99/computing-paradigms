@@ -1,13 +1,15 @@
 {
   "project": "statekanban",
-  "round": 4,
+  "round": 5,
   "mode": "v2_agent",
-  "title": "接口修正 + 真实 API 验证",
+  "title": "可配置项目空间 + R4 遗留修正",
   "notes": [
-    "R4 修正轮次：修复 R3 Reviewer 发现的接口偏差，新增真实 API 烟雾测试",
-    "3 REQ：REQ-401（set_behavior_mode 双参数签名）、REQ-402（E2E 改 Engine.drive()）、REQ-403（真实 API 烟雾测试）",
-    "4 交付物：mock_adapter.py（改）、test_e2e.py（改）、test_live_api.py（新增）、conftest.py（改）",
-    "代码基座：05_delivery/statekanban/（R3 产出）"
+    "R5 修正轮次：实现可配置的项目空间路径，修正 R4 遗留的 2 项实现偏差",
+    "5 REQ：REQ-501（Config project_root）、REQ-502（CLI --project-root）、REQ-503（Engine 路径解析）、REQ-504（双参数签名修正）、REQ-505（E2E Engine.drive() 修正）",
+    "7 交付物：config.py（改）、cli/main.py（改）、core/valve.py（改）、mock_adapter.py（改）、test_e2e.py（改）、test_mock_adapter.py（改）",
+    "REQ-503 改为调用者解析路径：CLI 从 Config.resolve_path() 解析后传给 OutputValve，OutputValve 新增 output_dir 构造参数",
+    "代码基座：05_delivery/statekanban/（R4 产出）",
+    "技术约束：不改核心模块接口（kanban/message_bus/viewport/valve/registry/process），路径解析统一走 Config.resolve_path()"
   ],
   "nodes": [
     {

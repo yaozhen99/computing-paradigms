@@ -17,10 +17,10 @@ from statekanban.core.kanban import (
 )
 from statekanban.engine.response_parser import ResponseParser
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def kanban():
@@ -36,6 +36,7 @@ def parser(kanban):
 # TC-RP-01: Unstructured response produces parsed result
 # ---------------------------------------------------------------------------
 
+
 class TestResponseParserBasic:
 
     def test_unstructured_produces_result(self, parser):
@@ -48,12 +49,15 @@ class TestResponseParserBasic:
         """Parsed result has a response_type attribute."""
         raw = LLMResponse(content="Some output", finish_reason="end_turn")
         results = parser.parse(raw, "coder", 1)
-        assert hasattr(results[0], "response_type") or hasattr(results[0], "parse_success")
+        assert hasattr(results[0], "response_type") or hasattr(
+            results[0], "parse_success"
+        )
 
 
 # ---------------------------------------------------------------------------
 # TC-RP-02: Error signal injection on unstructured coder response
 # ---------------------------------------------------------------------------
+
 
 class TestResponseParserErrorInjection:
 
@@ -63,7 +67,9 @@ class TestResponseParserErrorInjection:
         parser.parse(raw, "coder", 1)
 
         error_signals = list(kanban.fluid.read_signals(signal_type=SignalType.ERROR))
-        assert len(error_signals) > 0, "Unstructured coder response should inject error signal"
+        assert (
+            len(error_signals) > 0
+        ), "Unstructured coder response should inject error signal"
 
     def test_unstructured_reviewer_injects_error(self, parser, kanban):
         """Unstructured reviewer response also injects error signal."""
@@ -78,6 +84,7 @@ class TestResponseParserErrorInjection:
 # TC-RP-03: Parser without kanban does not inject errors
 # ---------------------------------------------------------------------------
 
+
 class TestResponseParserNoKanban:
 
     def test_parser_without_kanban(self):
@@ -91,6 +98,7 @@ class TestResponseParserNoKanban:
 # ---------------------------------------------------------------------------
 # TC-RP-04: Error code injection
 # ---------------------------------------------------------------------------
+
 
 class TestResponseParserErrorCode:
 
@@ -108,6 +116,7 @@ class TestResponseParserErrorCode:
 # TC-RP-05: Multiple parse calls accumulate errors
 # ---------------------------------------------------------------------------
 
+
 class TestResponseParserMultipleCalls:
 
     def test_multiple_unstructured_calls_produce_errors(self, parser, kanban):
@@ -119,4 +128,6 @@ class TestResponseParserMultipleCalls:
         error_signals = list(kanban.fluid.read_signals(signal_type=SignalType.ERROR))
         # Note: FluidZone index deduplicates by (target_id, signal_type, author_role),
         # so the second error overwrites the first. At least 1 error signal must exist.
-        assert len(error_signals) >= 1, "Unstructured calls should produce error signals"
+        assert (
+            len(error_signals) >= 1
+        ), "Unstructured calls should produce error signals"

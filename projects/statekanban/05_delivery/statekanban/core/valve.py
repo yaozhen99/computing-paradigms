@@ -31,10 +31,10 @@ from statekanban.core.kanban import (
     now_utc,
 )
 
-
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ValidationResult:
@@ -59,6 +59,7 @@ class ValveResult:
 # Validator ABC
 # ---------------------------------------------------------------------------
 
+
 class Validator(ABC):
     """Base class for valve validators."""
 
@@ -75,6 +76,7 @@ class Validator(ABC):
 # ---------------------------------------------------------------------------
 # Built-in validators
 # ---------------------------------------------------------------------------
+
 
 class SyntaxValidator(Validator):
     """Validates syntax: AST parse for Python, JSON parse for configs."""
@@ -138,6 +140,7 @@ class TestValidator(Validator):
 # OutputValve
 # ---------------------------------------------------------------------------
 
+
 class OutputValve:
     """Mandatory validation chain for all physical writes."""
 
@@ -145,12 +148,15 @@ class OutputValve:
         self,
         validators: list[Validator] | None = None,
         kanban: StateKanban | None = None,
+        project_root: str = "",  # REQ-503
     ) -> None:
         """
         Args:
             validators: Ordered list of validators.
                 Default: [SyntaxValidator, TypeValidator, TestValidator].
             kanban: StateKanban instance for error signal injection.
+            project_root: Project space root for path resolution (REQ-503).
+                Empty string falls back to os.getcwd() at resolution time.
         """
         self._validators: list[Validator] = validators or [
             SyntaxValidator(),
@@ -158,6 +164,7 @@ class OutputValve:
             TestValidator(),
         ]
         self._kanban = kanban
+        self._project_root = project_root  # REQ-503
 
     def set_kanban(self, kanban: StateKanban) -> None:
         """Set the StateKanban instance (for error signal injection)."""
@@ -190,15 +197,19 @@ class OutputValve:
                     error=result.error_detail,
                 )
 
-        # All validators passed -- perform atomic write
+        # All validators passed -- resolve artifact path and perform atomic write
+        resolved_path = self._resolve_artifact_path(artifact.path)
         try:
-            self._atomic_write(artifact.path, artifact.content)
+            self._atomic_write(resolved_path, artifact.content)
         except AtomicWriteError as exc:
-            self._inject_error_signal(artifact, ValidationResult(
-                passed=False,
-                validator_name="AtomicWrite",
-                error_detail=str(exc),
-            ))
+            self._inject_error_signal(
+                artifact,
+                ValidationResult(
+                    passed=False,
+                    validator_name="AtomicWrite",
+                    error_detail=str(exc),
+                ),
+            )
             return ValveResult(
                 success=False,
                 validation_results=results,
@@ -207,7 +218,7 @@ class OutputValve:
 
         return ValveResult(
             success=True,
-            artifact_path=artifact.path,
+            artifact_path=resolved_path,
             validation_results=results,
         )
 
@@ -217,6 +228,24 @@ class OutputValve:
             self._validators.append(validator)
         else:
             self._validators.insert(position, validator)
+
+    # REQ-503: Resolve artifact path against project_root
+    def _resolve_artifact_path(self, artifact_path: str) -> str:
+        """Resolve an artifact path against project_root.
+
+        If the path is already absolute, return unchanged.
+        Otherwise, resolve relative to project_root (or CWD if empty).
+
+        Args:
+            artifact_path: Path from the artifact.
+
+        Returns:
+            Absolute resolved path.
+        """
+        if os.path.isabs(artifact_path):
+            return artifact_path
+        base = self._project_root if self._project_root else os.getcwd()
+        return os.path.join(base, artifact_path)
 
     # -----------------------------------------------------------------------
     # Private helpers
@@ -238,9 +267,7 @@ class OutputValve:
         if self._kanban is None:
             return
 
-        error_code = self._VALIDATOR_ERROR_CODES.get(
-            result.validator_name, "SK_OV_000"
-        )
+        error_code = self._VALIDATOR_ERROR_CODES.get(result.validator_name, "SK_OV_000")
 
         error_signal = ErrorSignal(
             signal_id=make_signal_id(),

@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 # REQ-002: Behavior enums
 # ---------------------------------------------------------------------------
 
+
 class MockReviewerBehavior(Enum):
     """Predefined reviewer behaviors for one-click scenario setup."""
 
@@ -68,8 +69,14 @@ class MockLLMAdapter(LLMAdapter):
         self._structured_mode: bool = structured_mode
         self._structured_responses: dict[str, list[dict[str, Any]]] = {}
 
-        # REQ-002: Behavior mode state
-        self._behavior_mode: MockReviewerBehavior | MockCoderBehavior | None = None
+        # REQ-504: Dual-parameter behavior mode state
+        self._reviewer_behavior: MockReviewerBehavior = (
+            MockReviewerBehavior.ALWAYS_APPROVE
+        )
+        self._coder_behavior: MockCoderBehavior = MockCoderBehavior.GENERATE_SIMPLE
+        self._behavior_mode_active: bool = (
+            False  # True after set_behavior_mode() called
+        )
         self._behavior_state: dict[str, int] = {}  # per-role call counts
 
     # ─── REQ-001: structured_mode ──────────────────────────────
@@ -108,7 +115,11 @@ class MockLLMAdapter(LLMAdapter):
         self._structured_mode = True
 
         # Build the structured JSON object
-        type_str = response_type.value if hasattr(response_type, "value") else str(response_type)
+        type_str = (
+            response_type.value
+            if hasattr(response_type, "value")
+            else str(response_type)
+        )
         response_obj: dict[str, Any] = {
             "type": type_str,
             "target_id": target_id,
@@ -126,128 +137,110 @@ class MockLLMAdapter(LLMAdapter):
             self._structured_responses[role] = []
         self._structured_responses[role].append(response_obj)
 
-    # ─── REQ-002: behavior_mode ────────────────────────────────
+    # ─── REQ-504: Dual-keyword behavior_mode ───────────────────
 
     def set_behavior_mode(
         self,
-        role_or_mode: str | MockReviewerBehavior | MockCoderBehavior,
-        mode: str | None = None,
+        *,
+        reviewer_behavior: MockReviewerBehavior | None = None,
+        coder_behavior: MockCoderBehavior | None = None,
     ) -> None:
-        """Configure one-click scenario mode.
+        """Configure behavior mode for mock responses (REQ-504 dual-keyword signature).
 
-        Supports two calling conventions:
-        - Dual-param:  set_behavior_mode("reviewer", "strict")
-        - Single-param: set_behavior_mode(MockReviewerBehavior.ALWAYS_APPROVE)
+        Auto-enables structured_mode. Simultaneously configures reviewer
+        and coder behaviors. Also auto-configures tester and integrator roles.
 
-        Dual-param mode auto-enables structured_mode=True and configures
-        the behavior for the specified role string.
+        Args:
+            reviewer_behavior: How the reviewer role should behave.
+            coder_behavior: How the coder role should behave.
 
-        Single-param mode (backward compatible) works as before.
-
-        Behavior modes (dual-param strings):
-        - "always_approve":  reviewer returns approval intent
-        - "always_reject":   reviewer returns veto
-        - "reject_then_approve": first call veto, subsequent calls approve
-        - "generate_simple":  coder returns simple artifact
-        - "generate_with_bug": coder returns buggy artifact
-        - "strict":          reviewer returns veto (alias for always_reject)
-        - "lenient":         reviewer returns approval (alias for always_approve)
+        Raises:
+            TypeError: If called with positional args (old convention).
         """
-        # Dual-param: set_behavior_mode("reviewer", "strict")
-        if mode is not None:
-            self._behavior_mode = self._resolve_behavior_string(role_or_mode, mode)
-            self._structured_mode = True
-            self._behavior_state.clear()
-            self._apply_behavior_mode(self._behavior_mode)
-            return
-
-        # Single-param: set_behavior_mode(MockReviewerBehavior.ALWAYS_APPROVE)
-        # Backward compatible
-        self._behavior_mode = role_or_mode  # type: ignore[assignment]
-        self._structured_mode = True
+        if reviewer_behavior is not None:
+            self._reviewer_behavior = reviewer_behavior
+        if coder_behavior is not None:
+            self._coder_behavior = coder_behavior
+        self._behavior_mode_active = True
         self._behavior_state.clear()
-        self._apply_behavior_mode(self._behavior_mode)
+        self._apply_behavior_mode()
 
-    @staticmethod
-    def _resolve_behavior_string(
-        role: str, mode_str: str
-    ) -> MockReviewerBehavior | MockCoderBehavior:
-        """Resolve a (role, mode_string) pair to a behavior enum value."""
-        # Aliases
-        aliases: dict[str, str] = {
-            "strict": "always_reject",
-            "lenient": "always_approve",
-        }
-        resolved = aliases.get(mode_str, mode_str)
+    def _apply_behavior_mode(self) -> None:
+        """Pre-configure structured responses for all roles based on behavior modes.
 
-        if role == "reviewer":
-            return MockReviewerBehavior(resolved)
-        elif role == "coder":
-            return MockCoderBehavior(resolved)
-        else:
-            # Default: try reviewer first, then coder
-            try:
-                return MockReviewerBehavior(resolved)
-            except ValueError:
-                return MockCoderBehavior(resolved)
+        REQ-504: Simultaneously configures reviewer, coder, tester, and integrator.
+        """
+        self._structured_responses.clear()
 
-    def _apply_behavior_mode(
-        self, mode: MockReviewerBehavior | MockCoderBehavior
-    ) -> None:
-        """Pre-configure structured responses based on behavior mode."""
-        if isinstance(mode, MockReviewerBehavior):
-            if mode == MockReviewerBehavior.ALWAYS_APPROVE:
-                self.set_structured_response(
-                    role="reviewer",
-                    response_type="intent",
-                    target_id="task_root",
-                    payload={"approved": True},
-                )
-            elif mode == MockReviewerBehavior.ALWAYS_REJECT:
-                self.set_structured_response(
-                    role="reviewer",
-                    response_type="veto",
-                    target_id="task_root",
-                    reason="Quality gate: always reject",
-                )
-            elif mode == MockReviewerBehavior.REJECT_THEN_APPROVE:
-                self.set_structured_response(
-                    role="reviewer",
-                    response_type="veto",
-                    target_id="task_root",
-                    reason="Quality gate: needs rework",
-                )
-                self.set_structured_response(
-                    role="reviewer",
-                    response_type="intent",
-                    target_id="task_root",
-                    payload={"approved": True},
-                )
+        # --- Reviewer ---
+        if self._reviewer_behavior == MockReviewerBehavior.ALWAYS_APPROVE:
+            self.set_structured_response(
+                role="reviewer",
+                response_type="intent",
+                target_id="task_root",
+                payload={"approved": True},
+            )
+        elif self._reviewer_behavior == MockReviewerBehavior.ALWAYS_REJECT:
+            self.set_structured_response(
+                role="reviewer",
+                response_type="veto",
+                target_id="task_root",
+                reason="Quality gate: always reject",
+            )
+        elif self._reviewer_behavior == MockReviewerBehavior.REJECT_THEN_APPROVE:
+            self.set_structured_response(
+                role="reviewer",
+                response_type="veto",
+                target_id="task_root",
+                reason="Quality gate: needs rework",
+            )
+            self.set_structured_response(
+                role="reviewer",
+                response_type="intent",
+                target_id="task_root",
+                payload={"approved": True},
+            )
 
-        elif isinstance(mode, MockCoderBehavior):
-            if mode == MockCoderBehavior.GENERATE_SIMPLE:
-                self.set_structured_response(
-                    role="coder",
-                    response_type="artifact",
-                    target_id="task_root",
-                    artifact_path="output.py",
-                    artifact_content='def hello():\n    return "hello world"',
-                    artifact_type="code",
-                )
-            elif mode == MockCoderBehavior.GENERATE_WITH_BUG:
-                self.set_structured_response(
-                    role="coder",
-                    response_type="artifact",
-                    target_id="task_root",
-                    artifact_path="output.py",
-                    artifact_content="def hello():\n    print('hello world')",
-                    artifact_type="code",
-                )
+        # --- Coder ---
+        if self._coder_behavior == MockCoderBehavior.GENERATE_SIMPLE:
+            self.set_structured_response(
+                role="coder",
+                response_type="artifact",
+                target_id="task_root",
+                artifact_path="output.py",
+                artifact_content='def hello():\n    return "hello world"\n',
+                artifact_type="code",
+            )
+        elif self._coder_behavior == MockCoderBehavior.GENERATE_WITH_BUG:
+            self.set_structured_response(
+                role="coder",
+                response_type="artifact",
+                target_id="task_root",
+                artifact_path="output.py",
+                artifact_content="def hello():\n    return undefined_var\n",
+                artifact_type="code",
+            )
+
+        # --- Tester (auto-configured) ---
+        self.set_structured_response(
+            role="tester",
+            response_type="intent",
+            target_id="task_root",
+            payload={"action": "test_passed", "coverage": "100%"},
+        )
+
+        # --- Integrator (auto-configured) ---
+        self.set_structured_response(
+            role="integrator",
+            response_type="intent",
+            target_id="task_root",
+            payload={"action": "integrate", "files": ["output.py"]},
+        )
 
     @property
-    def behavior_mode(self) -> MockReviewerBehavior | MockCoderBehavior | None:
-        """Current behavior mode, or None if not set."""
-        return self._behavior_mode
+    def behavior_mode(self) -> tuple[MockReviewerBehavior, MockCoderBehavior]:
+        """Current behavior mode as (reviewer_behavior, coder_behavior)."""  # REQ-504
+        return (self._reviewer_behavior, self._coder_behavior)
 
     # ─── Core method (unchanged signature) ─────────────────────
 
@@ -278,8 +271,8 @@ class MockLLMAdapter(LLMAdapter):
                     role = msg.content.split("\n")[0].replace("Role:", "").strip()
                     break
 
-        # REQ-002: behavior_mode takes highest priority
-        if self._behavior_mode is not None:
+        # REQ-504: behavior_mode takes highest priority
+        if self._behavior_mode_active:
             return self._get_behavior_response(role)
 
         # REQ-001: structured_mode
@@ -297,28 +290,35 @@ class MockLLMAdapter(LLMAdapter):
         For REJECT_THEN_APPROVE: first call returns veto, subsequent calls return approve.
         Other behaviors use the pre-configured structured responses.
         """
-        if self._behavior_mode == MockReviewerBehavior.REJECT_THEN_APPROVE and role == "reviewer":
+        if (
+            self._reviewer_behavior == MockReviewerBehavior.REJECT_THEN_APPROVE
+            and role == "reviewer"
+        ):
             call_count = self._behavior_state.get(role, 0)
             self._behavior_state[role] = call_count + 1
 
             if call_count == 0:
                 # First call: return veto
                 return LLMResponse(
-                    content=json.dumps({
-                        "type": "veto",
-                        "target_id": "task_root",
-                        "reason": "Quality gate: needs rework",
-                    }),
+                    content=json.dumps(
+                        {
+                            "type": "veto",
+                            "target_id": "task_root",
+                            "reason": "Quality gate: needs rework",
+                        }
+                    ),
                     finish_reason="end_turn",
                 )
             else:
                 # Subsequent calls: return approve
                 return LLMResponse(
-                    content=json.dumps({
-                        "type": "intent",
-                        "target_id": "task_root",
-                        "payload": {"approved": True},
-                    }),
+                    content=json.dumps(
+                        {
+                            "type": "intent",
+                            "target_id": "task_root",
+                            "payload": {"approved": True},
+                        }
+                    ),
                     finish_reason="end_turn",
                 )
 

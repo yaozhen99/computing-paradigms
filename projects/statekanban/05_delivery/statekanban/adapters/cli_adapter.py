@@ -41,9 +41,7 @@ class ClaudeCLIAdapter(LLMAdapter):
         prompt = "\n".join(prompt_parts)
 
         if not shutil.which(self._cli_path):
-            raise LLMAuthError(
-                f"Claude CLI not found at: {self._cli_path}"
-            )
+            raise LLMAuthError(f"Claude CLI not found at: {self._cli_path}")
 
         try:
             proc = await asyncio.create_subprocess_exec(
@@ -56,9 +54,7 @@ class ClaudeCLIAdapter(LLMAdapter):
                 stderr=asyncio.subprocess.PIPE,
             )
 
-            stdout, stderr = await asyncio.wait_for(
-                proc.communicate(), timeout=120.0
-            )
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120.0)
 
             if proc.returncode != 0:
                 error_msg = stderr.decode("utf-8", errors="replace")

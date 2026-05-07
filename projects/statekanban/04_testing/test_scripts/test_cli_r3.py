@@ -25,21 +25,23 @@ from statekanban.core.kanban import (
 )
 from statekanban.snapshot import save_snapshot
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_kanban_with_data():
     """Create a StateKanban with some data."""
     kanban = StateKanban()
-    kanban.register_viewport(ViewportSpec(
-        role="coder",
-        visible_signal_types=[SignalType.INTENT, SignalType.ERROR],
-        visible_artifact_types=[ArtifactType.CODE],
-        visible_target_patterns=["*"],
-        max_tokens=4000,
-    ))
+    kanban.register_viewport(
+        ViewportSpec(
+            role="coder",
+            visible_signal_types=[SignalType.INTENT, SignalType.ERROR],
+            visible_artifact_types=[ArtifactType.CODE],
+            visible_target_patterns=["*"],
+            max_tokens=4000,
+        )
+    )
     sig = IntentSignal(
         signal_id=make_signal_id(),
         author_role="user",
@@ -56,6 +58,7 @@ def _make_kanban_with_data():
 # TC-CLI-01: snapshot save creates file
 # ---------------------------------------------------------------------------
 
+
 class TestCLISnapshotSave:
 
     def test_snapshot_save_creates_file(self, tmp_path):
@@ -70,11 +73,13 @@ class TestCLISnapshotSave:
 # TC-CLI-02: snapshot load restores state
 # ---------------------------------------------------------------------------
 
+
 class TestCLISnapshotLoad:
 
     def test_snapshot_load_restores_state(self, tmp_path):
         """TC-CLI-02: snapshot load restores kanban state."""
         from statekanban.snapshot import load_snapshot
+
         kanban = _make_kanban_with_data()
         snap_path = str(tmp_path / "cli_load.json")
         save_snapshot(kanban, snap_path)
@@ -91,11 +96,13 @@ class TestCLISnapshotLoad:
 # TC-CLI-03: snapshot list returns filenames
 # ---------------------------------------------------------------------------
 
+
 class TestCLISnapshotList:
 
     def test_snapshot_list_returns_filenames(self, tmp_path):
         """TC-CLI-03: snapshot list returns sorted filenames."""
         from statekanban.snapshot import list_snapshots
+
         kanban = _make_kanban_with_data()
         for name in ["b.json", "a.json", "c.json"]:
             save_snapshot(kanban, str(tmp_path / name))
@@ -109,11 +116,13 @@ class TestCLISnapshotList:
 # TC-CLI-04: snapshot delete removes file
 # ---------------------------------------------------------------------------
 
+
 class TestCLISnapshotDelete:
 
     def test_snapshot_delete_removes_file(self, tmp_path):
         """TC-CLI-04: snapshot delete removes the snapshot file."""
         from statekanban.snapshot import delete_snapshot
+
         kanban = _make_kanban_with_data()
         snap_path = str(tmp_path / "cli_delete.json")
         save_snapshot(kanban, snap_path)
@@ -126,6 +135,7 @@ class TestCLISnapshotDelete:
 # ---------------------------------------------------------------------------
 # TC-CLI-05: CLI parser has snapshot subcommand
 # ---------------------------------------------------------------------------
+
 
 class TestCLIParserSnapshot:
 
@@ -140,18 +150,24 @@ class TestCLIParserSnapshot:
         """CLI parser recognizes snapshot save with path argument."""
         parser = build_parser()
         args = parser.parse_args(["snapshot", "save", "my_snapshot.json"])
-        assert hasattr(args, "subcommand") or hasattr(args, "path") or hasattr(args, "name")
+        assert (
+            hasattr(args, "subcommand")
+            or hasattr(args, "path")
+            or hasattr(args, "name")
+        )
 
 
 # ---------------------------------------------------------------------------
 # TC-CLI-06: snapshot list on missing directory
 # ---------------------------------------------------------------------------
 
+
 class TestCLISnapshotListEdgeCases:
 
     def test_snapshot_list_missing_dir(self, tmp_path):
         """TC-CLI-06: snapshot list on missing directory returns empty list."""
         from statekanban.snapshot import list_snapshots
+
         missing_dir = str(tmp_path / "no_such_dir")
         result = list_snapshots(missing_dir)
         assert result == []

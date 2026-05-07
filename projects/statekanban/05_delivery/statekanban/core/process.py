@@ -23,7 +23,6 @@ from statekanban.core.kanban import (
 )
 from statekanban.core.message_bus import MessageBus
 
-
 # Default heartbeat interval in seconds
 DEFAULT_HEARTBEAT_INTERVAL = 30
 
@@ -158,9 +157,7 @@ class ProcessManager:
 
         # Self-termination check
         if terminator == process_id:
-            raise SelfTerminationError(
-                f"Process {process_id} cannot terminate itself"
-            )
+            raise SelfTerminationError(f"Process {process_id} cannot terminate itself")
 
         self._validate_transition(process.state, ProcessState.TERMINATED)
 
@@ -272,9 +269,7 @@ class ProcessManager:
         """Get process info by ID."""
         return self._processes.get(process_id)
 
-    def list_processes(
-        self, state: ProcessState | None = None
-    ) -> list[ProcessInfo]:
+    def list_processes(self, state: ProcessState | None = None) -> list[ProcessInfo]:
         """List processes, optionally filtered by state."""
         processes = list(self._processes.values())
         if state is not None:
@@ -284,9 +279,7 @@ class ProcessManager:
     def get_state_for_snapshot(self) -> dict[str, Any]:
         """Export process state for snapshot serialization."""
         return {
-            "processes": {
-                pid: p.to_dict() for pid, p in self._processes.items()
-            },
+            "processes": {pid: p.to_dict() for pid, p in self._processes.items()},
             "role_processes": dict(self._role_processes),
             "heartbeat_interval": self._heartbeat_interval,
             "heartbeat_threshold": self._heartbeat_threshold,
@@ -300,7 +293,9 @@ class ProcessManager:
         for pid, pdata in data.get("processes", {}).items():
             self._processes[pid] = ProcessInfo.from_dict(pdata)
         self._role_processes.update(data.get("role_processes", {}))
-        self._heartbeat_interval = data.get("heartbeat_interval", DEFAULT_HEARTBEAT_INTERVAL)
+        self._heartbeat_interval = data.get(
+            "heartbeat_interval", DEFAULT_HEARTBEAT_INTERVAL
+        )
         self._heartbeat_threshold = data.get(
             "heartbeat_threshold", DEFAULT_HEARTBEAT_INTERVAL * 3
         )
@@ -313,9 +308,7 @@ class ProcessManager:
         """Get a process or raise if not found."""
         process = self._processes.get(process_id)
         if process is None:
-            raise InvalidStateTransitionError(
-                f"Process not found: {process_id}"
-            )
+            raise InvalidStateTransitionError(f"Process not found: {process_id}")
         return process
 
     def _validate_transition(

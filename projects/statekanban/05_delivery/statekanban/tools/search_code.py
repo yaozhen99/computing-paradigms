@@ -40,8 +40,10 @@ async def search_code(params: dict[str, Any]) -> dict[str, Any]:
         for dirpath, dirnames, filenames in os.walk(root_path):
             # Skip hidden and common non-source directories
             dirnames[:] = [
-                d for d in dirnames
-                if not d.startswith(".") and d not in ("__pycache__", "node_modules", ".git", ".venv")
+                d
+                for d in dirnames
+                if not d.startswith(".")
+                and d not in ("__pycache__", "node_modules", ".git", ".venv")
             ]
 
             for filename in filenames:
@@ -53,11 +55,13 @@ async def search_code(params: dict[str, Any]) -> dict[str, Any]:
                     with open(filepath, "r", encoding="utf-8", errors="replace") as f:
                         for line_no, line in enumerate(f, 1):
                             if pattern.lower() in line.lower():
-                                matches.append({
-                                    "file": filepath,
-                                    "line": line_no,
-                                    "content": line.rstrip(),
-                                })
+                                matches.append(
+                                    {
+                                        "file": filepath,
+                                        "line": line_no,
+                                        "content": line.rstrip(),
+                                    }
+                                )
                                 if len(matches) >= max_results:
                                     break
                     if len(matches) >= max_results:

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import os
 import sys
 from typing import Any
 
@@ -43,7 +44,11 @@ from statekanban.core.viewport import ViewportSlicer, ViewportSlice
 from statekanban.engine.circuit_breaker import CircuitBreaker
 from statekanban.engine.convergence import ConvergenceDetector
 from statekanban.engine.result import EngineResult, ResultSummarizer
-from statekanban.engine.response_parser import ParsedResponse, ParsedResponseType, ResponseParser
+from statekanban.engine.response_parser import (
+    ParsedResponse,
+    ParsedResponseType,
+    ResponseParser,
+)
 from statekanban.engine.router import SignalRouter
 from statekanban.engine.scheduler import RoleScheduler
 from statekanban.adapters.base import LLMAdapter
@@ -93,6 +98,7 @@ class Engine:
         self._pm = pm
         self._adapter = adapter
         self._config = config
+        self._project_root = config.resolve_path("")  # REQ-503: resolved project root
         self._parser = ResponseParser(kanban=kanban)
         self._convergence = ConvergenceDetector(kanban)
         self._scheduler = RoleScheduler()
@@ -163,7 +169,9 @@ class Engine:
 
             # 4. Convergence check for all pending targets
             all_results = self._convergence.check_all_pending(round_num)
-            all_converged = all(r.converged for r in all_results.values()) if all_results else False
+            all_converged = (
+                all(r.converged for r in all_results.values()) if all_results else False
+            )
 
             if all_converged:
                 # 5. Converged: crystal fix + valve write
@@ -294,7 +302,9 @@ class Engine:
 
     # ─── REQ-005: Refactored to use Registry ───────────────────
 
-    async def _call_llm_for_role(self, role: str, slice_data: ViewportSlice) -> LLMResponse:
+    async def _call_llm_for_role(
+        self, role: str, slice_data: ViewportSlice
+    ) -> LLMResponse:
         """Invoke LLM for a role via ToolRegistry.dispatch("call_llm", ...).
 
         REQ-004 change: Routes through self._registry.dispatch("call_llm", ...)
@@ -339,16 +349,31 @@ class Engine:
             if not tool_result.success:
                 # Dispatch failed -- construct a fallback LLMResponse
                 return LLMResponse(
-                    content=json.dumps({
-                        "type": "error",
-                        "target_id": role,
-                        "payload": {"error": tool_result.error},
-                    }),
+                    content=json.dumps(
+                        {
+                            "type": "error",
+                            "target_id": role,
+                            "payload": {"error": tool_result.error},
+                        }
+                    ),
                     finish_reason="error",
                 )
 
             # Extract LLMResponse from dispatch output
             output = tool_result.output
+            # call_llm tool returns {"success": True, "output": {"content": ..., "finish_reason": ...}}
+            # ToolRegistry.dispatch() wraps the entire return as tool_result.output,
+            # so we need to unwrap the nested "output" key first.
+            if (
+                isinstance(output, dict)
+                and "output" in output
+                and isinstance(output["output"], dict)
+            ):
+                inner = output["output"]
+                return LLMResponse(
+                    content=inner.get("content", ""),
+                    finish_reason=inner.get("finish_reason", "end_turn"),
+                )
             if isinstance(output, dict) and "content" in output:
                 return LLMResponse(
                     content=output["content"],
@@ -364,15 +389,19 @@ class Engine:
         except Exception as exc:
             # Dispatch exception -- construct error LLMResponse
             return LLMResponse(
-                content=json.dumps({
-                    "type": "error",
-                    "target_id": role,
-                    "payload": {"error": str(exc)},
-                }),
+                content=json.dumps(
+                    {
+                        "type": "error",
+                        "target_id": role,
+                        "payload": {"error": str(exc)},
+                    }
+                ),
                 finish_reason="error",
             )
 
-    def _inject_parsed(self, parsed: ParsedResponse, author_role: str, round_number: int) -> None:
+    def _inject_parsed(
+        self, parsed: ParsedResponse, author_role: str, round_number: int
+    ) -> None:
         """Inject a parsed response into FluidZone as a typed Signal.
 
         - ParsedResponseType.INTENT -> IntentSignal
@@ -460,6 +489,10 @@ class Engine:
         6. REQ-006: Track consecutive valve failures and raise
            ValveReworkLoopError if threshold is exceeded.
         """
+        # REQ-503: Ensure project_root directory exists before first write
+        if self._project_root and not os.path.exists(self._project_root):
+            os.makedirs(self._project_root, exist_ok=True)
+
         # Read all intent signals and look for artifact payloads
         intent_signals = self._kanban.fluid.read_signals(signal_type=SignalType.INTENT)
         for sig in intent_signals:
@@ -467,7 +500,9 @@ class Engine:
             if not artifact_content:
                 continue
 
-            artifact_path = sig.payload.get("artifact_path", f"output_{sig.target_id}.py")
+            artifact_path = sig.payload.get(
+                "artifact_path", f"output_{sig.target_id}.py"
+            )
             artifact_type_str = sig.payload.get("artifact_type", "code")
 
             try:
@@ -494,8 +529,12 @@ class Engine:
             if not valve_result.success:
                 # REQ-006: Track consecutive valve failures
                 self._consecutive_valve_failures += 1
-                if self._consecutive_valve_failures >= self._max_consecutive_valve_failures:
+                if (
+                    self._consecutive_valve_failures
+                    >= self._max_consecutive_valve_failures
+                ):
                     from statekanban.core.errors import ValveReworkLoopError
+
                     raise ValveReworkLoopError(
                         f"Consecutive valve failures ({self._consecutive_valve_failures}): "
                         f"possible infinite rework loop"

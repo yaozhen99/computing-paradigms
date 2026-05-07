@@ -43,10 +43,10 @@ from statekanban.adapters.mock_adapter import (
 )
 from statekanban.tools.call_llm import create_call_llm_tool
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _build_engine(
     coder_behavior=MockCoderBehavior.GENERATE_SIMPLE,
@@ -81,10 +81,18 @@ def _build_engine(
 
     p = ProcessManager(k, b)
     a = MockLLMAdapter()
-    if coder_behavior is not None:
-        a.set_behavior_mode(coder_behavior)
-    if reviewer_behavior is not None:
-        a.set_behavior_mode(reviewer_behavior)
+    a.set_behavior_mode(
+        coder_behavior=(
+            coder_behavior
+            if coder_behavior is not None
+            else MockCoderBehavior.GENERATE_SIMPLE
+        ),
+        reviewer_behavior=(
+            reviewer_behavior
+            if reviewer_behavior is not None
+            else MockReviewerBehavior.ALWAYS_APPROVE
+        ),
+    )
 
     c = Config()
     c.convergence_max_rounds = max_rounds
@@ -122,6 +130,7 @@ def _build_engine(
 # TC-INT-01: Engine + Adapter integration
 # ---------------------------------------------------------------------------
 
+
 class TestEngineAdapterIntegration:
 
     @pytest.mark.asyncio
@@ -142,6 +151,7 @@ class TestEngineAdapterIntegration:
 # TC-INT-02: Engine + Registry integration
 # ---------------------------------------------------------------------------
 
+
 class TestEngineRegistryIntegration:
 
     @pytest.mark.asyncio
@@ -161,6 +171,7 @@ class TestEngineRegistryIntegration:
 # TC-INT-03: ConvergenceDetector
 # ---------------------------------------------------------------------------
 
+
 class TestConvergenceDetectorIntegration:
 
     def test_convergence_detector_instantiation(self):
@@ -174,14 +185,16 @@ class TestConvergenceDetectorIntegration:
         kanban = StateKanban()
         cd = ConvergenceDetector(kanban=kanban)
 
-        kanban.fluid.write_signal(IntentSignal(
-            signal_id=make_signal_id(),
-            author_role="coder",
-            target_id="target_X",
-            payload={"action": "approve"},
-            timestamp=now_utc(),
-            round_number=1,  # Must match the check round
-        ))
+        kanban.fluid.write_signal(
+            IntentSignal(
+                signal_id=make_signal_id(),
+                author_role="coder",
+                target_id="target_X",
+                payload={"action": "approve"},
+                timestamp=now_utc(),
+                round_number=1,  # Must match the check round
+            )
+        )
 
         result = cd.check("target_X", current_round=1)
         assert result.converged is True
@@ -190,6 +203,7 @@ class TestConvergenceDetectorIntegration:
 # ---------------------------------------------------------------------------
 # TC-INT-04: CircuitBreaker
 # ---------------------------------------------------------------------------
+
 
 class TestCircuitBreakerIntegration:
 
@@ -208,13 +222,15 @@ class TestCircuitBreakerIntegration:
         )
         result = await engine.drive("Write code that keeps getting rejected")
         assert result is not None
-        assert result.forced_terminate is True, \
-            "Engine should force-terminate when circuit breaker trips"
+        assert (
+            result.forced_terminate is True
+        ), "Engine should force-terminate when circuit breaker trips"
 
 
 # ---------------------------------------------------------------------------
 # TC-INT-05: ResponseParser
 # ---------------------------------------------------------------------------
+
 
 class TestResponseParserIntegration:
 
@@ -237,12 +253,15 @@ class TestResponseParserIntegration:
         parser.parse(raw, "coder", 1)
 
         error_signals = list(kanban.fluid.read_signals(signal_type=SignalType.ERROR))
-        assert len(error_signals) > 0, "Unstructured response should inject error signal"
+        assert (
+            len(error_signals) > 0
+        ), "Unstructured response should inject error signal"
 
 
 # ---------------------------------------------------------------------------
 # TC-INT-06: Full pipeline (seed -> process -> valve)
 # ---------------------------------------------------------------------------
+
 
 class TestFullPipelineIntegration:
 
@@ -275,6 +294,7 @@ class TestFullPipelineIntegration:
 # ---------------------------------------------------------------------------
 # TC-INT-07: Valve + Artifact interaction
 # ---------------------------------------------------------------------------
+
 
 class TestValveArtifactIntegration:
 

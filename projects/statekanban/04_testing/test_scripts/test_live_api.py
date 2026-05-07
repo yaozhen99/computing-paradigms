@@ -48,7 +48,11 @@ def _make_viewports() -> dict:
         "reviewer": ViewportSpec(
             role="reviewer",
             visible_signal_types=[SignalType.INTENT, SignalType.VETO, SignalType.ERROR],
-            visible_artifact_types=[ArtifactType.CODE, ArtifactType.CONFIG, ArtifactType.DOC],
+            visible_artifact_types=[
+                ArtifactType.CODE,
+                ArtifactType.CONFIG,
+                ArtifactType.DOC,
+            ],
             visible_target_patterns=["*"],
             max_tokens=4000,
         ),
@@ -62,7 +66,11 @@ def _make_viewports() -> dict:
         "integrator": ViewportSpec(
             role="integrator",
             visible_signal_types=[SignalType.INTENT, SignalType.VETO, SignalType.ERROR],
-            visible_artifact_types=[ArtifactType.CODE, ArtifactType.CONFIG, ArtifactType.TEST],
+            visible_artifact_types=[
+                ArtifactType.CODE,
+                ArtifactType.CONFIG,
+                ArtifactType.TEST,
+            ],
             visible_target_patterns=["*"],
             max_tokens=4000,
         ),
@@ -109,8 +117,14 @@ async def test_live_api_smoke_drive():
     )
 
     engine = Engine(
-        kanban=kanban, bus=bus, registry=registry, valve=valve,
-        slicer=slicer, pm=pm, adapter=adapter, config=config,
+        kanban=kanban,
+        bus=bus,
+        registry=registry,
+        valve=valve,
+        slicer=slicer,
+        pm=pm,
+        adapter=adapter,
+        config=config,
     )
 
     result = await engine.drive("Write a hello world function in Python")

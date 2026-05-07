@@ -201,9 +201,11 @@ class TestProcessManagerHandoff:
         # so we manually register a new process for the handoff test.
         # Simulate the new process by directly adding to the processes dict.
         import uuid
+
         new_pid = str(uuid.uuid4())
         new_spec = _make_viewport_spec("coder")
         from statekanban.core.kanban import ProcessInfo
+
         new_info = ProcessInfo(
             process_id=new_pid,
             role="coder",
@@ -293,7 +295,9 @@ class TestProcessManagerHeartbeat:
         )
         pm.activate(info.process_id)
         # Set heartbeat_at to a time well past threshold
-        info.heartbeat_at = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(seconds=200)
+        info.heartbeat_at = datetime.datetime.now(
+            tz=datetime.timezone.utc
+        ) - datetime.timedelta(seconds=200)
         timed_out = pm.check_heartbeats()
         assert info.process_id in timed_out
 

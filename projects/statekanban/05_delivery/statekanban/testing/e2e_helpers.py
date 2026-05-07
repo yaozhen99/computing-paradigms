@@ -36,10 +36,10 @@ from statekanban.engine.engine import Engine
 from statekanban.config import Config
 from statekanban.tools.call_llm import create_call_llm_tool
 
-
 # ---------------------------------------------------------------------------
 # ScenarioResult
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ScenarioResult:
@@ -61,16 +61,24 @@ class ScenarioResult:
 # Preset scenarios
 # ---------------------------------------------------------------------------
 
+
 def happy_path_scenario() -> dict[str, Any]:
     """Happy path: coder produces, reviewer approves, converges in 1 round.
 
     Uses ALWAYS_APPROVE + GENERATE_SIMPLE behavior modes.
     """
     adapter = MockLLMAdapter()
-    adapter.set_behavior_mode(MockReviewerBehavior.ALWAYS_APPROVE)
+    adapter.set_behavior_mode(
+        reviewer_behavior=MockReviewerBehavior.ALWAYS_APPROVE,
+        coder_behavior=MockCoderBehavior.GENERATE_SIMPLE,
+    )
     config = Config()
     config.convergence_max_rounds = 5
-    return {"adapter": adapter, "config": config, "description": "Happy path: produce and approve"}
+    return {
+        "adapter": adapter,
+        "config": config,
+        "description": "Happy path: produce and approve",
+    }
 
 
 def collision_convergence_scenario() -> dict[str, Any]:
@@ -79,10 +87,17 @@ def collision_convergence_scenario() -> dict[str, Any]:
     Uses REJECT_THEN_APPROVE behavior mode.
     """
     adapter = MockLLMAdapter()
-    adapter.set_behavior_mode(MockReviewerBehavior.REJECT_THEN_APPROVE)
+    adapter.set_behavior_mode(
+        reviewer_behavior=MockReviewerBehavior.REJECT_THEN_APPROVE,
+        coder_behavior=MockCoderBehavior.GENERATE_SIMPLE,
+    )
     config = Config()
     config.convergence_max_rounds = 5
-    return {"adapter": adapter, "config": config, "description": "Collision convergence: reject then approve"}
+    return {
+        "adapter": adapter,
+        "config": config,
+        "description": "Collision convergence: reject then approve",
+    }
 
 
 def circuit_break_scenario() -> dict[str, Any]:
@@ -91,15 +106,23 @@ def circuit_break_scenario() -> dict[str, Any]:
     Uses ALWAYS_REJECT + GENERATE_WITH_BUG behavior modes.
     """
     adapter = MockLLMAdapter()
-    adapter.set_behavior_mode(MockReviewerBehavior.ALWAYS_REJECT)
+    adapter.set_behavior_mode(
+        reviewer_behavior=MockReviewerBehavior.ALWAYS_REJECT,
+        coder_behavior=MockCoderBehavior.GENERATE_WITH_BUG,
+    )
     config = Config()
     config.convergence_max_rounds = 3
-    return {"adapter": adapter, "config": config, "description": "Circuit break: always reject"}
+    return {
+        "adapter": adapter,
+        "config": config,
+        "description": "Circuit break: always reject",
+    }
 
 
 # ---------------------------------------------------------------------------
 # Result validators
 # ---------------------------------------------------------------------------
+
 
 def validate_converged(result: ScenarioResult) -> bool:
     """Validate that the scenario converged successfully."""
@@ -124,6 +147,7 @@ def validate_max_rounds(result: ScenarioResult, max_rounds: int) -> bool:
 # ---------------------------------------------------------------------------
 # E2ETestRunner
 # ---------------------------------------------------------------------------
+
 
 class E2ETestRunner:
     """Orchestrates end-to-end scenario runs.
@@ -207,7 +231,7 @@ class E2ETestRunner:
         kanban = StateKanban()
         bus = MessageBus(kanban)
         registry = ToolRegistry(kanban)
-        valve = OutputValve(kanban=kanban)
+        valve = OutputValve(kanban=kanban, project_root=config.project_root)
 
         # Set up viewport specs
         specs = _default_viewport_specs()
@@ -231,6 +255,7 @@ class E2ETestRunner:
 
         # Register call_llm tool
         from statekanban.core.kanban import ToolDef
+
         registry.register(
             ToolDef(
                 name="call_llm",
@@ -268,6 +293,7 @@ class E2ETestRunner:
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _default_viewport_specs() -> dict[str, ViewportSpec]:
     """Create default viewport specs for built-in roles."""
     return {
@@ -281,7 +307,11 @@ def _default_viewport_specs() -> dict[str, ViewportSpec]:
         "reviewer": ViewportSpec(
             role="reviewer",
             visible_signal_types=[SignalType.INTENT, SignalType.VETO, SignalType.ERROR],
-            visible_artifact_types=[ArtifactType.CODE, ArtifactType.CONFIG, ArtifactType.DOC],
+            visible_artifact_types=[
+                ArtifactType.CODE,
+                ArtifactType.CONFIG,
+                ArtifactType.DOC,
+            ],
             visible_target_patterns=["*"],
             max_tokens=2000,
         ),
@@ -295,7 +325,11 @@ def _default_viewport_specs() -> dict[str, ViewportSpec]:
         "integrator": ViewportSpec(
             role="integrator",
             visible_signal_types=[SignalType.INTENT, SignalType.VETO, SignalType.ERROR],
-            visible_artifact_types=[ArtifactType.CODE, ArtifactType.CONFIG, ArtifactType.TEST],
+            visible_artifact_types=[
+                ArtifactType.CODE,
+                ArtifactType.CONFIG,
+                ArtifactType.TEST,
+            ],
             visible_target_patterns=["*"],
             max_tokens=2000,
         ),

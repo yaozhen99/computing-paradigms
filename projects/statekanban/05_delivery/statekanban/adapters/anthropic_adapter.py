@@ -73,7 +73,7 @@ class AnthropicMessagesAdapter(LLMAdapter):
                 return self._parse_response(response)
             except anthropic.RateLimitError:
                 if attempt < max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)
+                    await asyncio.sleep(2**attempt)
                     continue
                 raise LLMRateLimitError("Anthropic API rate limit hit")
             except anthropic.AuthenticationError:
@@ -117,11 +117,13 @@ class AnthropicMessagesAdapter(LLMAdapter):
                     if block.type == "text":
                         content = block.text
                     elif block.type == "tool_use":
-                        tool_use_calls.append({
-                            "id": block.id,
-                            "name": block.name,
-                            "input": block.input,
-                        })
+                        tool_use_calls.append(
+                            {
+                                "id": block.id,
+                                "name": block.name,
+                                "input": block.input,
+                            }
+                        )
 
             usage = {}
             if hasattr(response, "usage"):

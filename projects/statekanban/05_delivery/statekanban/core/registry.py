@@ -26,7 +26,6 @@ from statekanban.core.kanban import (
     now_utc,
 )
 
-
 # Type alias for tool implementations
 ToolImplementation = Callable[..., Awaitable[Any]]
 
@@ -67,9 +66,7 @@ class ToolRegistry:
             ToolNotFoundError: Tool name already registered (duplicate).
         """
         if tool_def.name in self._tools:
-            raise ToolNotFoundError(
-                f"Tool already registered: {tool_def.name}"
-            )
+            raise ToolNotFoundError(f"Tool already registered: {tool_def.name}")
         self._tools[tool_def.name] = (tool_def, implementation)
 
         self._kanban.audit.log(
@@ -108,7 +105,10 @@ class ToolRegistry:
         tool_def, implementation = entry
 
         # Permission check
-        if caller_role not in tool_def.required_permissions and "all_roles" not in tool_def.required_permissions:
+        if (
+            caller_role not in tool_def.required_permissions
+            and "all_roles" not in tool_def.required_permissions
+        ):
             self._kanban.audit.log(
                 event_type="permission_denied",
                 actor="ToolRegistry",

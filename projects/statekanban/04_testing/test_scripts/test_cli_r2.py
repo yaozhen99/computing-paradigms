@@ -17,10 +17,10 @@ import pytest
 from statekanban.cli.main import main as cli_main, build_parser
 from statekanban.config import Config
 
-
 # ---------------------------------------------------------------------------
 # Helper: invoke CLI via subprocess
 # ---------------------------------------------------------------------------
+
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess:
     """Run the CLI with given arguments."""
@@ -35,6 +35,7 @@ def _run_cli(*args: str) -> subprocess.CompletedProcess:
 # ---------------------------------------------------------------------------
 # TC-CL-001: --adapter option
 # ---------------------------------------------------------------------------
+
 
 class TestCLIAdapter:
     """TC-CL-001..002: --adapter option."""
@@ -55,6 +56,7 @@ class TestCLIAdapter:
 # ---------------------------------------------------------------------------
 # TC-CL-003: --max-rounds option
 # ---------------------------------------------------------------------------
+
 
 class TestCLIMaxRounds:
     """TC-CL-003: --max-rounds option."""
@@ -80,6 +82,7 @@ class TestCLIMaxRounds:
 # TC-CL-004: --verbose flag
 # ---------------------------------------------------------------------------
 
+
 class TestCLIVerbose:
     """TC-CL-004: --verbose flag."""
 
@@ -100,6 +103,7 @@ class TestCLIVerbose:
 # TC-CL-005: Intent validation
 # ---------------------------------------------------------------------------
 
+
 class TestCLIIntentValidation:
     """TC-CL-005: Intent string parsing."""
 
@@ -114,6 +118,7 @@ class TestCLIIntentValidation:
 # Config from_dict tests
 # ---------------------------------------------------------------------------
 
+
 class TestConfigFromDict:
     """Config.from_dict with codex settings."""
 
@@ -124,11 +129,13 @@ class TestConfigFromDict:
         assert config.llm_adapter == "mock"
 
     def test_config_from_dict_codex(self):
-        config = Config.from_dict({
-            "codex_cli_path": "/custom/codex",
-            "codex_timeout": 120.0,
-            "llm_adapter": "codex",
-        })
+        config = Config.from_dict(
+            {
+                "codex_cli_path": "/custom/codex",
+                "codex_timeout": 120.0,
+                "llm_adapter": "codex",
+            }
+        )
         assert config.codex_cli_path == "/custom/codex"
         assert config.codex_timeout == 120.0
         assert config.llm_adapter == "codex"

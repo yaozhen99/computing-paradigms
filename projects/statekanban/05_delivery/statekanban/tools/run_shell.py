@@ -38,9 +38,7 @@ async def run_shell(params: dict[str, Any]) -> dict[str, Any]:
             cwd=cwd,
         )
 
-        stdout, stderr = await asyncio.wait_for(
-            proc.communicate(), timeout=timeout
-        )
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
 
         return {
             "success": proc.returncode == 0,

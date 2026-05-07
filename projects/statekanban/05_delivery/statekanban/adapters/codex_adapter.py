@@ -84,9 +84,7 @@ class CodexAdapter(LLMAdapter):
 
         # Availability check (lazy, cached)
         if not self.check_available():
-            raise CodexNotAvailableError(
-                f"Codex CLI not found at '{self._cli_path}'"
-            )
+            raise CodexNotAvailableError(f"Codex CLI not found at '{self._cli_path}'")
 
         # Extract prompt from last user message
         prompt = ""
@@ -138,17 +136,11 @@ class CodexAdapter(LLMAdapter):
             raise
         except asyncio.TimeoutError:
             # REQ-006: Use CodexTimeoutError instead of CodexExecutionError
-            raise CodexTimeoutError(
-                f"Codex CLI timed out after {self._timeout}s"
-            )
+            raise CodexTimeoutError(f"Codex CLI timed out after {self._timeout}s")
         except FileNotFoundError:
-            raise CodexNotAvailableError(
-                f"Codex CLI not found at '{self._cli_path}'"
-            )
+            raise CodexNotAvailableError(f"Codex CLI not found at '{self._cli_path}'")
         except Exception as exc:
-            raise CodexExecutionError(
-                f"Codex execution error: {exc}"
-            ) from exc
+            raise CodexExecutionError(f"Codex execution error: {exc}") from exc
 
     def check_available(self) -> bool:
         """Check whether the Codex CLI is available on PATH.

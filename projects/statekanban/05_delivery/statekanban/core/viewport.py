@@ -20,10 +20,10 @@ from statekanban.core.kanban import (
     ViewportSpec,
 )
 
-
 # ---------------------------------------------------------------------------
 # ViewportSlice result
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ViewportSlice:
@@ -41,6 +41,7 @@ class ViewportSlice:
 # ---------------------------------------------------------------------------
 # ViewportSlicer
 # ---------------------------------------------------------------------------
+
 
 class ViewportSlicer:
     """Context engineering: slice the kanban into role-specific views."""
@@ -74,7 +75,9 @@ class ViewportSlicer:
         """
         spec = self._specs.get(role) or self._kanban.get_viewport_spec(role)
         if spec is None:
-            raise InvalidViewportSpecError(f"No viewport spec registered for role: {role}")
+            raise InvalidViewportSpecError(
+                f"No viewport spec registered for role: {role}"
+            )
 
         # Filter signals
         all_signals = self._kanban.fluid.read_signals()
@@ -156,7 +159,9 @@ class ViewportSlicer:
         for sig in signals:
             if sig.signal_type not in spec.visible_signal_types:
                 continue
-            if not self._matches_target_patterns(sig.target_id, spec.visible_target_patterns):
+            if not self._matches_target_patterns(
+                sig.target_id, spec.visible_target_patterns
+            ):
                 continue
             result.append(sig)
         return result

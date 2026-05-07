@@ -13,7 +13,6 @@ from typing import Any, Awaitable, Callable
 from statekanban.core.errors import SubscriptionError, SyncCallTimeoutError
 from statekanban.core.kanban import Signal, StateKanban
 
-
 # Type alias for async signal callbacks
 SignalCallback = Callable[[Signal], Awaitable[None]]
 
@@ -29,9 +28,13 @@ class MessageBus:
         self._kanban = kanban
         self._subscriptions: dict[str, dict[str, SignalCallback]] = {}
         # signal_type -> {subscription_id: callback}
-        self._sync_handlers: dict[str, Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]] = {}
+        self._sync_handlers: dict[
+            str, Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]
+        ] = {}
         # target_role -> handler
-        self._notify_handlers: dict[str, Callable[[dict[str, Any]], Awaitable[None]]] = {}
+        self._notify_handlers: dict[
+            str, Callable[[dict[str, Any]], Awaitable[None]]
+        ] = {}
         # target_role -> notification handler
 
     def subscribe(

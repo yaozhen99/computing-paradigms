@@ -1,10 +1,10 @@
 {
-  "status": "READY",
+  "status": "COMPLETE",
   "mode": "v2_agent",
-  "round": 4,
-  "stage_reached": 0,
+  "round": 5,
+  "stage_reached": 8,
   "active_nodes": [],
-  "completed_nodes": [],
+  "completed_nodes": ["pm", "architect", "backend", "tester_write", "tester_run", "reviewer", "integration"],
   "blocked_nodes": [],
   "round_history": {
     "R1": {
@@ -21,15 +21,20 @@
       "status": "MISSION_ACCOMPLISHED",
       "completed_at": "2026-05-06T18:00:00Z",
       "summary": "引擎调校+端到端验证，8 REQ，369+测试通过，11个review issues待修"
+    },
+    "R4": {
+      "status": "MISSION_ACCOMPLISHED",
+      "completed_at": "2026-05-06T19:00:00Z",
+      "summary": "接口修正+真实API验证，381项测试通过，2项实现偏差遗留至R5"
     }
   },
-  "r4_requirements": {
-    "title": "接口修正 + 真实 API 验证",
-    "req_count": 3,
-    "req_ids": ["REQ-401", "REQ-402", "REQ-403"],
-    "origin": "R3 Reviewer 11 issues 中的接口偏差修正",
-    "deliverables": 4,
-    "acceptance_criteria": 4
+  "r5_requirements": {
+    "title": "可配置项目空间 + R4 遗留修正",
+    "req_count": 5,
+    "req_ids": ["REQ-501", "REQ-502", "REQ-503", "REQ-504", "REQ-505"],
+    "origin": "R4 遗留2项偏差 + 项目空间路径硬编码问题",
+    "deliverables": 6,
+    "acceptance_criteria": 5
   },
-  "last_updated": "2026-05-06T19:00:00+08:00"
+  "last_updated": "2026-05-07T10:00:00+08:00"
 }

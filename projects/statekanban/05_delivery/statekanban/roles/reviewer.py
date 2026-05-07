@@ -17,15 +17,23 @@ class Reviewer(ProcessRole):
         """
         viewport = await self.read_viewport()
 
-        llm_result = await self.call_tool("call_llm", {
-            "messages": [
-                {"role": "user", "content": f"Review task: {intent}\n\nContext: {viewport}"},
-            ],
-        })
+        llm_result = await self.call_tool(
+            "call_llm",
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": f"Review task: {intent}\n\nContext: {viewport}",
+                    },
+                ],
+            },
+        )
 
         return {
             "role": self.role,
             "intent": intent,
             "viewport_signals": len(viewport.signals),
-            "llm_result": llm_result.output if hasattr(llm_result, "output") else str(llm_result),
+            "llm_result": (
+                llm_result.output if hasattr(llm_result, "output") else str(llm_result)
+            ),
         }

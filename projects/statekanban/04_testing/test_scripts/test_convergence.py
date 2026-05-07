@@ -18,10 +18,10 @@ from statekanban.core.kanban import (
 )
 from statekanban.engine.convergence import ConvergenceCheckResult, ConvergenceDetector
 
-
 # ---------------------------------------------------------------------------
 # TC-CD-001: Converged (intent present, no veto in current round)
 # ---------------------------------------------------------------------------
+
 
 class TestConvergenceConverged:
     """TC-CD-001."""
@@ -72,6 +72,7 @@ class TestConvergenceConverged:
 # TC-CD-002: Not converged (veto in current round)
 # ---------------------------------------------------------------------------
 
+
 class TestConvergenceNotConvergedVeto:
     """TC-CD-002."""
 
@@ -106,6 +107,7 @@ class TestConvergenceNotConvergedVeto:
 # TC-CD-003: Not converged (no intent in current round)
 # ---------------------------------------------------------------------------
 
+
 class TestConvergenceNotConvergedNoIntent:
     """TC-CD-003."""
 
@@ -136,6 +138,7 @@ class TestConvergenceNotConvergedNoIntent:
 # ---------------------------------------------------------------------------
 # TC-CD-004: check_all_pending with multiple targets
 # ---------------------------------------------------------------------------
+
 
 class TestConvergenceCheckAllPending:
     """TC-CD-004."""
@@ -184,6 +187,7 @@ class TestConvergenceCheckAllPending:
 # TC-CD-005: Empty FluidZone
 # ---------------------------------------------------------------------------
 
+
 class TestConvergenceEmpty:
     """TC-CD-005."""
 
@@ -195,6 +199,7 @@ class TestConvergenceEmpty:
 # ---------------------------------------------------------------------------
 # TC-CD-006: Prior veto resolved
 # ---------------------------------------------------------------------------
+
 
 class TestConvergencePriorVetoResolved:
     """TC-CD-006: Veto in round 1, but not in round 2 -> converged."""
@@ -245,6 +250,7 @@ class TestConvergencePriorVetoResolved:
 # ConvergenceCheckResult dataclass contract
 # ---------------------------------------------------------------------------
 
+
 class TestConvergenceCheckResultContract:
     """Verify all fields of ConvergenceCheckResult are populated."""
 
@@ -254,7 +260,7 @@ class TestConvergenceCheckResultContract:
             author_role="coder",
             target_id="t1",
             payload={},
-         timestamp=now_utc(),
+            timestamp=now_utc(),
             round_number=1,
         )
         kanban.fluid.write_signal(sig)

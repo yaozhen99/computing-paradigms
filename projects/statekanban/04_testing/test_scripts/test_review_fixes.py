@@ -21,10 +21,10 @@ from statekanban.core.kanban import (
 )
 from statekanban.core.valve import OutputValve
 
-
 # ---------------------------------------------------------------------------
 # TC-RR-001: TOCTOU -- same key written twice, no duplicates in backing list
 # ---------------------------------------------------------------------------
+
 
 class TestTOCTOU:
     """RR-001: Write same key (target,type,author) twice -> only latest in list."""
@@ -102,7 +102,9 @@ class TestTOCTOU:
         kanban.fluid.write_signal(sig1)
         kanban.fluid.write_signal(sig2)
 
-        signals = kanban.fluid.read_signals(target_id="task_root", signal_type=SignalType.INTENT)
+        signals = kanban.fluid.read_signals(
+            target_id="task_root", signal_type=SignalType.INTENT
+        )
         assert len(signals) == 2
 
 
@@ -110,30 +112,35 @@ class TestTOCTOU:
 # TC-RR-003: Error code derivation (type-derived map, not string matching)
 # ---------------------------------------------------------------------------
 
+
 class TestErrorCodeDerivation:
     """RR-002: OutputValve uses type-derived _VALIDATOR_ERROR_CODES dict."""
 
     def test_syntax_check_error_code_is_SK_OV_001(self, kanban):
         """TC-RR-003: Invalid syntax -> ErrorSignal with SK_OV_001."""
         from statekanban.core.errors import SyntaxCheckError
+
         error = SyntaxCheckError("invalid syntax")
         assert error.error_code == "SK_OV_001"
 
     def test_type_check_error_code_is_SK_OV_002(self):
         """Type check error -> SK_OV_002."""
         from statekanban.core.errors import TypeCheckError
+
         error = TypeCheckError("type mismatch")
         assert error.error_code == "SK_OV_002"
 
     def test_atomic_write_error_code_is_SK_OV_004(self):
         """TC-RR-004: I/O failure -> SK_OV_004."""
         from statekanban.core.errors import AtomicWriteError
+
         error = AtomicWriteError("permission denied")
         assert error.error_code == "SK_OV_004"
 
     def test_human_gate_rejected_error_code_is_SK_OV_005(self):
         """Human gate rejected -> SK_OV_005."""
         from statekanban.core.errors import HumanGateRejectedError
+
         error = HumanGateRejectedError("human rejected")
         assert error.error_code == "SK_OV_005"
 
@@ -146,6 +153,7 @@ class TestErrorCodeDerivation:
             AtomicWriteError,
             HumanGateRejectedError,
         )
+
         # Verify that error_code is a class attribute (not computed from __class__.__name__)
         assert SyntaxCheckError.error_code == "SK_OV_001"
         assert TypeCheckError.error_code == "SK_OV_002"
@@ -163,16 +171,31 @@ class TestErrorCodeDerivation:
             AtomicWriteError,
             HumanGateRejectedError,
         )
-        assert valve._VALIDATOR_ERROR_CODES["SyntaxValidator"] == SyntaxCheckError.error_code
-        assert valve._VALIDATOR_ERROR_CODES["TypeValidator"] == TypeCheckError.error_code
-        assert valve._VALIDATOR_ERROR_CODES["TestValidator"] == TestExecutionError.error_code
-        assert valve._VALIDATOR_ERROR_CODES["AtomicWrite"] == AtomicWriteError.error_code
-        assert valve._VALIDATOR_ERROR_CODES["HumanGate"] == HumanGateRejectedError.error_code
+
+        assert (
+            valve._VALIDATOR_ERROR_CODES["SyntaxValidator"]
+            == SyntaxCheckError.error_code
+        )
+        assert (
+            valve._VALIDATOR_ERROR_CODES["TypeValidator"] == TypeCheckError.error_code
+        )
+        assert (
+            valve._VALIDATOR_ERROR_CODES["TestValidator"]
+            == TestExecutionError.error_code
+        )
+        assert (
+            valve._VALIDATOR_ERROR_CODES["AtomicWrite"] == AtomicWriteError.error_code
+        )
+        assert (
+            valve._VALIDATOR_ERROR_CODES["HumanGate"]
+            == HumanGateRejectedError.error_code
+        )
 
 
 # ---------------------------------------------------------------------------
 # TC-RR-005: Stale signal removal
 # ---------------------------------------------------------------------------
+
 
 class TestStaleSignalRemoval:
     """RR-003: FluidZone.write_signal removes stale entry before adding new."""

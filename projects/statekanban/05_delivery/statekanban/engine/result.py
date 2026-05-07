@@ -58,7 +58,9 @@ class ResultSummarizer:
             EngineResult with signal counts, artifact files, and timing.
         """
         # Count signals by type
-        intent_count = len(self._kanban.fluid.read_signals(signal_type=SignalType.INTENT))
+        intent_count = len(
+            self._kanban.fluid.read_signals(signal_type=SignalType.INTENT)
+        )
         veto_count = len(self._kanban.fluid.read_signals(signal_type=SignalType.VETO))
         error_count = len(self._kanban.fluid.read_signals(signal_type=SignalType.ERROR))
 

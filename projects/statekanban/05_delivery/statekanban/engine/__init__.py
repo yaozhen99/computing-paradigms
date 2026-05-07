@@ -10,7 +10,11 @@ Sub-components:
 """
 
 from statekanban.engine.engine import Engine
-from statekanban.engine.response_parser import ResponseParser, ParsedResponse, ParsedResponseType
+from statekanban.engine.response_parser import (
+    ResponseParser,
+    ParsedResponse,
+    ParsedResponseType,
+)
 from statekanban.engine.convergence import ConvergenceDetector, ConvergenceCheckResult
 from statekanban.engine.scheduler import RoleScheduler
 from statekanban.engine.circuit_breaker import CircuitBreaker

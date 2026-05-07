@@ -38,10 +38,10 @@ from statekanban.core.message_bus import MessageBus
 from statekanban.core.process import ProcessManager
 from statekanban.core.registry import ToolRegistry
 
-
 # ---------------------------------------------------------------------------
 # TC-REG-01: FluidZone write_signal and read_signals
 # ---------------------------------------------------------------------------
+
 
 class TestFluidZoneRegression:
 
@@ -118,6 +118,7 @@ class TestFluidZoneRegression:
 # TC-REG-02: CrystalZone write_artifact and read_artifacts
 # ---------------------------------------------------------------------------
 
+
 class TestCrystalZoneRegression:
 
     def test_write_and_read_artifact(self):
@@ -142,6 +143,7 @@ class TestCrystalZoneRegression:
 # TC-REG-03: AuditZone write and read
 # ---------------------------------------------------------------------------
 
+
 class TestAuditZoneRegression:
 
     def test_audit_write_and_read(self):
@@ -159,8 +161,12 @@ class TestAuditZoneRegression:
     def test_audit_read_with_filter(self):
         """AuditZone read_entries filters by event_type."""
         kanban = StateKanban()
-        kanban.audit.log(event_type="type_a", actor="alice", action="act", details={"x": 1})
-        kanban.audit.log(event_type="type_b", actor="bob", action="act", details={"y": 2})
+        kanban.audit.log(
+            event_type="type_a", actor="alice", action="act", details={"x": 1}
+        )
+        kanban.audit.log(
+            event_type="type_b", actor="bob", action="act", details={"y": 2}
+        )
 
         a_entries = kanban.audit.read_entries(event_type="type_a")
         assert len(a_entries) >= 1
@@ -171,6 +177,7 @@ class TestAuditZoneRegression:
 # ---------------------------------------------------------------------------
 # TC-REG-04: ViewportSpec and ViewportSlicer
 # ---------------------------------------------------------------------------
+
 
 class TestViewportRegression:
 
@@ -234,6 +241,7 @@ class TestViewportRegression:
 # TC-REG-05: OutputValve validation
 # ---------------------------------------------------------------------------
 
+
 class TestValveRegression:
 
     @pytest.mark.asyncio
@@ -277,6 +285,7 @@ class TestValveRegression:
 # TC-REG-06: ToolRegistry register and dispatch
 # ---------------------------------------------------------------------------
 
+
 class TestToolRegistryRegression:
 
     @pytest.mark.asyncio
@@ -307,6 +316,7 @@ class TestToolRegistryRegression:
 # TC-REG-07: MessageBus
 # ---------------------------------------------------------------------------
 
+
 class TestMessageBusRegression:
 
     def test_message_bus_instantiation(self):
@@ -319,6 +329,7 @@ class TestMessageBusRegression:
 # ---------------------------------------------------------------------------
 # TC-REG-08: ProcessManager
 # ---------------------------------------------------------------------------
+
 
 class TestProcessManagerRegression:
 
@@ -334,26 +345,31 @@ class TestProcessManagerRegression:
 # TC-REG-09: StateKanban to_json / from_json round-trip
 # ---------------------------------------------------------------------------
 
+
 class TestStateKanbanJsonRoundTrip:
 
     def test_to_json_and_from_json(self):
         """TC-REG-09: StateKanban to_json/from_json preserves state."""
         kanban = StateKanban()
-        kanban.register_viewport(ViewportSpec(
-            role="coder",
-            visible_signal_types=[SignalType.INTENT],
-            visible_artifact_types=[ArtifactType.CODE],
-            visible_target_patterns=["*"],
-            max_tokens=4000,
-        ))
-        kanban.fluid.write_signal(IntentSignal(
-            signal_id=make_signal_id(),
-            author_role="user",
-            target_id="task_root",
-            payload={"intent": "test"},
-            timestamp=now_utc(),
-            round_number=0,
-        ))
+        kanban.register_viewport(
+            ViewportSpec(
+                role="coder",
+                visible_signal_types=[SignalType.INTENT],
+                visible_artifact_types=[ArtifactType.CODE],
+                visible_target_patterns=["*"],
+                max_tokens=4000,
+            )
+        )
+        kanban.fluid.write_signal(
+            IntentSignal(
+                signal_id=make_signal_id(),
+                author_role="user",
+                target_id="task_root",
+                payload={"intent": "test"},
+                timestamp=now_utc(),
+                round_number=0,
+            )
+        )
 
         data = kanban.to_json()
         restored = StateKanban.from_json(data)
@@ -366,6 +382,7 @@ class TestStateKanbanJsonRoundTrip:
 # ---------------------------------------------------------------------------
 # TC-REG-10: Signal ID uniqueness
 # ---------------------------------------------------------------------------
+
 
 class TestSignalIdUniqueness:
 
@@ -382,18 +399,22 @@ class TestSignalIdUniqueness:
 # TC-REG-11: ArtifactType enum values
 # ---------------------------------------------------------------------------
 
+
 class TestArtifactTypeRegression:
 
     def test_artifact_type_values(self):
         """TC-REG-11: ArtifactType has expected values."""
         expected = {"CODE", "CONFIG", "DOC", "TEST"}
         actual = {t.name for t in ArtifactType}
-        assert expected.issubset(actual), f"Missing ArtifactType values: {expected - actual}"
+        assert expected.issubset(
+            actual
+        ), f"Missing ArtifactType values: {expected - actual}"
 
 
 # ---------------------------------------------------------------------------
 # TC-REG-12: SignalType enum values
 # ---------------------------------------------------------------------------
+
 
 class TestSignalTypeRegression:
 
@@ -401,4 +422,6 @@ class TestSignalTypeRegression:
         """TC-REG-12: SignalType has expected values."""
         expected = {"INTENT", "VETO", "ERROR"}
         actual = {t.name for t in SignalType}
-        assert expected.issubset(actual), f"Missing SignalType values: {expected - actual}"
+        assert expected.issubset(
+            actual
+        ), f"Missing SignalType values: {expected - actual}"

@@ -35,10 +35,10 @@ from statekanban.adapters.mock_adapter import MockLLMAdapter
 from statekanban.config import Config
 from statekanban.tools.call_llm import create_call_llm_tool
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 async def _echo_impl(params: dict) -> dict:
     """Echo implementation for tests."""
@@ -48,6 +48,7 @@ async def _echo_impl(params: dict) -> dict:
 async def _slow_impl(params: dict) -> dict:
     """Slow implementation for timeout tests."""
     import asyncio
+
     await asyncio.sleep(100)
     return {"late": True}
 
@@ -85,6 +86,7 @@ def all_roles_tool_def():
 # TC-TR-001 ~ TC-TR-002: Tool registration
 # ---------------------------------------------------------------------------
 
+
 class TestToolRegistryRegister:
 
     @pytest.mark.asyncio
@@ -102,6 +104,7 @@ class TestToolRegistryRegister:
 # ---------------------------------------------------------------------------
 # TC-TR-003 ~ TC-TR-006: Dispatch and permission
 # ---------------------------------------------------------------------------
+
 
 class TestToolRegistryDispatch:
 
@@ -133,6 +136,7 @@ class TestToolRegistryDispatch:
 # ---------------------------------------------------------------------------
 # TC-TR-007 ~ TC-TR-008: Timeout handling
 # ---------------------------------------------------------------------------
+
 
 class TestToolRegistryTimeout:
 
@@ -168,6 +172,7 @@ class TestToolRegistryTimeout:
 # ---------------------------------------------------------------------------
 # TC-TR-009 ~ TC-TR-012: Audit logging
 # ---------------------------------------------------------------------------
+
 
 class TestToolRegistryAudit:
 
@@ -216,17 +221,24 @@ class TestToolRegistryAudit:
 # TC-ENG-01: Engine dispatches through registry
 # ---------------------------------------------------------------------------
 
+
 class TestEngineViaRegistry:
 
     @pytest.mark.asyncio
-    async def test_engine_uses_registry_for_llm(self, kanban, bus, registry, valve, slicer, pm, adapter, config):
+    async def test_engine_uses_registry_for_llm(
+        self, kanban, bus, registry, valve, slicer, pm, adapter, config
+    ):
         """TC-ENG-01: Engine._call_llm_for_role uses registry.dispatch."""
         # Register call_llm tool
         registry.register(
             ToolDef(
                 name="call_llm",
                 description="Invoke LLM via adapter",
-                param_schema={"type": "object", "properties": {"messages": {"type": "array"}}, "required": ["messages"]},
+                param_schema={
+                    "type": "object",
+                    "properties": {"messages": {"type": "array"}},
+                    "required": ["messages"],
+                },
                 required_permissions={"all_roles"},
                 timeout_seconds=120.0,
             ),
@@ -254,19 +266,24 @@ class TestEngineViaRegistry:
         entries = kanban.audit.read_entries(event_type="tool_call")
         assert len(entries) >= 1, "Registry dispatch should be logged in audit"
 
-
-# ---------------------------------------------------------------------------
-# TC-ENG-02: Direct adapter fallback
-# ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
+    # TC-ENG-02: Direct adapter fallback
+    # ---------------------------------------------------------------------------
 
     @pytest.mark.asyncio
-    async def test_engine_direct_adapter_fallback(self, kanban, bus, registry, valve, slicer, pm, adapter, config):
+    async def test_engine_direct_adapter_fallback(
+        self, kanban, bus, registry, valve, slicer, pm, adapter, config
+    ):
         """TC-ENG-02: Engine uses direct adapter when _use_registry_for_llm=False."""
         registry.register(
             ToolDef(
                 name="call_llm",
                 description="Invoke LLM via adapter",
-                param_schema={"type": "object", "properties": {"messages": {"type": "array"}}, "required": ["messages"]},
+                param_schema={
+                    "type": "object",
+                    "properties": {"messages": {"type": "array"}},
+                    "required": ["messages"],
+                },
                 required_permissions={"all_roles"},
                 timeout_seconds=120.0,
             ),
@@ -290,21 +307,30 @@ class TestEngineViaRegistry:
 
         # Direct adapter calls don't produce tool_call audit entries
         entries = kanban.audit.read_entries(event_type="tool_call")
-        tool_call_entries = [e for e in entries if "call_llm" in e.details.get("tool_name", "")]
-        assert len(tool_call_entries) == 0, "Direct adapter calls should bypass registry audit"
+        tool_call_entries = [
+            e for e in entries if "call_llm" in e.details.get("tool_name", "")
+        ]
+        assert (
+            len(tool_call_entries) == 0
+        ), "Direct adapter calls should bypass registry audit"
 
+    # ---------------------------------------------------------------------------
+    # TC-ENG-03: _build_context formats correctly
+    # ---------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# TC-ENG-03: _build_context formats correctly
-# ---------------------------------------------------------------------------
-
-    def test_build_context(self, kanban, bus, registry, valve, slicer, pm, adapter, config):
+    def test_build_context(
+        self, kanban, bus, registry, valve, slicer, pm, adapter, config
+    ):
         """TC-ENG-03: _build_context formats ViewportSlice into context string."""
         registry.register(
             ToolDef(
                 name="call_llm",
                 description="Invoke LLM via adapter",
-                param_schema={"type": "object", "properties": {"messages": {"type": "array"}}, "required": ["messages"]},
+                param_schema={
+                    "type": "object",
+                    "properties": {"messages": {"type": "array"}},
+                    "required": ["messages"],
+                },
                 required_permissions={"all_roles"},
                 timeout_seconds=120.0,
             ),
@@ -342,12 +368,13 @@ class TestEngineViaRegistry:
         assert "Role: coder" in context
         assert "Signals" in context
 
+    # ---------------------------------------------------------------------------
+    # TC-ENG-04: ValveReworkLoopError on consecutive failures
+    # ---------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# TC-ENG-04: ValveReworkLoopError on consecutive failures
-# ---------------------------------------------------------------------------
-
-    def test_valve_rework_loop_counter(self, kanban, bus, registry, valve, slicer, pm, adapter, config):
+    def test_valve_rework_loop_counter(
+        self, kanban, bus, registry, valve, slicer, pm, adapter, config
+    ):
         """TC-ENG-04: Engine tracks consecutive valve failures."""
         engine = Engine(
             kanban=kanban,
@@ -365,14 +392,17 @@ class TestEngineViaRegistry:
 
         # Simulate reaching the threshold
         engine._consecutive_valve_failures = 3
-        assert engine._consecutive_valve_failures >= engine._max_consecutive_valve_failures
+        assert (
+            engine._consecutive_valve_failures >= engine._max_consecutive_valve_failures
+        )
 
+    # ---------------------------------------------------------------------------
+    # TC-ENG-05: Valve success resets counter
+    # ---------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# TC-ENG-05: Valve success resets counter
-# ---------------------------------------------------------------------------
-
-    def test_valve_success_resets_counter(self, kanban, bus, registry, valve, slicer, pm, adapter, config):
+    def test_valve_success_resets_counter(
+        self, kanban, bus, registry, valve, slicer, pm, adapter, config
+    ):
         """TC-ENG-05: Valve success resets consecutive failure counter to 0."""
         engine = Engine(
             kanban=kanban,

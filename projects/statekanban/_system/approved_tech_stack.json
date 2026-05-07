@@ -1,6 +1,6 @@
 {
   "project": "statekanban",
-  "round": 4,
+  "round": 5,
   "language": "Python 3.11+",
   "frameworks": {
     "async": "asyncio",
@@ -10,19 +10,14 @@
     "testing": "pytest",
     "cli": "click"
   },
-  "new_dependencies": {
-    "live_api_test": {
-      "modules": ["anthropic", "os"],
-      "note": "anthropic SDK 已在 R2 引入，无新增第三方依赖"
-    }
-  },
-  "new_files": [
-    "04_testing/test_scripts/test_live_api.py"
-  ],
+  "new_dependencies": {},
   "modified_files": [
-    "statekanban/adapters/mock_adapter.py",
+    "05_delivery/statekanban/config.py",
+    "05_delivery/statekanban/cli/main.py",
+    "05_delivery/statekanban/core/valve.py",
+    "05_delivery/statekanban/adapters/mock_adapter.py",
     "04_testing/test_scripts/test_e2e.py",
-    "04_testing/test_scripts/conftest.py"
+    "04_testing/test_scripts/test_mock_adapter.py"
   ],
   "roles": {
     "pm": {"platform": "claude"},

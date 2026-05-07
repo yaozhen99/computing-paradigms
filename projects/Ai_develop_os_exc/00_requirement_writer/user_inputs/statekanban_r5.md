@@ -83,16 +83,19 @@ statekanban snapshot load snapshot.json --project-root /path/to/project
 - `snapshot save` 命令：从 `--project-root` 解析 snapshot 存储路径
 - `snapshot load` 命令：同上
 
-### REQ-503：Engine 从 Config 解析路径传给 OutputValve
+### REQ-503：调用者从 Config 解析路径传给 OutputValve
 
-**现在**：Engine 构造时 OutputValve 的 output_dir 由调用者自行传入，Engine 不参与路径解析。
+**现在**：CLI 构造 OutputValve 时无 output_dir 配置，Engine 不参与路径解析。
 
-**改成**：Engine 从 `Config.project_root` 解析 `output_dir`，传给 OutputValve。
+**改成**：CLI（或任何 Engine 调用者）从 `Config.resolve_path(config.output_dir)` 解析绝对路径，传给 OutputValve。Engine 本身不改构造签名。
 
-**具体改动**（`engine/engine.py`）：
-- Engine 构造时接收 Config
-- 用 `config.resolve_path(config.output_dir)` 解析 output_dir
-- 将解析后的绝对路径传给 OutputValve
+**具体改动**（`cli/main.py`）：
+- `cmd_drive()` 中：`valve = OutputValve(kanban=kanban, output_dir=config.resolve_path(config.output_dir))`
+- OutputValve 新增 `output_dir` 构造参数（可选，默认 `"./output"`），用于指定写入目录
+
+**具体改动**（`core/valve.py`）：
+- OutputValve 构造新增 `output_dir: str = "./output"` 参数
+- `_atomic_write()` 中 artifact.path 若为相对路径，相对于 output_dir 解析
 
 ### REQ-504：修正 set_behavior_mode 为双参数签名（R4 遗留）
 
@@ -120,7 +123,7 @@ def set_behavior_mode(
 - GENERATE_SIMPLE：`"def hello():\n    return \"hello world\"\n"`
 - GENERATE_WITH_BUG：`"def hello():\n    return undefined_var\n"`
 
-**向后兼容**：现有单参数调用 `set_behavior_mode(MockReviewerBehavior.ALWAYS_APPROVE)` 会因签名变更报错。需同步修改所有调用点（test_e2e.py、test_mock_adapter.py 等）。
+**破坏性变更**：现有单参数调用 `set_behavior_mode(MockReviewerBehavior.ALWAYS_APPROVE)` 会因签名变更报错。需同步修改所有调用点（test_e2e.py、test_mock_adapter.py 等）。这是有意为之——双参数签名是唯一正确的调用方式，不再支持单参数。
 
 ### REQ-505：修正 E2E 测试为 Engine.drive() 驱动（R4 遗留）
 
@@ -129,18 +132,38 @@ def set_behavior_mode(
 **改成**：改为通过 Engine.drive() + behavior_mode 驱动，验证完整驱动循环。
 
 **TC-E2E-002：碰撞收敛（重写）**
-- 构建完整系统（`_make_system()` 工厂函数）
+- 用 `_make_system()` 工厂函数构建完整系统
 - adapter 设置 `set_behavior_mode(reviewer_behavior=MockReviewerBehavior.REJECT_THEN_APPROVE, coder_behavior=MockCoderBehavior.GENERATE_SIMPLE)`
 - `result = await engine.drive("实现带类型注解的函数")`
 - 断言：`result.converged is True`
 - 断言：FluidZone 有至少 1 个 VetoSignal
 
 **TC-E2E-003：拦截率（重写）**
-- 构建完整系统
+- 用 `_make_system()` 工厂函数构建完整系统
 - adapter 设置 `set_behavior_mode(reviewer_behavior=MockReviewerBehavior.ALWAYS_REJECT, coder_behavior=MockCoderBehavior.GENERATE_WITH_BUG)`
 - `result = await engine.drive("实现安全函数")`，max_rounds=3
 - 断言：`result.converged is False`，`result.forced_terminate is True`
 - 断言：CrystalZone 无 artifact
+
+**`_make_system()` 工厂函数定义**：
+```python
+def _make_system(config: Config | None = None) -> tuple[StateKanban, MessageBus, ToolRegistry, OutputValve, ViewportSlicer, ProcessManager, MockLLMAdapter, Config]:
+    """构建完整系统，返回 (kanban, bus, registry, valve, slicer, pm, adapter, config)。"""
+    config = config or Config()
+    kanban = StateKanban()
+    bus = MessageBus(kanban)
+    registry = ToolRegistry(kanban)
+    valve = OutputValve(kanban=kanban, output_dir=config.resolve_path(config.output_dir))
+    # 注册 4 个 viewport（coder/reviewer/tester/integrator）
+    for spec in _make_viewport_specs():
+        kanban.register_viewport(spec)
+    slicer = ViewportSlicer(kanban, _make_viewport_specs())
+    pm = ProcessManager(kanban, bus)
+    adapter = MockLLMAdapter()
+    # 注册 call_llm 工具
+    registry.register(ToolDef(...), create_call_llm_tool(adapter))
+    return kanban, bus, registry, valve, slicer, pm, adapter, config
+```
 
 **TC-E2E-001 也需修正**：改为双参数调用：
 ```python
@@ -172,8 +195,8 @@ adapter.set_behavior_mode(
 | # | 文件 | 操作 |
 |---|------|------|
 | 1 | `05_delivery/statekanban/config.py` | 修改：REQ-501（新增 project_root + resolve_path） |
-| 2 | `05_delivery/statekanban/cli/main.py` | 修改：REQ-502（--project-root 参数） |
-| 3 | `05_delivery/statekanban/engine/engine.py` | 修改：REQ-503（从 Config 解析路径） |
+| 2 | `05_delivery/statekanban/cli/main.py` | 修改：REQ-502（--project-root 参数）+ REQ-503（从 Config 解析路径传给 OutputValve） |
+| 3 | `05_delivery/statekanban/core/valve.py` | 修改：REQ-503（新增 output_dir 构造参数） |
 | 4 | `05_delivery/statekanban/adapters/mock_adapter.py` | 修改：REQ-504（双参数签名 + artifact_content 精确值 + tester/integrator 预设） |
-| 5 | `04_testing/test_scripts/test_e2e.py` | 修改：REQ-505（TC-E2E-001/002/003 改为 Engine.drive() 驱动） |
+| 5 | `04_testing/test_scripts/test_e2e.py` | 修改：REQ-505（TC-E2E-001/002/003 改为 Engine.drive() 驱动 + _make_system 工厂函数） |
 | 6 | `04_testing/test_scripts/test_mock_adapter.py` | 修改：同步更新 set_behavior_mode 调用点 |
