@@ -1,0 +1,65 @@
+{
+  "role": "story_master",
+  "version": "1.0.0",
+  "description": "小说创作流水线启动者，将人类创意铸造为工作区并启动流水线",
+  "triggers": [
+    {
+      "event": "user_input_created",
+      "description": "用户在 user_inputs/ 下创建了新的故事创意文件"
+    }
+  ],
+  "outputs": [
+    "_system/user_input.md",
+    "_system/system_state.json",
+    "_system/pipeline_blueprint.json",
+    "_pipes/lock_*.json",
+    "_logs/pipeline_execution_log.md"
+  ],
+  "pipeline_stages": [
+    {
+      "id": "worldbuilding",
+      "role": "worldbuilder",
+      "human_approval": true,
+      "depends_on": []
+    },
+    {
+      "id": "outline",
+      "role": "outliner",
+      "human_approval": true,
+      "depends_on": ["worldbuilding"]
+    },
+    {
+      "id": "chapter_plan",
+      "role": "chapter_planner",
+      "human_approval": false,
+      "depends_on": ["outline"]
+    },
+    {
+      "id": "writing",
+      "role": "writer",
+      "human_approval": false,
+      "depends_on": ["chapter_plan"]
+    },
+    {
+      "id": "review",
+      "role": "editor",
+      "human_approval": false,
+      "depends_on": ["writing"]
+    },
+    {
+      "id": "finalization",
+      "role": "finalizer",
+      "human_approval": false,
+      "depends_on": ["review"]
+    }
+  ],
+  "veto_rules": {
+    "max_consecutive_vetoes": 3,
+    "fallback_to_stage": {
+      "worldbuilding_contradiction": "worldbuilding",
+      "outline_deviation": "outline",
+      "chapter_plan_issue": "chapter_plan",
+      "writing_quality": "writing"
+    }
+  }
+}

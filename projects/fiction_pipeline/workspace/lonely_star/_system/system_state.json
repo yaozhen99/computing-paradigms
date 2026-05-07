@@ -1,0 +1,51 @@
+{
+  "story_name": "lonely_star",
+  "volume": 1,
+  "volume_name": "世外桃源",
+  "status": "running",
+  "current_stage": "worldbuilding",
+  "veto_count": 0,
+  "max_veto": 3,
+  "human_approval_required": ["worldbuilding", "outline"],
+  "approved": {},
+  "completed_stages": [],
+  "created_at": "2026-05-06T00:00:00Z",
+  "updated_at": "2026-05-07T06:30:00Z",
+  "input_files": {
+    "volume1_requirements": "00_story_master/user_inputs/lonely_star_volume1.md",
+    "worldbuilding": "01_worldbuilding/worldbuilding.md",
+    "rewrite_spec": "01_worldbuilding/rewrite_spec.md"
+  },
+  "pipeline_stages": [
+    {
+      "id": "worldbuilding",
+      "status": "in_progress",
+      "description": "补充动植物、感官细节、日常景色、异化生活方式"
+    },
+    {
+      "id": "outline",
+      "status": "pending",
+      "description": "基于世界观+需求文档生成第一卷章节大纲"
+    },
+    {
+      "id": "chapter_plan",
+      "status": "pending",
+      "description": "每章详细计划：场景、氛围、人物、AI互动"
+    },
+    {
+      "id": "writing",
+      "status": "pending",
+      "description": "逐章撰写正文"
+    },
+    {
+      "id": "review",
+      "status": "pending",
+      "description": "审核：设定自洽、风格一致、人物真实"
+    },
+    {
+      "id": "finalization",
+      "status": "pending",
+      "description": "终稿定稿"
+    }
+  ]
+}
