@@ -1,666 +1,262 @@
-# StateKanban Troubleshooting Guide
+# StateKanban 常见问题与解决方案
 
-Common issues, their causes, and step-by-step solutions.
+> 涵盖 R3 迭代新增问题及历史问题。
 
 ---
 
-## 1. Installation Issues
+## 安装与启动
 
-### 1.1 `pip install` fails with Python version error
+### Q: `pip install -e .` 报错 "No module named 'statekanban'"
 
-**Symptom:**
+**原因**：未在正确的目录下执行安装命令。
 
-```
-ERROR: Package 'statekanban' requires Python >=3.11
-```
-
-**Cause:** StateKanban requires Python 3.11 or later due to use of modern type hint syntax (`X | None`, `dict[str, Any]`).
-
-**Solution:**
+**解决方案**：
 
 ```bash
-# Check your Python version
-python --version
-
-# If below 3.11, install a supported version
-# On macOS (Homebrew):
-brew install python@3.11
-
-# On Ubuntu:
-sudo apt install python3.11 python3.11-venv
-
-# Then create a venv with the correct version
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
+cd 05_delivery/statekanban
+pip install -e .
 ```
 
-### 1.2 `ModuleNotFoundError: No module named 'click'`
+确认当前目录包含 `pyproject.toml`。
 
-**Cause:** The `click` dependency was not installed.
+### Q: 启动 CLI 报 `ModuleNotFoundError: No module named 'rich'`
 
-**Solution:**
+**原因**：依赖未完整安装。
+
+**解决方案**：
 
 ```bash
-pip install -e ".[dev]"
-# Or install dependencies directly:
-pip install click>=8.1 anthropic>=0.30
-```
-
-### 1.3 `anthropic` package import error on startup
-
-**Symptom:**
-
-```
-ImportError: cannot import name 'AsyncAnthropic' from 'anthropic'
-```
-
-**Cause:** The installed `anthropic` SDK version is too old.
-
-**Solution:**
-
-```bash
-pip install --upgrade anthropic>=0.30
-```
-
-If you do not need the Anthropic adapter, use the mock or CLI adapter instead:
-
-```bash
-statekanban run --intent "..." --adapter mock
+pip install -e ".[full]"
+# 或单独安装
+pip install rich pydantic
 ```
 
 ---
 
-## 2. LLM Adapter Issues
+## 适配器与 Registry
 
-### 2.1 `LLMAuthError: ANTHROPIC_API_KEY not set`
+### Q: `AdapterNotFoundError: adapter 'openai' not found in registry`
 
-**Symptom:**
+**原因**：OpenAI 适配器未注册到 Registry，或 `statekanban.adapters.openai` 模块缺失。
 
-```
-statekanban.core.errors.LLMAuthError: ANTHROPIC_API_KEY not set
-```
+**解决方案**：
 
-**Cause:** The `ANTHROPIC_API_KEY` environment variable is not set or is empty.
-
-**Solution:**
-
-```bash
-# Set the API key
-export ANTHROPIC_API_KEY="sk-ant-..."
-
-# Verify it is set
-echo $ANTHROPIC_API_KEY
-
-# Alternatively, use a .env file in the project root
-echo 'ANTHROPIC_API_KEY=sk-ant-...' > .env
-```
-
-### 2.2 `LLMRateLimitError: Anthropic API rate limit hit`
-
-**Symptom:**
-
-```
-statekanban.core.errors.LLMRateLimitError: Anthropic API rate limit hit
-```
-
-**Cause:** The Anthropic API rate limit has been exceeded. The adapter retries 3 times with exponential backoff before raising this error.
-
-**Solution:**
-
-1. Wait a few seconds and retry. The adapter already uses exponential backoff (1s, 2s, 4s).
-2. Check your Anthropic account rate limits at console.anthropic.com.
-3. Reduce the number of concurrent processes or increase the interval between calls.
-4. Consider using a model with higher rate limits.
-
-### 2.3 `LLMResponseParseError: Failed to parse response`
-
-**Symptom:**
-
-```
-statekanban.core.errors.LLMResponseParseError: Failed to parse response: ...
-```
-
-**Cause:** The LLM returned a response that could not be parsed into the expected format.
-
-**Solution:**
-
-1. Retry the request -- transient API issues can cause malformed responses.
-2. Check if the `anthropic` SDK version is compatible with the model version.
-3. If using custom tools, verify the tool definitions are valid JSON Schema.
-
-### 2.4 `ClaudeCLIAdapter: Claude CLI not found`
-
-**Symptom:**
-
-```
-statekanban.core.errors.LLMAuthError: Claude CLI not found at: claude
-```
-
-**Cause:** The `claude` command-line tool is not installed or not on the PATH.
-
-**Solution:**
-
-```bash
-# Install Claude CLI (if available)
-npm install -g @anthropic-ai/claude-cli
-
-# Or specify the full path
-statekanban run --intent "..." --adapter cli --cli-path /usr/local/bin/claude
-```
-
----
-
-## 3. Viewport and Slicing Issues
-
-### 3.1 `InvalidViewportSpecError: No viewport spec registered for role`
-
-**Symptom:**
-
-```
-statekanban.core.errors.InvalidViewportSpecError: No viewport spec registered for role: devops
-```
-
-**Cause:** A custom role was created without a corresponding ViewportSpec.
-
-**Solution:**
-
-Register a ViewportSpec for the custom role before creating its process:
+1. 确认已安装 `openai` 包：`pip install openai`
+2. 确认适配器已注册：
 
 ```python
-from statekanban.core.kanban import ViewportSpec, SignalType, ArtifactType
+from statekanban import Registry
+from statekanban.adapters.codex_adapter import CodexAdapter
 
-spec = ViewportSpec(
-    role="devops",
-    visible_signal_types=[SignalType.INTENT, SignalType.ERROR],
-    visible_artifact_types=[ArtifactType.CODE, ArtifactType.CONFIG],
-    visible_target_patterns=["*"],
-    max_tokens=2000,
-)
-kanban.register_viewport(spec)
+registry = Registry()
+registry.register("codex", CodexAdapter())
+engine = Engine(kanban=kb, registry=registry, adapter_name="codex")
 ```
 
-### 3.2 `SliceOverflowError: Cannot fit any items within token budget`
+3. 环境变量设置：`STATEKANBAN_LLM_PROVIDER=codex`
 
-**Symptom:**
+### Q: R3 升级后 Engine 构造报 `TypeError: __init__() missing required argument: 'registry'`
 
-```
-statekanban.core.errors.SliceOverflowError: Cannot fit any items within token budget (2000) for role: coder
-```
+**原因**：R3 重构后 Engine 不再接受 `adapter` 参数，改为 `registry` + `adapter_name`。
 
-**Cause:** Even a single signal or artifact exceeds the token budget for the role's viewport.
+**解决方案**：
 
-**Solution:**
-
-1. Increase the token budget in the ViewportSpec:
-
+R2 旧代码：
 ```python
-spec = ViewportSpec(
-    role="coder",
-    visible_signal_types=[SignalType.INTENT, SignalType.ERROR],
-    visible_artifact_types=[ArtifactType.CODE],
-    visible_target_patterns=["*"],
-    max_tokens=4000,  # Increase from 2000
-)
+engine = Engine(kanban=kb, adapter=MockAdapter())  # 已废弃
 ```
 
-2. Reduce the scope of visible items (narrower target patterns or fewer artifact types).
-3. Check if a single artifact has abnormally large content; consider splitting it.
+R3 新代码：
+```python
+registry = Registry()
+registry.register("mock", MockAdapter())
+engine = Engine(kanban=kb, registry=registry, adapter_name="mock")
+```
+
+### Q: `AdapterCallError: codex adapter call failed with timeout`
+
+**原因**：Codex 服务不可达或响应超时。
+
+**解决方案**：
+
+1. 检查 Codex 服务端点配置
+2. 增加超时时间（适配器 `call()` 方法的 `timeout` 参数）
+3. 确认网络连通性：`curl <endpoint>/health`
+4. 降级到 mock 适配器进行本地调试
 
 ---
 
-## 4. Tool and Permission Issues
+## 快照 (Snapshot)
 
-### 4.1 `PermissionDeniedError: Role 'reviewer' lacks permission for tool 'write_file'`
+### Q: `SnapshotError: failed to deserialize snapshot file`
 
-**Symptom:**
+**原因**：快照文件损坏或格式不兼容（如 R2 生成的快照缺少 R3 新增字段）。
 
-```
-statekanban.core.errors.PermissionDeniedError: Role 'reviewer' lacks permission for tool 'write_file'
-```
+**解决方案**：
 
-**Cause:** The Reviewer role is not permitted to call `write_file`. Only `coder` and `integrator` have this permission.
+1. 检查文件是否为合法 JSON：`python -m json.tool <snapshot_file>`
+2. R2 快照需手动添加缺失字段（`version`, `metadata`）
+3. 使用 `Snapshot.from_kanban()` 重新生成快照
 
-**Solution:**
+### Q: `snapshot --diff` 报 `KeyError` 或结果不完整
 
-This is by design -- Reviewer should not write files. If you need a custom role with write access, register the tool with the role in its permission set:
+**原因**：两个快照来自不同版本的看板定义，泳道名称不一致。
+
+**解决方案**：
+
+1. 确保对比的快照来自同一看板实例或结构兼容的看板
+2. 检查泳道名称是否完全匹配（区分大小写）
+3. 使用 `--structured` 输出以获取详细错误信息
+
+---
+
+## 阀 (Valve) 与守卫
+
+### Q: 卡片在阀处"卡住"不流动
+
+**原因**：守卫条件过于严格，或守卫函数抛出异常（异常默认返回 `False`）。
+
+**解决方案**：
+
+1. 使用 `--behavior` 查看阀的语义描述，理解守卫意图
+2. 检查守卫函数是否正确评估卡片的 `payload`
+3. 为守卫函数添加日志：
 
 ```python
-from statekanban.core.kanban import ToolDef
+def my_guard(card: Card) -> bool:
+    result = card.payload.get("approved", False)
+    logger.debug("Guard evaluated for card %s: %s", card.id, result)
+    return result
+```
 
-# Create a new tool definition that includes the custom role
-registry.register(
-    ToolDef(
-        name="write_file_custom",
-        description="Write with custom permissions",
-        param_schema={...},
-        required_permissions={"custom_role"},
-    ),
-    write_file_impl,
+4. 临时移除守卫测试是否为守卫问题
+
+### Q: `ValveGuardError` 但守卫函数返回 `True`
+
+**原因**：R3 中阀守卫评估增加了类型检查，非布尔返回值会触发异常。
+
+**解决方案**：
+
+确保守卫函数返回严格的 `bool` 类型：
+
+```python
+# 错误：返回 truthy 值（如 1, "yes", [...]）
+def bad_guard(card): return card.payload.get("count")  # 可能返回 int
+
+# 正确：显式返回 bool
+def good_guard(card): return bool(card.payload.get("count", 0))
+```
+
+---
+
+## 视口 (Viewport)
+
+### Q: 视口投影结果为空
+
+**原因**：`swimlane_filter` 或 `card_filter` 过于严格。
+
+**解决方案**：
+
+1. 空的 `swimlane_filter` 表示订阅全部泳道——确认不是误设了空字符串列表
+2. 检查 `card_filter` 函数是否对所有卡片返回 `False`
+3. 先不带过滤器创建视口，逐步添加过滤条件
+
+---
+
+## 引擎 (Engine)
+
+### Q: `ConvergenceError: engine failed to converge after N iterations`
+
+**原因**：卡片在泳道间循环移动，导致引擎永远无法收敛。
+
+**解决方案**：
+
+1. 检查是否存在环路：泳道 A -> B -> A 的阀链
+2. 增大 `max_iterations` 观察循环模式
+3. 调整 `Convergence.max_idle_rounds` 阈值
+4. 为环路中的阀添加守卫，打破循环条件
+
+### Q: `advance_all()` 返回空结果列表
+
+**原因**：没有卡片的守卫条件满足通过。
+
+**解决方案**：
+
+1. 使用 `show` 命令查看当前看板状态和卡片位置
+2. 检查所有出边阀的守卫条件
+3. 使用 `--behavior` 了解每个阀的语义预期
+4. 确认卡片 `payload` 包含守卫所需的数据
+
+### Q: Engine 运行时日志过多
+
+**原因**：默认日志级别可能被覆盖。
+
+**解决方案**：
+
+```bash
+# CLI 方式
+statekanban advance --log-level WARNING
+
+# 环境变量
+export STATEKANBAN_LOG_LEVEL=WARNING
+
+# 程序化方式
+import logging
+logging.getLogger("statekanban").setLevel(logging.WARNING)
+```
+
+---
+
+## CLI 输出
+
+### Q: `--structured` 输出不是合法 JSON
+
+**原因**：标准输出混入了非 JSON 内容（如警告日志）。
+
+**解决方案**：
+
+1. 确保日志级别 >= WARNING：`statekanban show --structured --log-level WARNING`
+2. 使用 stderr 重定向分离日志：`statekanban show --structured 2>/dev/null`
+
+### Q: `--behavior` 输出为空或显示 "No behavior defined"
+
+**原因**：阀未设置 `behavior` 字段。
+
+**解决方案**：
+
+创建阀时添加行为描述：
+
+```python
+valve = Valve(
+    name="approve",
+    source="review",
+    target="approved",
+    guard=lambda c: c.payload.get("reviewed"),
+    behavior="将已审核的卡片从审核中移至已批准"
 )
 ```
 
-### 4.2 `ToolNotFoundError: Tool not found: my_custom_tool`
-
-**Symptom:**
-
-```
-statekanban.core.errors.ToolNotFoundError: Tool not found: my_custom_tool
-```
-
-**Cause:** The tool was never registered in the ToolRegistry.
-
-**Solution:**
-
-Register the tool before dispatching calls:
-
-```python
-from statekanban.core.kanban import ToolDef
-
-async def my_custom_tool(params):
-    return {"result": "done"}
-
-registry.register(
-    ToolDef(
-        name="my_custom_tool",
-        description="Custom tool description",
-        param_schema={"type": "object", "properties": {}},
-        required_permissions={"all_roles"},
-    ),
-    my_custom_tool,
-)
-```
-
-### 4.3 `ToolTimeoutError: Tool 'run_shell' timed out after 120s`
-
-**Symptom:**
-
-```
-statekanban.core.errors.ToolTimeoutError: Tool 'run_shell' timed out after 120s
-```
-
-**Cause:** The shell command execution exceeded the timeout limit.
-
-**Solution:**
-
-1. Check if the command is hanging (e.g., waiting for input).
-2. Increase the timeout when calling the tool:
-
-```python
-result = await registry.dispatch("run_shell", "tester", {
-    "command": "long_running_command",
-    "timeout": 300,  # 5 minutes
-})
-```
-
-3. Use background execution if the command is expected to run long.
-
 ---
 
-## 5. Process Management Issues
+## R3 迁移相关
 
-### 5.1 `SelfTerminationError: Process cannot terminate itself`
+### Q: 旧版配置文件不兼容
 
-**Symptom:**
+**原因**：R3 引入了 `Registry`，配置结构有变更。
 
-```
-statekanban.core.errors.SelfTerminationError: Process abc123 cannot terminate itself
-```
+**解决方案**：
 
-**Cause:** A process attempted to call `terminate()` with its own process_id as the terminator. This is forbidden by design.
+1. 将 `adapter` 配置替换为 `adapter_name` + `registry` 配置
+2. 在启动脚本中显式注册适配器
+3. 参考新版本的 `config.py` 对比差异
 
-**Solution:**
+### Q: R2 测试用例在 R3 下失败
 
-Only the scheduler (ProcessManager) or another process can terminate a process:
+**原因**：Engine 构造签名变更、Snapshot 模块新增。
 
-```python
-# Correct: scheduler terminates the process
-pm.terminate(process_id, terminator="scheduler")
+**解决方案**：
 
-# Incorrect: process terminates itself
-pm.terminate(process_id, terminator=process_id)  # raises SelfTerminationError
-```
-
-### 5.2 `InvalidStateTransitionError: Invalid transition: terminated -> active`
-
-**Symptom:**
-
-```
-statekanban.core.errors.InvalidStateTransitionError: Invalid transition: terminated -> active
-```
-
-**Cause:** Attempting to transition a TERMINATED process back to ACTIVE. TERMINATED is a terminal state.
-
-**Solution:**
-
-Create a new process for the role instead:
-
-```python
-# Instead of reactivating a terminated process:
-new_process = pm.create_process(
-    role="coder",
-    tool_permits={"write_file", "read_file", "call_llm", "search_code"},
-    viewport_spec=kanban.get_viewport_spec("coder"),
-)
-pm.activate(new_process.process_id)
-```
-
-### 5.3 `HandoffError: No predecessor process exists for role`
-
-**Symptom:**
-
-```
-statekanban.core.errors.HandoffError: No predecessor process exists for role: architect
-```
-
-**Cause:** `claim_primary()` was called for a role that has no existing process.
-
-**Solution:**
-
-Use `create_process()` + `activate()` for the first process of a role. `claim_primary()` is only for replacing an existing process:
-
-```python
-# First process: use create + activate
-info = pm.create_process(role="architect", tool_permits=..., viewport_spec=...)
-pm.activate(info.process_id)
-
-# Later, replace with a new process:
-new_info = pm.create_process(role="architect", tool_permits=..., viewport_spec=...)
-pm.claim_primary("architect", new_info.process_id)
-```
-
-### 5.4 Heartbeat timeout detected
-
-**Symptom:** `check_heartbeats()` returns process IDs that have timed out.
-
-**Cause:** The process has not recorded a heartbeat within the threshold (default: 90 seconds = 3x the 30s interval).
-
-**Solution:**
-
-1. Ensure the process is calling `pm.heartbeat(process_id)` regularly.
-2. If the process crashed, recreate it from the last snapshot:
-
-```python
-timed_out = pm.check_heartbeats()
-for pid in timed_out:
-    process = pm.get_process(pid)
-    if process:
-        pm.terminate(pid, terminator="heartbeat_monitor")
-        # Recreate from snapshot
-        new_process = pm.create_process(
-            role=process.role,
-            tool_permits=process.tool_permits,
-            viewport_spec=process.viewport_spec,
-        )
-        pm.activate(new_process.process_id)
-```
-
----
-
-## 6. Snapshot Issues
-
-### 6.1 `SnapshotIntegrityError: Snapshot integrity check failed`
-
-**Symptom:**
-
-```
-statekanban.core.errors.SnapshotIntegrityError: Snapshot integrity check failed: checksum mismatch
-```
-
-**Cause:** The snapshot file was modified or corrupted after it was written. The SHA-256 checksum embedded in the snapshot does not match the recomputed checksum.
-
-**Solution:**
-
-1. Do not manually edit snapshot JSON files.
-2. If you have an earlier snapshot, use that instead:
-
-```bash
-statekanban restore --file earlier_snapshot.json
-```
-
-3. If no valid snapshot exists, start fresh:
-
-```bash
-statekanban run --intent "..." # creates a new kanban
-```
-
-### 6.2 `SnapshotWriteError: Failed to write snapshot`
-
-**Symptom:**
-
-```
-statekanban.core.errors.SnapshotWriteError: Failed to write snapshot to /path/snapshot.json: [Errno 13] Permission denied
-```
-
-**Cause:** The snapshot directory or file is not writable.
-
-**Solution:**
-
-```bash
-# Check directory permissions
-ls -la .statekanban/snapshots/
-
-# Create the directory with proper permissions
-mkdir -p .statekanban/snapshots
-chmod 755 .statekanban/snapshots
-
-# Or specify a different output path
-statekanban snapshot --output /tmp/snapshot.json
-```
-
-### 6.3 `FileNotFoundError: Snapshot file not found`
-
-**Symptom:**
-
-```
-FileNotFoundError: Snapshot file not found: missing_snapshot.json
-```
-
-**Cause:** The specified snapshot file does not exist.
-
-**Solution:**
-
-1. Verify the file path is correct.
-2. Check if the file was moved or deleted.
-3. List available snapshots:
-
-```bash
-ls -la .statekanban/snapshots/
-```
-
----
-
-## 7. CrystalZone and FluidZone Issues
-
-### 7.1 `ArtifactConflictError: Sequence number X already exists`
-
-**Symptom:**
-
-```
-statekanban.core.errors.ArtifactConflictError: Sequence number 5 already exists
-```
-
-**Cause:** An artifact was appended with an explicit `seq_no` that already exists in CrystalZone.
-
-**Solution:**
-
-Use `seq_no=0` to let CrystalZone auto-assign the next available sequence number:
-
-```python
-artifact = Artifact(
-    seq_no=0,  # Auto-assigned
-    artifact_type=ArtifactType.CODE,
-    path="src/module.py",
-    content="...",
-    checksum=compute_checksum("..."),
-    author_role="coder",
-    created_at=now_utc(),
-)
-seq_no = crystal.append(artifact)
-```
-
-### 7.2 `InvalidSignalError: signal_id is required`
-
-**Symptom:**
-
-```
-statekanban.core.errors.InvalidSignalError: signal_id is required
-```
-
-**Cause:** A signal was created with an empty `signal_id`.
-
-**Solution:**
-
-Always use `make_signal_id()` to generate a UUID4 signal ID:
-
-```python
-from statekanban.core.kanban import IntentSignal, make_signal_id, now_utc
-
-signal = IntentSignal(
-    signal_id=make_signal_id(),  # Always generate a new UUID
-    author_role="coder",
-    target_id="feature_x",
-    payload={},
-    timestamp=now_utc(),
-    round_number=0,
-)
-```
-
-### 7.3 Convergence never completes (runs 10 rounds)
-
-**Symptom:** `ConvergenceResult.forced_terminate = True` after 10 rounds.
-
-**Cause:** Coder and Reviewer signals continue to conflict after 10 convergence iterations. This is a design limit to prevent infinite loops.
-
-**Solution:**
-
-1. Check the FluidZone signals to understand the conflict:
-
-```python
-signals = kanban.fluid.read_signals(target_id="contested_artifact")
-for s in signals:
-    print(f"{s.author_role}: {s.signal_type.value} (round {s.round_number})")
-```
-
-2. Manually resolve by clearing stale signals and re-injecting:
-
-```python
-kanban.fluid.clear_signals(target_id="contested_artifact", round_number_ge=0)
-# Re-inject a consensus signal
-```
-
-3. Check audit logs for convergence timeout details:
-
-```python
-entries = kanban.audit.read_entries(event_type="convergence_timeout")
-```
-
----
-
-## 8. OutputValve Issues
-
-### 8.1 `SyntaxCheckError: Python syntax error`
-
-**Symptom:**
-
-```
-OutputValve validation failed: Python syntax error: invalid syntax (file.py, line 42)
-```
-
-**Cause:** The artifact content contains Python syntax errors.
-
-**Solution:**
-
-1. Fix the syntax error in the generated code.
-2. The error is automatically injected as an ErrorSignal into FluidZone, which will trigger a rework loop by the Coder process.
-3. To manually inspect the error:
-
-```python
-error_signals = kanban.fluid.read_signals(
-    signal_type=SignalType.ERROR,
-    target_id="src/module.py",
-)
-for s in error_signals:
-    print(s.error_detail)
-```
-
-### 8.2 `AtomicWriteError: Atomic write failed`
-
-**Symptom:**
-
-```
-statekanban.core.errors.AtomicWriteError: Atomic write failed for /path/file.py: [Errno 13] Permission denied
-```
-
-**Cause:** The filesystem does not allow writing to the target path.
-
-**Solution:**
-
-1. Check file and directory permissions.
-2. Ensure the parent directory exists.
-3. On Windows, check if the file is locked by another process.
-4. Check available disk space.
-
----
-
-## 9. General Debugging Tips
-
-### 9.1 Inspecting the Audit Log
-
-The AuditZone records every state change. Query it to trace issues:
-
-```python
-# All entries
-entries = kanban.audit.read_entries()
-
-# Filter by event type
-tool_calls = kanban.audit.read_entries(event_type="tool_call")
-timeouts = kanban.audit.read_entries(event_type="tool_timeout")
-state_changes = kanban.audit.read_entries(event_type="process_activated")
-
-# Filter by actor
-coder_events = kanban.audit.read_entries(actor="coder")
-
-# Get entries since a specific ID
-recent = kanban.audit.read_entries(since_entry_id=100)
-```
-
-### 9.2 Checking Board Status via CLI
-
-```bash
-statekanban status
-```
-
-This shows:
-- FluidZone: total signals, intent count, veto count, error count
-- CrystalZone: latest sequence number, artifact counts by type
-- AuditZone: total entries, last action
-- Processes: count per state
-
-### 9.3 Creating a Debug Snapshot
-
-Before investigating an issue, save a snapshot so you can restore it later:
-
-```bash
-statekanban snapshot --output debug_snapshot.json
-```
-
-### 9.4 Running with the Mock Adapter
-
-For debugging without consuming API credits:
-
-```bash
-statekanban run --intent "test task" --adapter mock
-```
-
-The MockLLMAdapter returns deterministic responses and requires no API key.
-
-### 9.5 Checking Test Coverage
-
-```bash
-cd 03_source/backend
-pip install pytest pytest-asyncio pytest-cov
-pytest --cov=statekanban --cov-report=term-missing
-```
-
-The test suite includes 203 tests covering all core modules with integration tests for end-to-end pipelines.
+1. 更新 Engine 实例化代码（使用 `Registry`）
+2. 确保测试中注册了所需的适配器
+3. 为 Snapshot 相关功能添加新的测试用例
+4. 参考测试报告 `04_testing/test_report.md` 了解 R3 测试覆盖范围

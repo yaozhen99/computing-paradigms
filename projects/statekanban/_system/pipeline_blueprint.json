@@ -1,7 +1,14 @@
 {
   "project": "statekanban",
-  "round": 2,
+  "round": 4,
   "mode": "v2_agent",
+  "title": "接口修正 + 真实 API 验证",
+  "notes": [
+    "R4 修正轮次：修复 R3 Reviewer 发现的接口偏差，新增真实 API 烟雾测试",
+    "3 REQ：REQ-401（set_behavior_mode 双参数签名）、REQ-402（E2E 改 Engine.drive()）、REQ-403（真实 API 烟雾测试）",
+    "4 交付物：mock_adapter.py（改）、test_e2e.py（改）、test_live_api.py（新增）、conftest.py（改）",
+    "代码基座：05_delivery/statekanban/（R3 产出）"
+  ],
   "nodes": [
     {
       "role": "pm",
@@ -13,51 +20,44 @@
     {
       "role": "architect",
       "depends_on": ["pm"],
-      "inputs": ["01_requirements/", "_system/approved_tech_stack.json", "02_design/", "03_source/"],
+      "inputs": ["01_requirements/", "_system/approved_tech_stack.json", "02_design/", "05_delivery/statekanban/"],
       "outputs": "02_design/",
       "lock_file": "_pipes/lock_architect.json"
     },
     {
       "role": "backend",
       "depends_on": ["architect"],
-      "inputs": ["02_design/", "_system/approved_tech_stack.json", "03_source/"],
-      "outputs": "03_source/backend/",
+      "inputs": ["02_design/", "_system/approved_tech_stack.json", "05_delivery/statekanban/"],
+      "outputs": "05_delivery/statekanban/",
       "lock_file": "_pipes/lock_backend.json"
     },
     {
       "role": "tester_write",
       "depends_on": ["architect", "backend"],
-      "inputs": ["02_design/", "03_source/"],
+      "inputs": ["02_design/", "05_delivery/statekanban/", "04_testing/"],
       "outputs": "04_testing/",
       "lock_file": "_pipes/lock_tester_write.json"
     },
     {
       "role": "tester_run",
       "depends_on": ["tester_write"],
-      "inputs": ["04_testing/", "03_source/"],
+      "inputs": ["04_testing/", "05_delivery/"],
       "outputs": "04_testing/",
       "lock_file": "_pipes/lock_tester_run.json"
     },
     {
       "role": "reviewer",
       "depends_on": ["tester_run"],
-      "inputs": ["01_requirements/", "02_design/", "03_source/", "04_testing/"],
+      "inputs": ["01_requirements/", "02_design/", "05_delivery/statekanban/", "04_testing/"],
       "outputs": "05_review/",
       "lock_file": "_pipes/lock_reviewer.json"
     },
     {
       "role": "integration",
       "depends_on": ["reviewer"],
-      "inputs": ["02_design/", "03_source/", "04_testing/", "05_review/"],
+      "inputs": ["02_design/", "05_delivery/", "04_testing/", "05_review/"],
       "outputs": "05_delivery/",
       "lock_file": "_pipes/lock_integration.json"
-    },
-    {
-      "role": "doc",
-      "depends_on": ["integration"],
-      "inputs": ["01_requirements/", "02_design/", "03_source/", "04_testing/"],
-      "outputs": "docs/",
-      "lock_file": "_pipes/lock_doc.json"
     }
   ]
 }

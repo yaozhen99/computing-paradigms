@@ -222,12 +222,25 @@ class OutputValve:
     # Private helpers
     # -----------------------------------------------------------------------
 
+    # Validator name -> error code mapping (type-derived, not string-matched)
+    _VALIDATOR_ERROR_CODES: dict[str, str] = {
+        "SyntaxValidator": "SK_OV_001",
+        "TypeValidator": "SK_OV_002",
+        "TestValidator": "SK_OV_003",
+        "AtomicWrite": "SK_OV_004",
+        "HumanGate": "SK_OV_005",
+    }
+
     def _inject_error_signal(
         self, artifact: Artifact, result: ValidationResult
     ) -> None:
         """Inject an ErrorSignal into FluidZone on validation failure."""
         if self._kanban is None:
             return
+
+        error_code = self._VALIDATOR_ERROR_CODES.get(
+            result.validator_name, "SK_OV_000"
+        )
 
         error_signal = ErrorSignal(
             signal_id=make_signal_id(),
@@ -239,7 +252,7 @@ class OutputValve:
             },
             timestamp=now_utc(),
             round_number=0,
-            error_code="SK_OV_001" if "syntax" in result.error_detail.lower() else "SK_OV_000",
+            error_code=error_code,
             error_detail=result.error_detail,
         )
         self._kanban.fluid.write_signal(error_signal)

@@ -1,16 +1,16 @@
-# 00. 任务师
+# 01. 任务师
 
-岗位定义：创世者。只做一件事：将人类意图转化为可执行的流水线世界。
+岗位定义：创世者。只做一件事：将需求编写师产出的需求文档转化为可执行的流水线世界。
 生命周期：一次性。铸造完毕即消亡。绝对禁止参与后续开发作业——这是铁律。
-强制输入：user_inputs/<项目名>.md
+强制输入：01_task_master/user_inputs/<项目名>.md
 强制输出：$PROJECT_SPACE/ 整个目录树
 
 ## 铸造协议
 
-### 第0步：读取人类意图
+### 第0步：读取需求文档
 
-1. 扫描 user_inputs/ 目录，读取所有 .md 文件。
-2. 每个文件代表一个独立项目的需求。对每个需求，独立执行第1-7步。
+1. 扫描 01_task_master/user_inputs/ 目录，读取所有 .md 文件。
+2. 每个文件代表一个独立项目的需求（由 00 需求编写师产出）。对每个需求，独立执行第1-7步。
 
 ### 第1步：需求裁决与模式选择
 
@@ -28,7 +28,7 @@
 
 ### 第2步：目录铸造
 
-在 $PROJECT_SPACE（默认 C:\tower-of-babel\projects\<项目名>\）下创建：
+在 $PROJECT_SPACE（默认 `./projects/<项目名>/`，相对于 `$TOWER_ROOT` 环境变量或当前工作目录）下创建：
 
 **V2 Agent 模式目录结构**：
 ```
@@ -36,7 +36,7 @@ $PROJECT_SPACE/
 ├── 01_requirements/
 ├── 02_design/
 ├── 03_source/
-├── 04_tests/
+├── 04_testing/
 ├── 05_review/
 ├── 05_delivery/
 ├── _system/
@@ -105,7 +105,7 @@ $PROJECT_SPACE/
 
 3. **approved_tech_stack.json**：根据需求裁决技术栈，包含每个角色的 platform。
 
-4. **user_input.md**：从 user_inputs/ 复制人类意图。
+4. **user_input.md**：从 01_task_master/user_inputs/ 复制需求文档。
 
 ### 第4步：管道初始化
 

@@ -1,0 +1,22 @@
+{
+  "role_id": "00",
+  "role_name": "requirement_writer",
+  "display_name": "需求编写师",
+  "description": "将用户模糊想法转化为精确、可执行的需求文档。是开发流水线的起点。",
+  "input_dir": "user_inputs",
+  "output_dir": "user_inputs",
+  "upstream": ["user"],
+  "downstream": ["01_task_master"],
+  "capabilities": [
+    "read_code",
+    "read_tests",
+    "read_reports",
+    "write_requirements"
+  ],
+  "restrictions": [
+    "no_code_writing",
+    "no_code_modification",
+    "no_test_execution",
+    "no_architecture_decisions"
+  ]
+}

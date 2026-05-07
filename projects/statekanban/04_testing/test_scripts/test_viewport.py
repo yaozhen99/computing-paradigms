@@ -235,3 +235,60 @@ class TestViewportSlicerMetadata:
         slice = slicer.slice("coder")
         assert "budget" in slice.slice_log
         assert "total_signals_available" in slice.slice_log
+
+
+class TestViewportIsolation:
+    """TC-VS-011, TC-VS-012 (R2): Viewport isolation between roles."""
+
+    def test_coder_cannot_see_veto_signals(self, kanban, slicer):
+        """TC-VS-011: Coder viewport excludes Veto signals."""
+        kanban.fluid.write_signal(IntentSignal(
+            signal_id=make_signal_id(), author_role="coder",
+            target_id="artifact_1", payload={}, timestamp=now_utc(), round_number=1,
+        ))
+        kanban.fluid.write_signal(VetoSignal(
+            signal_id=make_signal_id(), author_role="reviewer",
+            target_id="artifact_1", payload={}, timestamp=now_utc(), round_number=1,
+            reason="missing error handling",
+        ))
+        coder_slice = slicer.slice("coder")
+        veto_in_coder = any(s.signal_type == SignalType.VETO for s in coder_slice.signals)
+        assert veto_in_coder is False, "Coder should not see Veto signals"
+
+    def test_reviewer_can_see_veto_signals(self, kanban, slicer):
+        """TC-VS-012: Reviewer viewport includes Veto signals."""
+        kanban.fluid.write_signal(IntentSignal(
+            signal_id=make_signal_id(), author_role="coder",
+            target_id="artifact_1", payload={}, timestamp=now_utc(), round_number=1,
+        ))
+        kanban.fluid.write_signal(VetoSignal(
+            signal_id=make_signal_id(), author_role="reviewer",
+            target_id="artifact_1", payload={}, timestamp=now_utc(), round_number=1,
+            reason="bad",
+        ))
+        reviewer_slice = slicer.slice("reviewer")
+        veto_in_reviewer = any(s.signal_type == SignalType.VETO for s in reviewer_slice.signals)
+        assert veto_in_reviewer is True, "Reviewer should see Veto signals"
+
+    def test_coder_can_see_error_signals(self, kanban, slicer):
+        """Coder can see Error signals (e.g., from valve failures)."""
+        from statekanban.core.kanban import ErrorSignal
+        kanban.fluid.write_signal(ErrorSignal(
+            signal_id=make_signal_id(), author_role="OutputValve",
+            target_id="output.py", payload={}, timestamp=now_utc(), round_number=1,
+            error_code="SK_OV_001", error_detail="syntax error",
+        ))
+        coder_slice = slicer.slice("coder")
+        error_in_coder = any(s.signal_type == SignalType.ERROR for s in coder_slice.signals)
+        assert error_in_coder is True, "Coder should see Error signals"
+
+    def test_tester_cannot_see_veto_signals(self, kanban, slicer):
+        """Tester viewport excludes Veto signals."""
+        kanban.fluid.write_signal(VetoSignal(
+            signal_id=make_signal_id(), author_role="reviewer",
+            target_id="artifact_1", payload={}, timestamp=now_utc(), round_number=1,
+            reason="bad",
+        ))
+        tester_slice = slicer.slice("tester")
+        veto_in_tester = any(s.signal_type == SignalType.VETO for s in tester_slice.signals)
+        assert veto_in_tester is False, "Tester should not see Veto signals"

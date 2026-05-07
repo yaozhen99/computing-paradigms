@@ -1,232 +1,133 @@
-# StateKanban Test Case Matrix
+# StateKanban Test Case Matrix — R3
 
-## TC-1: FluidZone
+> Round 3 端到端验证。所有 R1/R2 测试用例保留，R3 新增标记 (R3)。
 
-| TC ID | Category | Test Case | Input | Expected Output | Priority |
-|-------|----------|-----------|-------|-----------------|----------|
-| TC-FZ-001 | Write | Write valid IntentSignal | Complete IntentSignal | Signal stored, readable | P0 |
-| TC-FZ-002 | Write | Write valid VetoSignal with reason | VetoSignal(reason="bug") | Signal stored with reason | P0 |
-| TC-FZ-003 | Write | Write valid ErrorSignal | ErrorSignal(error_code="SK_OV_001") | Signal stored with error fields | P0 |
-| TC-FZ-004 | Validation | Signal with empty signal_id | signal_id="" | InvalidSignalError raised | P0 |
-| TC-FZ-005 | Validation | Signal with empty author_role | author_role="" | InvalidSignalError raised | P0 |
-| TC-FZ-006 | Validation | Signal with empty target_id | target_id="" | InvalidSignalError raised | P0 |
-| TC-FZ-007 | Validation | Signal with invalid signal_type | signal_type="unknown" | InvalidSignalError raised | P0 |
-| TC-FZ-008 | Read | Read all signals | No filters | All signals returned, timestamp-ordered | P0 |
-| TC-FZ-009 | Read | Read by target_id | target_id="artifact_A" | Only matching signals | P0 |
-| TC-FZ-010 | Read | Read by signal_type | signal_type=VETO | Only VETO signals | P0 |
-| TC-FZ-011 | Read | Read by author_role | author_role="coder" | Only coder signals | P0 |
-| TC-FZ-012 | Read | Read with combined filters | target_id + signal_type | Intersection of filters | P0 |
-| TC-FZ-013 | Read | Read from empty zone | No signals written | Empty list | P0 |
-| TC-FZ-014 | Collision | No collision (INTENT only) | Only IntentSignals for target | has_collision=False, is_resolved=True | P0 |
-| TC-FZ-015 | Collision | INTENT+VETO collision | Intent + Veto on same target | has_collision=True, is_resolved=False | P0 |
-| TC-FZ-016 | Collision | No signals for target | target_id="nonexistent" | has_collision=False, is_resolved=True | P0 |
-| TC-FZ-017 | Collision | VETO only (no INTENT) | Only VetoSignal | has_collision=False, is_resolved=True | P0 |
-| TC-FZ-018 | Clear | Clear signals at round >= N | Signals at rounds 0,1,2; clear round>=2 | Rounds 0,1 preserved, round 2 removed | P0 |
-| TC-FZ-019 | Clear | Clear rebuilds index correctly | Clear then read by target | Index reflects remaining signals | P1 |
-| TC-FZ-020 | Overwrite | Same key (target,type,author) overwritten | Two signals with same key | Latest signal wins | P0 |
+---
 
-## TC-2: CrystalZone
+## TC-E2E: End-to-End Scenarios (R3 — P0)
 
-| TC ID | Category | Test Case | Input | Expected Output | Priority |
-|-------|----------|-----------|-------|-----------------|----------|
-| TC-CZ-001 | Append | Append with seq_no=0 (auto-assign) | Artifact(seq_no=0) | seq_no=1 assigned | P0 |
-| TC-CZ-002 | Append | Append multiple, auto-assign | Three artifacts with seq_no=0 | seq_nos 1,2,3 | P0 |
-| TC-CZ-003 | Append | Append with explicit seq_no | Artifact(seq_no=5) | seq_no=5 assigned | P0 |
-| TC-CZ-004 | Conflict | Duplicate seq_no | Same seq_no twice | ArtifactConflictError | P0 |
-| TC-CZ-005 | Read | Read by seq_no | Append then read | Correct artifact returned | P0 |
-| TC-CZ-006 | Read | Read non-existent seq_no | seq_no=999 | None returned | P0 |
-| TC-CZ-007 | Read | Read all artifacts | No filter | All artifacts, seq_no sorted | P0 |
-| TC-CZ-008 | Read | Filter by artifact_type | artifact_type=CODE | Only CODE artifacts | P0 |
-| TC-CZ-009 | Read | Filter by author_role | author_role="coder" | Only coder artifacts | P0 |
-| TC-CZ-010 | Read | latest_seq_no on empty | No artifacts | 0 | P0 |
-| TC-CZ-011 | Read | latest_seq_no after appends | Append 3 artifacts | 3 | P0 |
-| TC-CZ-012 | Immutable | No update method exists | Inspection | No update() method | P1 |
-| TC-CZ-013 | Immutable | No delete method exists | Inspection | No delete() method | P1 |
+| TC ID     | Category              | Test Case                                    | Input / Setup                                 | Expected Outcome                                         | Priority |
+|-----------|-----------------------|----------------------------------------------|-----------------------------------------------|----------------------------------------------------------|----------|
+| TC-E2E-01 | Happy Path            | Coder->Reviewer->crystal->valve write        | ALWAYS_APPROVE + GENERATE_SIMPLE              | Converges in 1+ round, artifact in CrystalZone           | P0       |
+| TC-E2E-02 | Collision Convergence | Coder->Reviewer veto->Coder fix->Reviewer ok | REJECT_THEN_APPROVE + GENERATE_SIMPLE         | Converges in 2+ rounds                                  | P0       |
+| TC-E2E-03 | Circuit Breaker       | Persistent rejection exceeds max rounds       | ALWAYS_REJECT + GENERATE_WITH_BUG, max=3      | forced_terminate=True, zero artifacts in CrystalZone     | P0       |
+| TC-E2E-04 | Viewport Isolation    | Coder viewport excludes reviewer veto signals | Coder spec = [INTENT, ERROR] only             | No VETO signals in coder slice                          | P0       |
+| TC-E2E-05 | Snapshot Round-Trip   | Save mid-run, load, verify state matches     | GENERATE_SIMPLE, save after seeding intent    | Loaded kanban has same signal/artifact counts            | P0       |
+| TC-E2E-06 | Rework Loop Error     | 3 consecutive valve failures                 | Valve always rejects artifact                 | ValveReworkLoopError(SK_EN_004) raised                  | P0       |
 
-## TC-3: AuditZone
+## TC-MCK: MockLLMAdapter (R3 — P1)
 
-| TC ID | Category | Test Case | Input | Expected Output | Priority |
-|-------|----------|-----------|-------|-----------------|----------|
-| TC-AZ-001 | Log | Log entry | event_type, actor, action, details | Monotonically increasing entry_id | P0 |
-| TC-AZ-002 | Log | Multiple log entries | Three entries | IDs 1, 2, 3 | P0 |
-| TC-AZ-003 | Read | Read all entries | No filter | All entries | P0 |
-| TC-AZ-004 | Read | Filter by event_type | event_type="tool_call" | Only matching entries | P0 |
-| TC-AZ-005 | Read | Filter by actor | actor="ToolRegistry" | Only matching entries | P0 |
-| TC-AZ-006 | Read | Filter by since_entry_id | since_entry_id=2 | Entries with id > 2 | P0 |
-| TC-AZ-007 | Read | Empty zone | No entries logged | Empty list | P1 |
+| TC ID     | Category         | Test Case                                    | Input                                       | Expected Outcome                                         | Priority |
+|-----------|------------------|----------------------------------------------|---------------------------------------------|----------------------------------------------------------|----------|
+| TC-MCK-01 | structured_mode  | set_structured_response returns JSON string   | role="coder", type=ARTIFACT                 | LLMResponse.content is valid JSON with type/artifact_*   | P0       |
+| TC-MCK-02 | structured_mode  | structured_mode property toggle              | adapter.structured_mode = True               | complete() returns JSON strings                          | P0       |
+| TC-MCK-03 | behavior_mode    | ALWAYS_APPROVE auto-configures structured    | set_behavior_mode(ALWAYS_APPROVE)            | structured_mode=True, reviewer returns intent            | P0       |
+| TC-MCK-04 | behavior_mode    | ALWAYS_REJECT returns veto                   | set_behavior_mode(ALWAYS_REJECT)             | reviewer returns veto on every call                     | P0       |
+| TC-MCK-05 | behavior_mode    | REJECT_THEN_APPROVE: first veto then approve | set_behavior_mode(REJECT_THEN_APPROVE)       | Call 1: veto, Call 2+: intent                           | P0       |
+| TC-MCK-06 | behavior_mode    | GENERATE_SIMPLE returns artifact             | set_behavior_mode(GENERATE_SIMPLE)           | coder returns artifact with simple content              | P0       |
+| TC-MCK-07 | behavior_mode    | GENERATE_WITH_BUG returns buggy artifact     | set_behavior_mode(GENERATE_WITH_BUG)         | coder returns artifact with buggy content               | P0       |
+| TC-MCK-08 | priority_chain   | behavior_mode overrides structured_mode      | Set both behavior and structured responses   | Behavior-driven response takes priority                 | P0       |
+| TC-MCK-09 | legacy_mode      | Default mode returns legacy LLMResponse      | No structured/behavior mode set              | Returns LLMResponse with plain text content             | P1       |
+| TC-MCK-10 | reset            | reset() clears all state                     | Set modes, call reset()                      | All call counts and behavior state cleared              | P1       |
 
-## TC-4: StateKanban (Facade)
+## TC-SNP: Snapshot Module (R3 — P0)
 
-| TC ID | Category | Test Case | Input | Expected Output | Priority |
-|-------|----------|-----------|-------|-----------------|----------|
-| TC-SK-001 | Convergence | Immediate agreement (no collision) | Only IntentSignals | converged=True, rounds=1 | P0 |
-| TC-SK-002 | Convergence | Collision resolves immediately | INTENT+VETO then VETO cleared | converged=True | P0 |
-| TC-SK-003 | Convergence | Forced terminate at 10 rounds | Persistent INTENT+VETO | converged=False, forced_terminate=True, rounds=10 | P0 |
-| TC-SK-004 | Convergence | Convergence result fields | Any convergence | All ConvergenceResult fields populated | P0 |
-| TC-SK-005 | Viewport | Register and retrieve viewport spec | ViewportSpec for "coder" | get_viewport_spec returns spec | P0 |
-| TC-SK-006 | Viewport | Retrieve non-existent viewport | "unknown_role" | None returned | P1 |
-| TC-SK-007 | Serialization | to_json -> from_json round-trip | Full kanban state | All zones preserved | P0 |
-| TC-SK-008 | Serialization | Checksum validation pass | Valid snapshot | from_json succeeds | P0 |
-| TC-SK-009 | Serialization | Checksum validation fail | Tampered snapshot | SnapshotIntegrityError | P0 |
+| TC ID     | Category   | Test Case                                    | Input                                       | Expected Outcome                                         | Priority |
+|-----------|------------|----------------------------------------------|---------------------------------------------|----------------------------------------------------------|----------|
+| TC-SNP-01 | save       | Save to valid path                           | kanban + writable dir                       | File written with valid JSON + checksum                  | P0       |
+| TC-SNP-02 | save       | Creates parent directories                   | Nested subdirectory path                    | Directories created, file written                       | P0       |
+| TC-SNP-03 | save       | Atomic write (tempfile + os.replace)         | Save, verify no partial files               | No .tmp files left, target file complete                | P1       |
+| TC-SNP-04 | load       | Load valid snapshot                          | Previously saved file                       | StateKanban fully reconstructed                          | P0       |
+| TC-SNP-05 | load       | FileNotFoundError on missing path            | Nonexistent path                            | FileNotFoundError raised                                 | P0       |
+| TC-SNP-06 | load       | Invalid JSON raises SnapshotIntegrityError   | Malformed JSON file                         | SnapshotIntegrityError(SK_SN_001)                       | P0       |
+| TC-SNP-07 | load       | Checksum mismatch raises SnapshotIntegrityError | Tampered snapshot content                | SnapshotIntegrityError(SK_SN_001)                       | P0       |
+| TC-SNP-08 | round-trip | Full save->load round-trip                    | Kanban with signals, artifacts, viewports   | All zones preserved identically                         | P0       |
+| TC-SNP-09 | list       | list_snapshots returns sorted filenames      | Multiple .json files in dir                 | Sorted list of .json filenames                          | P0       |
+| TC-SNP-10 | list       | list_snapshots on missing dir returns empty  | Nonexistent directory                       | Empty list                                              | P1       |
+| TC-SNP-11 | delete     | delete_snapshot removes file                 | Existing snapshot file                      | File no longer exists                                   | P0       |
+| TC-SNP-12 | delete     | delete_snapshot on missing file raises       | Nonexistent file path                       | FileNotFoundError raised                                | P0       |
+| TC-SNP-13 | manager    | SnapshotManager.save_snapshot/load_snapshot round-trip | Manager with base_dir, explicit path | Save+load produces identical state                      | P0       |
+| TC-SNP-14 | write_error| Write to readonly dir raises SnapshotWriteError | Permission-denowned directory             | SnapshotWriteError(SK_SN_002)                           | P1       |
 
-## TC-5: MessageBus
+## TC-ENG: Engine via ToolRegistry (R3 — P0)
 
-| TC ID | Category | Test Case | Input | Expected Output | Priority |
-|-------|----------|-----------|-------|-----------------|----------|
-| TC-MB-001 | Subscribe | Valid subscription | signal_type, async callback | subscription_id returned | P0 |
-| TC-MB-002 | Subscribe | Empty signal_type | signal_type="" | SubscriptionError | P0 |
-| TC-MB-003 | Subscribe | Non-callable callback | callback=42 | SubscriptionError | P0 |
-| TC-MB-004 | Unsubscribe | Valid unsubscribe | Existing subscription_id | Subscription removed | P0 |
-| TC-MB-005 | Unsubscribe | Invalid subscription_id | Unknown ID | SubscriptionError | P0 |
-| TC-MB-006 | Publish | Publish to matching subscribers | Signal matching type | Callbacks invoked | P0 |
-| TC-MB-007 | Publish | Publish with no subscribers | Signal with no matching type | No error, audit logged | P0 |
-| TC-MB-008 | Publish | Audit log on publish | Any publish | Audit entry created | P1 |
-| TC-MB-009 | Sync call | Successful sync call | Registered handler | Response returned | P0 |
-| TC-MB-010 | Sync call | Sync call timeout | Slow handler + short timeout | SyncCallTimeoutError | P0 |
-| TC-MB-011 | Sync call | No handler registered | Unknown target_role | SyncCallTimeoutError | P0 |
-| TC-MB-012 | Sync call | Audit log on completion | Successful call | Audit entry created | P1 |
-| TC-MB-013 | Async notify | Valid notification | Registered notify handler | Handler called | P0 |
-| TC-MB-014 | Async notify | No handler registered | Unknown target_role | No error (best-effort) | P0 |
-| TC-MB-015 | Async notify | Handler throws exception | Failing handler | Error swallowed, audit logged | P1 |
+| TC ID     | Category          | Test Case                                    | Input                                       | Expected Outcome                                         | Priority |
+|-----------|-------------------|----------------------------------------------|---------------------------------------------|----------------------------------------------------------|----------|
+| TC-ENG-01 | registry_dispatch | _call_llm_for_role uses registry.dispatch     | Engine with registry, call_llm registered   | Dispatch logged in AuditZone                            | P0       |
+| TC-ENG-02 | registry_dispatch | Direct adapter fallback when _use_registry=False | engine.set_use_registry_for_llm(False)   | No registry dispatch, direct adapter.complete() call    | P0       |
+| TC-ENG-03 | build_context     | _build_context formats slice correctly       | ViewportSlice with signals + artifacts      | Formatted context string with Role/Signals/Artifacts    | P0       |
+| TC-ENG-04 | rework_loop       | 3 consecutive valve failures -> ValveReworkLoopError | Valve always fails                      | ValveReworkLoopError(SK_EN_004) raised after 3 failures | P0       |
+| TC-ENG-05 | rework_loop       | Valve success resets consecutive counter     | 2 failures then 1 success                  | Counter reset to 0, no ValveReworkLoopError            | P0       |
 
-## TC-6: ViewportSlicer
+## TC-CLL: call_llm Tool (R3 — P0)
 
-| TC ID | Category | Test Case | Input | Expected Output | Priority |
-|-------|----------|-----------|-------|-----------------|----------|
-| TC-VS-001 | Filter | Filter signals by visible_signal_types | Spec allows INTENT only | Only INTENT signals in slice | P0 |
-| TC-VS-002 | Filter | Filter artifacts by visible_artifact_types | Spec allows CODE only | Only CODE artifacts in slice | P0 |
-| TC-VS-003 | Filter | Filter by target patterns (glob) | Pattern "artifact_*" | Only matching target_ids | P0 |
-| TC-VS-004 | Filter | Empty target patterns (match all) | patterns=[] | All signals pass | P0 |
-| TC-VS-005 | Priority | Role-relevant signals first | Signals from own role + others | Own role signals first | P0 |
-| TC-VS-006 | Priority | Own artifacts before others | Artifacts by own role + others | Own artifacts first | P0 |
-| TC-VS-007 | Budget | Token budget respected | Budget=100, many signals | total_tokens <= budget | P0 |
-| TC-VS-008 | Budget | Budget exceeded, items excluded | Small budget, many items | items_excluded > 0 | P0 |
-| TC-VS-009 | Budget | SliceOverflowError | Budget too small for any item | SliceOverflowError raised | P0 |
-| TC-VS-010 | Error | No spec for role | role="nonexistent" | InvalidViewportSpecError | P0 |
-| TC-VS-011 | Token | estimate_tokens heuristic | Known string | len(text)//4 (min 1) | P1 |
-| TC-VS-012 | Metadata | Slice log populated | Any slice | slice_log contains budget and counts | P1 |
+| TC ID     | Category        | Test Case                                    | Input                                       | Expected Outcome                                         | Priority |
+|-----------|-----------------|----------------------------------------------|---------------------------------------------|----------------------------------------------------------|----------|
+| TC-CLL-01 | success         | Valid call returns structured result          | Valid messages + adapter                    | {"success": True, "output": {"content": ..., "finish_reason": ...}} | P0 |
+| TC-CLL-02 | error           | Adapter exception returns error dict          | Adapter that raises                         | {"success": False, "error": ..., "error_code": "SK_LLM_001"} | P0 |
+| TC-CLL-03 | null_bytes      | Null bytes in message content rejected        | messages with \x00 in content              | ToolRegistryError(SK_TR_004) raised                     | P0       |
+| TC-CLL-04 | null_bytes_deep | Null bytes in nested dict/list rejected       | params with nested \x00                    | ToolRegistryError(SK_TR_004) raised                     | P0       |
+| TC-CLL-05 | audit           | Each invocation produces audit log entry      | Valid call_llm invocation                   | AuditZone has tool_call entry                           | P1       |
+| TC-CLL-06 | message_convert | Raw dict messages converted to LLMMessage     | params with {"role":"user","content":"hi"}  | LLMMessage objects passed to adapter                    | P0       |
+| TC-CLL-07 | factory         | create_call_llm_tool returns callable         | Valid adapter                               | Returned callable is awaitable                           | P0       |
 
-## TC-7: OutputValve
+## TC-CCX: call_codex Tool (R3 — P1)
 
-| TC ID | Category | Test Case | Input | Expected Output | Priority |
-|-------|----------|-----------|-------|-----------------|----------|
-| TC-OV-001 | Syntax | Valid Python code | Artifact(path="x.py", content="x=1") | ValidationResult(passed=True) | P0 |
-| TC-OV-002 | Syntax | Invalid Python code | Artifact(path="x.py", content="def (") | ValidationResult(passed=False) | P0 |
-| TC-OV-003 | Syntax | Valid JSON config | Artifact(path="x.json", content='{"a":1}') | ValidationResult(passed=True) | P0 |
-| TC-OV-004 | Syntax | Invalid JSON config | Artifact(path="x.json", content="{invalid}") | ValidationResult(passed=False) | P0 |
-| TC-OV-005 | Syntax | Non-.py/.json passes | Artifact(path="x.txt", content="anything") | ValidationResult(passed=True) | P0 |
-| TC-OV-006 | Chain | Full chain passes | Valid artifact | ValveResult(success=True) | P0 |
-| TC-OV-007 | Chain | Fail-fast on first failure | Invalid syntax | Only SyntaxValidator runs, TypeValidator skipped | P0 |
-| TC-OV-008 | Write | Atomic write on success | Valid artifact + writable dir | File exists with correct content | P0 |
-| TC-OV-009 | Write | Atomic write creates parent dir | New subdirectory path | Directory created, file written | P0 |
-| TC-OV-010 | Error | ErrorSignal injected on failure | Invalid artifact | ErrorSignal in FluidZone | P0 |
-| TC-OV-011 | Custom | Add custom validator | Custom validator at position 0 | Runs first in chain | P1 |
-| TC-OV-012 | Type | TypeValidator always passes (stub) | Any artifact | passed=True | P1 |
-| TC-OV-013 | Test | TestValidator always passes (stub) | Any artifact | passed=True | P1 |
+| TC ID     | Category        | Test Case                                    | Input                                       | Expected Outcome                                         | Priority |
+|-----------|-----------------|----------------------------------------------|---------------------------------------------|----------------------------------------------------------|----------|
+| TC-CCX-01 | null_bytes      | Null bytes in prompt returns SK_TR_004 error  | prompt with \x00                           | {"success": False, "error_code": "SK_TR_004"}            | P0       |
+| TC-CCX-02 | error_handling  | Codex not available returns error             | Codex CLI not on PATH                      | {"success": False, "error": ...}                         | P1       |
+| TC-CCX-03 | factory         | create_call_codex_tool returns callable       | Valid CodexAdapter                          | Returned callable is awaitable                           | P0       |
+| TC-CCX-04 | async           | Tool call returns coroutine                   | Valid adapter                               | asyncio.iscoroutine(result) is True                      | P0       |
+| TC-CCX-05 | graceful_fail   | Clean prompt doesn't trigger SK_TR_004        | Valid prompt, codex not available           | error_code != SK_TR_004                                 | P1       |
 
-## TC-8: ToolRegistry
+## TC-ERR: New Error Codes (R3 — P0)
 
-| TC ID | Category | Test Case | Input | Expected Output | Priority |
-|-------|----------|-----------|-------|-----------------|----------|
-| TC-TR-001 | Register | Register new tool | Valid ToolDef + implementation | Tool registered, list_tools includes it | P0 |
-| TC-TR-002 | Register | Duplicate registration | Same name twice | ToolNotFoundError | P0 |
-| TC-TR-003 | Dispatch | Allowed role dispatch | role in required_permissions | ToolResult(success=True) | P0 |
-| TC-TR-004 | Dispatch | Denied role dispatch | role not in permissions | PermissionDeniedError | P0 |
-| TC-TR-005 | Dispatch | Tool not found | Unknown tool_name | ToolNotFoundError | P0 |
-| TC-TR-006 | Dispatch | "all_roles" permission | required_permissions={"all_roles"} | Any role passes | P0 |
-| TC-TR-007 | Timeout | Tool exceeds timeout | Slow implementation + short timeout | ToolTimeoutError | P0 |
-| TC-TR-008 | Timeout | Timeout injects error signal | Timeout scenario | ErrorSignal in FluidZone | P0 |
-| TC-TR-009 | Audit | Successful dispatch logged | Valid dispatch | Audit entry with "tool_call" event_type | P0 |
-| TC-TR-010 | Audit | Permission denied logged | Denied dispatch | Audit entry with "permission_denied" event_type | P0 |
-| TC-TR-011 | Audit | Params hashed | Any dispatch | params_hash in audit details | P1 |
-| TC-TR-012 | Audit | Tool error logged | Implementation throws exception | Audit entry with "tool_error" event_type | P0 |
+| TC ID     | Category   | Test Case                                    | Input                                       | Expected Outcome                                         | Priority |
+|-----------|------------|----------------------------------------------|---------------------------------------------|----------------------------------------------------------|----------|
+| TC-ERR-01 | SK_CX_003  | CodexTimeoutError error_code and http_analogy | CodexTimeoutError instance                 | error_code="SK_CX_003", http_analogy=408               | P0       |
+| TC-ERR-02 | SK_CX_003  | CodexTimeoutError hierarchy                  | isinstance check                            | CodexAdapterError -> StateKanbanError                   | P0       |
+| TC-ERR-03 | SK_EN_004  | ValveReworkLoopError error_code and http_analogy | ValveReworkLoopError instance           | error_code="SK_EN_004", http_analogy=500               | P0       |
+| TC-ERR-04 | SK_EN_004  | ValveReworkLoopError hierarchy               | isinstance check                            | EngineError -> StateKanbanError                         | P0       |
+| TC-ERR-05 | SK_TR_004  | ToolRegistryError with SK_TR_004 for null bytes | ToolRegistryError(error_code="SK_TR_004") | error_code="SK_TR_004"                                  | P0       |
+| TC-ERR-06 | codex_null | CodexAdapter.complete raises SK_TR_004       | Messages with null byte content             | ToolRegistryError(error_code="SK_TR_004")              | P0       |
+| TC-ERR-07 | call_codex_null | call_codex returns SK_TR_004 error dict  | Prompt with null bytes                      | {"success":False, "error_code":"SK_TR_004"}             | P0       |
 
-## TC-9: ProcessManager
+## TC-CLI: CLI Snapshot Subcommands (R3 — P1)
 
-| TC ID | Category | Test Case | Input | Expected Output | Priority |
-|-------|----------|-----------|-------|-----------------|----------|
-| TC-PM-001 | Create | Create process | role, tool_permits, viewport_spec | ProcessInfo(state=CREATED) | P0 |
-| TC-PM-002 | Create | Duplicate active process for role | Same role, active existing | InvalidStateTransitionError | P0 |
-| TC-PM-003 | Activate | CREATED -> ACTIVE | activate(created_pid) | state=ACTIVE, heartbeat_at set | P0 |
-| TC-PM-004 | Activate | SUSPENDED -> ACTIVE | activate(suspended_pid) | state=ACTIVE | P0 |
-| TC-PM-005 | Activate | ACTIVE -> ACTIVE (invalid) | activate(active_pid) | InvalidStateTransitionError | P0 |
-| TC-PM-006 | Activate | TERMINATED -> ACTIVE (invalid) | activate(terminated_pid) | InvalidStateTransitionError | P0 |
-| TC-PM-007 | Suspend | ACTIVE -> SUSPENDED | suspend(active_pid) | state=SUSPENDED | P0 |
-| TC-PM-008 | Suspend | CREATED -> SUSPENDED (invalid) | suspend(created_pid) | InvalidStateTransitionError | P0 |
-| TC-PM-009 | Terminate | ACTIVE -> TERMINATED | terminate(active_pid, "scheduler") | state=TERMINATED | P0 |
-| TC-PM-010 | Terminate | SUSPENDED -> TERMINATED | terminate(suspended_pid, "scheduler") | state=TERMINATED | P0 |
-| TC-PM-011 | Terminate | Self-termination | terminate(pid, pid) | SelfTerminationError | P0 |
-| TC-PM-012 | Terminate | TERMINATED -> TERMINATED (invalid) | terminate(terminated_pid, "scheduler") | InvalidStateTransitionError | P0 |
-| TC-PM-013 | Handoff | claim_primary valid | Old + new process for role | Old terminated, new active, viewport inherited | P0 |
-| TC-PM-014 | Handoff | No predecessor | claim_primary with no old process | HandoffError | P0 |
-| TC-PM-015 | Handoff | New process not found | Invalid new_process_id | HandoffError | P0 |
-| TC-PM-016 | Handoff | Role mismatch | New process with different role | HandoffError | P0 |
-| TC-PM-017 | Heartbeat | Record heartbeat | heartbeat(active_pid) | heartbeat_at updated | P0 |
-| TC-PM-018 | Heartbeat | Heartbeat on non-ACTIVE | heartbeat(suspended_pid) | InvalidStateTransitionError | P0 |
-| TC-PM-019 | Heartbeat | Timeout detection | Manipulate heartbeat_at to be old | Timed out PID returned | P0 |
-| TC-PM-020 | List | List all processes | Multiple processes | All returned | P0 |
-| TC-PM-021 | List | Filter by state | state=ACTIVE | Only active processes | P0 |
-| TC-PM-022 | Audit | State transitions logged | Any transition | Audit entry created | P1 |
-| TC-PM-023 | Snapshot | get_state_for_snapshot / load_state_from_snapshot | Full state | Round-trip preserves data | P0 |
-| TC-PM-024 | Terminate | Non-existent process | Unknown PID | InvalidStateTransitionError | P0 |
+| TC ID     | Category | Test Case                                    | Input                                       | Expected Outcome                                         | Priority |
+|-----------|----------|----------------------------------------------|---------------------------------------------|----------------------------------------------------------|----------|
+| TC-CLI-01 | save     | `sk snapshot save` creates file               | snapshot save path.json                     | File exists with valid JSON                              | P0       |
+| TC-CLI-02 | load     | `sk snapshot load` restores and prints info   | snapshot load path.json                     | stdout shows signal/artifact counts                     | P0       |
+| TC-CLI-03 | list     | `sk snapshot list` shows snapshots            | snapshot list                               | Lists .json files or "No snapshots found"              | P1       |
+| TC-CLI-04 | delete   | `sk snapshot delete` removes file             | snapshot delete path.json                   | File removed                                             | P0       |
+| TC-CLI-05 | drive+snapshot | --snapshot-save after drive              | drive "test" --snapshot-save out.json       | Snapshot file created after drive                       | P1       |
+| TC-CLI-06 | no-registry | --no-registry bypasses ToolRegistry        | drive "test" --no-registry                  | Engine uses direct adapter call                         | P1       |
 
-## TC-10: Snapshot
+## TC-PAP: Paper Criteria (R3 — P0)
 
-| TC ID | Category | Test Case | Input | Expected Output | Priority |
-|-------|----------|-----------|-------|-----------------|----------|
-| TC-SN-001 | Save | Save to valid path | kanban + writable dir | File written with valid JSON | P0 |
-| TC-SN-002 | Save | Creates parent directories | New subdirectory | Directory created | P0 |
-| TC-SN-003 | Load | Load valid snapshot | Previously saved file | StateKanban reconstructed | P0 |
-| TC-SN-004 | Load | File not found | Non-existent path | FileNotFoundError | P0 |
-| TC-SN-005 | Load | Invalid JSON | Corrupted file | SnapshotIntegrityError | P0 |
-| TC-SN-006 | Load | Checksum mismatch | Tampered content | SnapshotIntegrityError | P0 |
-| TC-SN-007 | Round-trip | Full round-trip | Save -> Load | All zones identical | P0 |
-| TC-SN-008 | Atomic | Temp file cleaned on failure | Write failure scenario | No partial file at target | P1 |
+| TC ID     | Category        | Test Case                                    | Input                                       | Expected Outcome                                         | Priority |
+|-----------|-----------------|----------------------------------------------|---------------------------------------------|----------------------------------------------------------|----------|
+| TC-PAP-01 | convergence_rate| Convergence rate >= 80% across scenarios      | 10 e2e runs with happy path                | converged_count / total >= 0.8                          | P0       |
+| TC-PAP-02 | interception    | Interception rate = 100%                     | Invalid artifact writes                     | All invalid writes blocked by Valve                     | P0       |
+| TC-PAP-03 | lossless_handoff| Snapshot restore produces identical state     | Save, load snapshot                         | Loaded state matches original                           | P0       |
 
-## TC-11: Error Codes Contract
+## TC-REG: Regression — R1/R2 Retained (P0)
 
-| TC ID | Category | Test Case | Input | Expected Output | Priority |
-|-------|----------|-----------|-------|-----------------|----------|
-| TC-EC-001 | Code | InvalidSignalError.error_code | Instance check | "SK_FZ_001" | P0 |
-| TC-EC-002 | Code | SignalCollisionError.error_code | Instance check | "SK_FZ_002" | P0 |
-| TC-EC-003 | Code | ConvergenceTimeoutError.error_code | Instance check | "SK_FZ_003" | P0 |
-| TC-EC-004 | Code | ArtifactConflictError.error_code | Instance check | "SK_CZ_001" | P0 |
-| TC-EC-005 | Code | AppendOnlyViolationError.error_code | Instance check | "SK_CZ_002" | P0 |
-| TC-EC-006 | Code | AuditWriteError.error_code | Instance check | "SK_AZ_001" | P0 |
-| TC-EC-007 | Code | InvalidViewportSpecError.error_code | Instance check | "SK_VS_001" | P0 |
-| TC-EC-008 | Code | SliceOverflowError.error_code | Instance check | "SK_VS_002" | P0 |
-| TC-EC-009 | Code | SyntaxCheckError.error_code | Instance check | "SK_OV_001" | P0 |
-| TC-EC-010 | Code | TypeCheckError.error_code | Instance check | "SK_OV_002" | P0 |
-| TC-EC-011 | Code | TestExecutionError.error_code | Instance check | "SK_OV_003" | P0 |
-| TC-EC-012 | Code | AtomicWriteError.error_code | Instance check | "SK_OV_004" | P0 |
-| TC-EC-013 | Code | HumanGateRejectedError.error_code | Instance check | "SK_OV_005" | P0 |
-| TC-EC-014 | Code | PermissionDeniedError.error_code | Instance check | "SK_TR_001" | P0 |
-| TC-EC-015 | Code | ToolNotFoundError.error_code | Instance check | "SK_TR_002" | P0 |
-| TC-EC-016 | Code | ToolTimeoutError.error_code | Instance check | "SK_TR_003" | P0 |
-| TC-EC-017 | Code | InvalidStateTransitionError.error_code | Instance check | "SK_PM_001" | P0 |
-| TC-EC-018 | Code | SelfTerminationError.error_code | Instance check | "SK_PM_002" | P0 |
-| TC-EC-019 | Code | HeartbeatTimeoutError.error_code | Instance check | "SK_PM_003" | P0 |
-| TC-EC-020 | Code | HandoffError.error_code | Instance check | "SK_PM_004" | P0 |
-| TC-EC-021 | Code | SubscriptionError.error_code | Instance check | "SK_MB_001" | P0 |
-| TC-EC-022 | Code | SyncCallTimeoutError.error_code | Instance check | "SK_MB_002" | P0 |
-| TC-EC-023 | Code | LLMRateLimitError.error_code | Instance check | "SK_LLM_001" | P0 |
-| TC-EC-024 | Code | LLMAuthError.error_code | Instance check | "SK_LLM_002" | P0 |
-| TC-EC-025 | Code | LLMResponseParseError.error_code | Instance check | "SK_LLM_003" | P0 |
-| TC-EC-026 | Code | SnapshotIntegrityError.error_code | Instance check | "SK_SN_001" | P0 |
-| TC-EC-027 | Code | SnapshotWriteError.error_code | Instance check | "SK_SN_002" | P0 |
-| TC-EC-028 | HTTP | All http_analogy values match contract | Each error class | Matches api_contracts.md table | P0 |
-| TC-EC-029 | Hierarchy | Error inheritance chain | isinstance checks | Matches architecture 4.1 tree | P0 |
+All TC IDs from R1/R2 matrix are retained. Key regression areas:
 
-## TC-12: Integration / Pipeline
-
-| TC ID | Category | Test Case | Input | Expected Output | Priority |
-|-------|----------|-----------|-------|-----------------|----------|
-| TC-INT-001 | Pipeline | Full write pipeline: ToolRegistry->OutputValve->filesystem | Valid code artifact | File written, ToolResult(success=True) | P0 |
-| TC-INT-002 | Pipeline | Write pipeline with syntax failure | Invalid Python code | No file written, ErrorSignal in FluidZone | P0 |
-| TC-INT-003 | Pipeline | Permission denied in full pipeline | Unauthorized role + write_file | PermissionDeniedError | P0 |
-| TC-INT-004 | Snapshot | PM state in snapshot round-trip | Create/activate processes, snapshot, restore | Process states preserved | P0 |
-| TC-INT-005 | Convergence | Collision -> convergence -> CrystalZone | INTENT+VETO on target, resolve | Artifact in CrystalZone | P0 |
-| TC-INT-006 | Metrics | Convergence rate measurement | Multiple collisions, some resolve | convergence_rate = resolved / total | P0 |
-| TC-INT-007 | Metrics | Interception rate (OutputValve) | Mix of valid/invalid artifacts | interception_rate = blocked / total_attempts | P0 |
-| TC-INT-008 | Metrics | Lossless handoff verification | claim_primary, read old viewport | New process has same viewport spec | P0 |
-| TC-INT-009 | Bootstrap | Full system bootstrap | _bootstrap_system(config) | All components initialized | P0 |
+| TC ID         | Category           | Test Case                                    | Priority |
+|---------------|--------------------|----------------------------------------------|----------|
+| TC-FZ-001..020| FluidZone          | All R1 FluidZone tests                       | P0       |
+| TC-CZ-001..011| CrystalZone        | All R1 CrystalZone tests                     | P0       |
+| TC-AZ-001..007| AuditZone          | All R1 AuditZone tests                       | P0       |
+| TC-SK-001..009| StateKanban        | All R1 facade tests                          | P0       |
+| TC-MB-001..012| MessageBus         | All R1 bus tests                             | P0       |
+| TC-VS-001..012| ViewportSlicer     | All R1/R2 viewport tests                     | P0       |
+| TC-OV-001..011| OutputValve        | All R1 valve tests                           | P0       |
+| TC-TR-001..015| ToolRegistry       | All R1/R2 registry tests                     | P0       |
+| TC-PM-001..008| ProcessManager     | All R1 process tests                         | P0       |
+| TC-EN-001..008| Engine             | All R2 engine tests                          | P0       |
+| TC-RP-001..011| ResponseParser     | All R2 parser tests                          | P0       |
+| TC-CD-001..006| Convergence        | All R2 convergence tests                     | P0       |
+| TC-RR-001..005| Review Fixes       | All R2 review fix tests                      | P0       |

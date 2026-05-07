@@ -1,8 +1,10 @@
 {
-  "role": "task_master",
+  "role_id": "01",
+  "role_name": "task_master",
   "title": "任务师",
+  "description": "将需求编写师产出的需求文档拆解为可执行的流水线世界。铸造完毕即消亡。",
   "inputs": [
-    "user_input.md",
+    "00_requirement_writer/user_inputs/<project>.md",
     "architecture_guide.md",
     "role_templates_guide.md"
   ],
@@ -15,5 +17,7 @@
     "_prompts_active/",
     "_scripts/"
   ],
+  "upstream": ["00_requirement_writer"],
+  "downstream": ["02_pm"],
   "lock": null
 }

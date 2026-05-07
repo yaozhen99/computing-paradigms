@@ -183,6 +183,11 @@ class ToolTimeoutError(ToolRegistryError):
     http_analogy = 408
 
 
+# Note: SK_TR_004 is raised as ToolRegistryError with error_code="SK_TR_004"
+# for null bytes in tool input (REQ-008). No new class is needed; the
+# existing ToolRegistryError is used with the specific error_code.
+
+
 # ---------------------------------------------------------------------------
 # ProcessManager errors
 # ---------------------------------------------------------------------------
@@ -289,4 +294,69 @@ class SnapshotWriteError(SnapshotError):
     """Snapshot write failed."""
 
     error_code = "SK_SN_002"
+    http_analogy = 500
+
+
+# ---------------------------------------------------------------------------
+# CodexAdapter errors (NEW)
+# ---------------------------------------------------------------------------
+
+class CodexAdapterError(StateKanbanError):
+    """Base error for CodexAdapter operations."""
+
+
+class CodexNotAvailableError(CodexAdapterError):
+    """Codex CLI not available on PATH."""
+
+    error_code = "SK_CX_001"
+    http_analogy = 503
+
+
+class CodexExecutionError(CodexAdapterError):
+    """Codex execution error (non-zero exit code)."""
+
+    error_code = "SK_CX_002"
+    http_analogy = 500
+
+
+class CodexTimeoutError(CodexAdapterError):
+    """Codex API call timed out (REQ-006)."""
+
+    error_code = "SK_CX_003"
+    http_analogy = 408
+
+
+# ---------------------------------------------------------------------------
+# Engine errors (NEW)
+# ---------------------------------------------------------------------------
+
+class EngineError(StateKanbanError):
+    """Base error for Engine operations."""
+
+
+class CircuitBreakerError(EngineError):
+    """Circuit breaker fired (max rounds exceeded)."""
+
+    error_code = "SK_EN_001"
+    http_analogy = 408
+
+
+class SignalRoutingError(EngineError):
+    """Signal routing error (no matching role)."""
+
+    error_code = "SK_EN_002"
+    http_analogy = 400
+
+
+class ParseRecoveryError(EngineError):
+    """Parse recovery failed (consecutive parse errors)."""
+
+    error_code = "SK_EN_003"
+    http_analogy = 500
+
+
+class ValveReworkLoopError(EngineError):
+    """Consecutive valve failures detected -- infinite rework loop (REQ-006)."""
+
+    error_code = "SK_EN_004"
     http_analogy = 500

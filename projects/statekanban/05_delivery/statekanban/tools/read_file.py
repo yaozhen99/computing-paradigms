@@ -17,23 +17,9 @@ async def read_file(params: dict[str, Any]) -> dict[str, Any]:
     Returns:
         Dict with 'success', 'content', and optional 'error'.
     """
-    import os
-
     path = params.get("path", "")
 
     try:
-        if not os.path.exists(path):
-            return {
-                "success": False,
-                "error": f"File not found: {path}",
-            }
-
-        if os.path.isdir(path):
-            return {
-                "success": False,
-                "error": f"Path is a directory, not a file: {path}",
-            }
-
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
 
@@ -46,7 +32,12 @@ async def read_file(params: dict[str, Any]) -> dict[str, Any]:
     except IsADirectoryError:
         return {
             "success": False,
-            "error": f"Path is a directory: {path}",
+            "error": f"Path is a directory, not a file: {path}",
+        }
+    except FileNotFoundError:
+        return {
+            "success": False,
+            "error": f"File not found: {path}",
         }
     except PermissionError:
         return {

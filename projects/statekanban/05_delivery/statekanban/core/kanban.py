@@ -410,6 +410,10 @@ class FluidZone:
     def write_signal(self, signal: Signal) -> None:
         """Write a signal to the fluid zone.
 
+        If a signal with the same (target_id, signal_type, author_role) key
+        already exists, the old signal is replaced in both the index and the
+        backing list to maintain list-index consistency.
+
         Args:
             signal: The signal to write.
 
@@ -418,6 +422,14 @@ class FluidZone:
         """
         self._validate_signal(signal)
         key = (signal.target_id, signal.signal_type.value, signal.author_role)
+        existing = self._signal_index.get(key)
+        if existing is not None:
+            # Remove the stale entry from the backing list to avoid
+            # false-positive collision detection and stale reads.
+            try:
+                self._signals.remove(existing)
+            except ValueError:
+                pass
         self._signal_index[key] = signal
         self._signals.append(signal)
 

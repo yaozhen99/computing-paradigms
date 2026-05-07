@@ -1,35 +1,63 @@
 {
-  "version": 1,
-  "rules": [
+  "reviewer_rules": [
     {
       "id": "RR-001",
-      "category": "security",
-      "severity": "medium",
-      "title": "No TOCTOU in file operations",
-      "description": "Do not use os.path.exists() or os.path.isdir() before open(). Directly attempt open() and catch FileNotFoundError/IsADirectoryError. Check-then-operate is a race condition vulnerability.",
-      "source_finding": "S-1",
-      "source_module": "tools/read_file.py",
-      "added": "2026-05-05T14:30:00Z"
+      "name": "No TOCTOU",
+      "description": "Do not check existence then operate. Use try/except on the operation directly.",
+      "severity": "blocker",
+      "round_introduced": 1,
+      "round_3_note": "snapshot.py delete_snapshot() has os.path.exists()+os.remove() pattern. Advisory only -- delete TOCTOU has negligible security impact. Recommend fix in future iteration."
     },
     {
       "id": "RR-002",
-      "category": "error_handling",
-      "severity": "low",
-      "title": "Error codes must derive from type, not message text",
-      "description": "Error codes in ErrorSignal must be determined by the validator type or a defined mapping, not by string matching on error_detail messages. String-based derivation produces undefined codes when messages change.",
-      "source_finding": "S-2",
-      "source_module": "core/valve.py",
-      "added": "2026-05-05T14:30:00Z"
+      "name": "Error codes must be type-derived",
+      "description": "Error codes are class-level attributes, not function parameters (except for parameterized error_code overrides).",
+      "severity": "blocker",
+      "round_introduced": 1
     },
     {
       "id": "RR-003",
-      "category": "data_integrity",
-      "severity": "medium",
-      "title": "Index-keyed containers must maintain list-index consistency on overwrite",
-      "description": "When a signal/artifact with the same index key is overwritten, the backing list must not retain stale entries. Inconsistent list-index state causes false positive collision detection and stale reads.",
-      "source_finding": "D-1",
-      "source_module": "core/kanban.py",
-      "added": "2026-05-05T14:30:00Z"
+      "name": "No stale signals in FluidZone",
+      "description": "FluidZone.write_signal() must remove stale signals before appending new ones.",
+      "severity": "blocker",
+      "round_introduced": 1
+    },
+    {
+      "id": "RR-004",
+      "name": "Core modules zero file I/O",
+      "description": "Modules in core/ must not perform file I/O. Exception: valve.py _atomic_write (pre-existing R1/R2 design decision, OutputValve is responsible for physical writes).",
+      "severity": "blocker",
+      "round_introduced": 1
+    },
+    {
+      "id": "RR-005",
+      "name": "Null byte rejection at all entry points",
+      "description": "All external input entry points must validate and reject null bytes (\\x00). Defense-in-depth: both tool layer and adapter layer must check.",
+      "severity": "blocker",
+      "round_introduced": 2
+    },
+    {
+      "id": "RR-006",
+      "name": "Engine LLM calls via ToolRegistry",
+      "description": "Engine._call_llm_for_role() must route through ToolRegistry.dispatch() by default. Direct adapter fallback requires explicit opt-in.",
+      "severity": "blocker",
+      "round_introduced": 2
+    },
+    {
+      "id": "RR-007",
+      "name": "API contract return format compliance",
+      "description": "All tool and adapter return values must strictly match api_contracts.md format: success dict with output/error and error_code.",
+      "severity": "blocker",
+      "round_introduced": 2
+    }
+  ],
+  "carry_over_issues": [],
+  "advisory_items": [
+    {
+      "id": "ADV-001",
+      "description": "snapshot.py delete_snapshot() uses os.path.exists()+os.remove() TOCTOU pattern. Low severity for delete operations. Recommend refactoring to try/except in future iteration.",
+      "introduced_round": 3,
+      "severity": "advisory"
     }
   ]
 }

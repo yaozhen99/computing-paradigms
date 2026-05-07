@@ -1,10 +1,35 @@
 {
-  "status": "RUNNING",
+  "status": "READY",
   "mode": "v2_agent",
-  "stage_reached": 3,
-  "round": 2,
+  "round": 4,
+  "stage_reached": 0,
   "active_nodes": [],
-  "completed_nodes": ["pm", "architect", "backend"],
+  "completed_nodes": [],
   "blocked_nodes": [],
-  "last_updated": "2026-05-05T14:08:39Z"
+  "round_history": {
+    "R1": {
+      "status": "MISSION_ACCOMPLISHED",
+      "completed_at": "2026-05-05T12:39:41Z",
+      "summary": "内核六大模块实现，3987行代码，203项测试通过"
+    },
+    "R2": {
+      "status": "MISSION_ACCOMPLISHED",
+      "completed_at": "2026-05-05T23:38:00Z",
+      "summary": "驱动引擎+Codex接入，+1553行，369项测试通过，4个Advisory Findings待修"
+    },
+    "R3": {
+      "status": "MISSION_ACCOMPLISHED",
+      "completed_at": "2026-05-06T18:00:00Z",
+      "summary": "引擎调校+端到端验证，8 REQ，369+测试通过，11个review issues待修"
+    }
+  },
+  "r4_requirements": {
+    "title": "接口修正 + 真实 API 验证",
+    "req_count": 3,
+    "req_ids": ["REQ-401", "REQ-402", "REQ-403"],
+    "origin": "R3 Reviewer 11 issues 中的接口偏差修正",
+    "deliverables": 4,
+    "acceptance_criteria": 4
+  },
+  "last_updated": "2026-05-06T19:00:00+08:00"
 }

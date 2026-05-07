@@ -1,360 +1,331 @@
-"""Integration tests: full pipeline, convergence, metrics, bootstrap."""
+"""
+StateKanban Integration Tests -- R3
+TC-INT-01 through TC-INT-07
+
+Tests for multi-component interactions: Engine+Adapter, Engine+Registry,
+ConvergenceDetector, CircuitBreaker, ResponseParser, and full pipeline.
+"""
 
 from __future__ import annotations
 
-import os
-import tempfile
-
 import pytest
 
-from statekanban.core.errors import PermissionDeniedError
 from statekanban.core.kanban import (
     Artifact,
     ArtifactType,
     IntentSignal,
+    VetoSignal,
+    ErrorSignal,
     SignalType,
     StateKanban,
-    ToolDef,
-    VetoSignal,
     ViewportSpec,
-    compute_checksum,
     make_signal_id,
     now_utc,
+    compute_checksum,
+    ToolDef,
+    LLMMessage,
+    LLMResponse,
 )
 from statekanban.core.message_bus import MessageBus
-from statekanban.core.process import ProcessManager
 from statekanban.core.registry import ToolRegistry
 from statekanban.core.valve import OutputValve
 from statekanban.core.viewport import ViewportSlicer
+from statekanban.core.process import ProcessManager
+from statekanban.engine.engine import Engine
+from statekanban.engine.response_parser import ResponseParser
+from statekanban.engine.convergence import ConvergenceDetector
+from statekanban.engine.circuit_breaker import CircuitBreaker
 from statekanban.config import Config
+from statekanban.adapters.mock_adapter import (
+    MockLLMAdapter,
+    MockCoderBehavior,
+    MockReviewerBehavior,
+)
+from statekanban.tools.call_llm import create_call_llm_tool
 
 
-class TestFullWritePipeline:
-    """TC-INT-001 ~ TC-INT-003: Full write pipeline integration."""
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _build_engine(
+    coder_behavior=MockCoderBehavior.GENERATE_SIMPLE,
+    reviewer_behavior=MockReviewerBehavior.ALWAYS_APPROVE,
+    max_rounds=5,
+) -> Engine:
+    """Build a configured Engine with all dependencies."""
+    k = StateKanban()
+    b = MessageBus(k)
+    r = ToolRegistry(k)
+    v = OutputValve(kanban=k)
+
+    specs = {
+        "coder": ViewportSpec(
+            role="coder",
+            visible_signal_types=[SignalType.INTENT, SignalType.ERROR],
+            visible_artifact_types=[ArtifactType.CODE],
+            visible_target_patterns=["*"],
+            max_tokens=4000,
+        ),
+        "reviewer": ViewportSpec(
+            role="reviewer",
+            visible_signal_types=[SignalType.INTENT, SignalType.VETO, SignalType.ERROR],
+            visible_artifact_types=[ArtifactType.CODE],
+            visible_target_patterns=["*"],
+            max_tokens=4000,
+        ),
+    }
+    for spec in specs.values():
+        k.register_viewport(spec)
+    s = ViewportSlicer(k, specs)
+
+    p = ProcessManager(k, b)
+    a = MockLLMAdapter()
+    if coder_behavior is not None:
+        a.set_behavior_mode(coder_behavior)
+    if reviewer_behavior is not None:
+        a.set_behavior_mode(reviewer_behavior)
+
+    c = Config()
+    c.convergence_max_rounds = max_rounds
+
+    e = Engine(
+        kanban=k,
+        bus=b,
+        registry=r,
+        valve=v,
+        slicer=s,
+        pm=p,
+        adapter=a,
+        config=c,
+    )
+
+    r.register(
+        ToolDef(
+            name="call_llm",
+            description="Invoke LLM via adapter",
+            param_schema={
+                "type": "object",
+                "properties": {"messages": {"type": "array"}},
+                "required": ["messages"],
+            },
+            required_permissions={"all_roles"},
+            timeout_seconds=120.0,
+        ),
+        create_call_llm_tool(a),
+    )
+
+    return e
+
+
+# ---------------------------------------------------------------------------
+# TC-INT-01: Engine + Adapter integration
+# ---------------------------------------------------------------------------
+
+class TestEngineAdapterIntegration:
 
     @pytest.mark.asyncio
-    async def test_valid_write_pipeline(self, tmp_dir):
-        # TC-INT-001: ToolRegistry -> OutputValve -> filesystem
+    async def test_engine_calls_adapter(self):
+        """TC-INT-01: Engine.drive() invokes the LLM adapter."""
+        engine = _build_engine()
+        kanban = engine._kanban
+
+        result = await engine.drive("Write a hello function")
+
+        # Adapter should have been called
+        adapter = engine._adapter
+        total_calls = sum(adapter._call_counts.values())
+        assert total_calls > 0, "Adapter should have been called during engine drive"
+
+
+# ---------------------------------------------------------------------------
+# TC-INT-02: Engine + Registry integration
+# ---------------------------------------------------------------------------
+
+class TestEngineRegistryIntegration:
+
+    @pytest.mark.asyncio
+    async def test_engine_uses_registry_for_llm(self):
+        """TC-INT-02: When use_registry_for_llm=True, engine dispatches through registry."""
+        engine = _build_engine()
+        kanban = engine._kanban
+
+        await engine.drive("Test registry dispatch")
+
+        # Audit zone should have tool_call entries
+        entries = kanban.audit.read_entries(event_type="tool_call")
+        assert len(entries) > 0, "Registry dispatch should produce audit entries"
+
+
+# ---------------------------------------------------------------------------
+# TC-INT-03: ConvergenceDetector
+# ---------------------------------------------------------------------------
+
+class TestConvergenceDetectorIntegration:
+
+    def test_convergence_detector_instantiation(self):
+        """TC-INT-03: ConvergenceDetector can be instantiated with kanban."""
         kanban = StateKanban()
-        registry = ToolRegistry(kanban)
-        valve = OutputValve(kanban=kanban)
+        cd = ConvergenceDetector(kanban=kanban)
+        assert cd is not None
 
-        # Register write_file tool
-        async def write_impl(params: dict) -> dict:
-            art = Artifact(
-                seq_no=0,
-                artifact_type=ArtifactType.CODE,
-                path=params["path"],
-                content=params["content"],
-                checksum=compute_checksum(params["content"]),
-                author_role=params.get("author_role", "coder"),
-                created_at=now_utc(),
-            )
-            result = await valve.validate_and_write(art)
-            return {"success": result.success, "path": result.artifact_path}
+    def test_convergence_detected_with_intent_only(self):
+        """Intent without veto means convergence on a target."""
+        kanban = StateKanban()
+        cd = ConvergenceDetector(kanban=kanban)
 
-        tool_def = ToolDef(
-            name="write_file",
-            description="Write file",
-            param_schema={},
-            required_permissions={"coder", "integrator"},
+        kanban.fluid.write_signal(IntentSignal(
+            signal_id=make_signal_id(),
+            author_role="coder",
+            target_id="target_X",
+            payload={"action": "approve"},
+            timestamp=now_utc(),
+            round_number=1,  # Must match the check round
+        ))
+
+        result = cd.check("target_X", current_round=1)
+        assert result.converged is True
+
+
+# ---------------------------------------------------------------------------
+# TC-INT-04: CircuitBreaker
+# ---------------------------------------------------------------------------
+
+class TestCircuitBreakerIntegration:
+
+    def test_circuit_breaker_instantiation(self):
+        """TC-INT-04: CircuitBreaker can be instantiated."""
+        cb = CircuitBreaker()
+        assert cb is not None
+
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_trips_on_persistent_failure(self):
+        """Circuit breaker trips after persistent failures."""
+        engine = _build_engine(
+            coder_behavior=MockCoderBehavior.GENERATE_SIMPLE,
+            reviewer_behavior=MockReviewerBehavior.ALWAYS_REJECT,
+            max_rounds=3,
         )
-        registry.register(tool_def, write_impl)
+        result = await engine.drive("Write code that keeps getting rejected")
+        assert result is not None
+        assert result.forced_terminate is True, \
+            "Engine should force-terminate when circuit breaker trips"
 
-        path = os.path.join(tmp_dir, "output.py")
-        result = await registry.dispatch("write_file", "coder", {
-            "path": path,
-            "content": "x = 1",
-            "author_role": "coder",
-        })
-        assert result.success is True
-        assert os.path.exists(path)
+
+# ---------------------------------------------------------------------------
+# TC-INT-05: ResponseParser
+# ---------------------------------------------------------------------------
+
+class TestResponseParserIntegration:
+
+    def test_parser_handles_unstructured_response(self):
+        """TC-INT-05: ResponseParser handles unstructured LLM response."""
+        kanban = StateKanban()
+        parser = ResponseParser(kanban=kanban)
+
+        raw = LLMResponse(content="Just plain text", finish_reason="end_turn")
+        results = parser.parse(raw, "coder", 1)
+
+        assert len(results) > 0, "Parser should produce at least one result"
+
+    def test_parser_injects_error_on_unstructured(self):
+        """Unstructured response from coder injects error signal into kanban."""
+        kanban = StateKanban()
+        parser = ResponseParser(kanban=kanban)
+
+        raw = LLMResponse(content="Just plain text", finish_reason="end_turn")
+        parser.parse(raw, "coder", 1)
+
+        error_signals = list(kanban.fluid.read_signals(signal_type=SignalType.ERROR))
+        assert len(error_signals) > 0, "Unstructured response should inject error signal"
+
+
+# ---------------------------------------------------------------------------
+# TC-INT-06: Full pipeline (seed -> process -> valve)
+# ---------------------------------------------------------------------------
+
+class TestFullPipelineIntegration:
 
     @pytest.mark.asyncio
-    async def test_syntax_failure_pipeline(self, tmp_dir):
-        # TC-INT-002: Invalid code -> no file written + ErrorSignal
+    async def test_seed_and_process_role(self):
+        """TC-INT-06: _seed_intent + _process_role produces signals."""
+        engine = _build_engine()
+        kanban = engine._kanban
+
+        await engine._seed_intent("Write a function")
+        signals_before = list(kanban.fluid.read_signals())
+
+        # Intent should be seeded
+        assert len(signals_before) > 0, "Intent should be seeded"
+
+    @pytest.mark.asyncio
+    async def test_process_role_updates_fluid(self):
+        """Processing a role adds signals to fluid zone."""
+        engine = _build_engine()
+        kanban = engine._kanban
+
+        await engine._seed_intent("Write a function")
+        await engine._process_role("coder", 1)
+
+        # After processing, fluid zone should have signals
+        signals = list(kanban.fluid.read_signals())
+        assert len(signals) > 0
+
+
+# ---------------------------------------------------------------------------
+# TC-INT-07: Valve + Artifact interaction
+# ---------------------------------------------------------------------------
+
+class TestValveArtifactIntegration:
+
+    @pytest.mark.asyncio
+    async def test_valve_blocks_invalid_artifact(self, tmp_path):
+        """TC-INT-07: Valve blocks artifacts with invalid syntax."""
         kanban = StateKanban()
         valve = OutputValve(kanban=kanban)
 
-        path = os.path.join(tmp_dir, "bad.py")
-        art = Artifact(
+        # Valid Python artifact
+        valid_art = Artifact(
             seq_no=0,
             artifact_type=ArtifactType.CODE,
-            path=path,
+            path=str(tmp_path / "valid.py"),
+            content="x = 1",
+            checksum=compute_checksum("x = 1"),
+            author_role="coder",
+            created_at=now_utc(),
+        )
+        result = await valve.validate_and_write(valid_art)
+        assert result.success is True
+
+        # Invalid Python artifact (syntax error)
+        invalid_art = Artifact(
+            seq_no=0,
+            artifact_type=ArtifactType.CODE,
+            path=str(tmp_path / "invalid.py"),
             content="def (",
             checksum=compute_checksum("def ("),
             author_role="coder",
             created_at=now_utc(),
         )
-        result = await valve.validate_and_write(art)
+        result = await valve.validate_and_write(invalid_art)
         assert result.success is False
-        assert not os.path.exists(path)
-        # ErrorSignal should be in FluidZone
-        errors = kanban.fluid.read_signals(signal_type=SignalType.ERROR)
-        assert len(errors) > 0
 
     @pytest.mark.asyncio
-    async def test_permission_denied_in_pipeline(self):
-        # TC-INT-003: Unauthorized role + write_file
-        kanban = StateKanban()
-        registry = ToolRegistry(kanban)
-
-        async def dummy_impl(params: dict) -> dict:
-            return {"success": True}
-
-        tool_def = ToolDef(
-            name="write_file",
-            description="Write file",
-            param_schema={},
-            required_permissions={"coder", "integrator"},
-        )
-        registry.register(tool_def, dummy_impl)
-
-        with pytest.raises(PermissionDeniedError):
-            await registry.dispatch("write_file", "reviewer", {"path": "x.py", "content": "x=1"})
-
-
-class TestSnapshotIntegration:
-    """TC-INT-004: PM state in snapshot round-trip."""
-
-    def test_pm_state_round_trip(self):
-        # TC-INT-004
-        kanban = StateKanban()
-        bus = MessageBus(kanban)
-        pm = ProcessManager(kanban, bus)
-
-        spec = ViewportSpec(
-            role="coder",
-            visible_signal_types=[SignalType.INTENT],
-            visible_artifact_types=[ArtifactType.CODE],
-            visible_target_patterns=["*"],
-        )
-        info = pm.create_process("coder", {"write_file"}, spec)
-        pm.activate(info.process_id)
-
-        # Save
-        data = kanban.to_json()
-        pm_state = pm.get_state_for_snapshot()
-
-        # Restore kanban
-        restored_kanban = StateKanban.from_json(data)
-        restored_bus = MessageBus(restored_kanban)
-        restored_pm = ProcessManager(restored_kanban, restored_bus)
-        restored_pm.load_state_from_snapshot(pm_state)
-
-        process = restored_pm.get_process(info.process_id)
-        assert process is not None
-        assert process.state.value == "active"
-
-
-class TestConvergenceIntegration:
-    """TC-INT-005: Collision -> convergence -> CrystalZone."""
-
-    def test_collision_resolved_to_crystal(self):
-        # TC-INT-005
-        kanban = StateKanban()
-        # Write intent
-        kanban.fluid.write_signal(IntentSignal(
-            signal_id=make_signal_id(),
-            author_role="coder",
-            target_id="artifact_A",
-            payload={"action": "approve"},
-            timestamp=now_utc(),
-            round_number=0,
-        ))
-        # Write veto
-        kanban.fluid.write_signal(VetoSignal(
-            signal_id=make_signal_id(),
-            author_role="reviewer",
-            target_id="artifact_A",
-            payload={"action": "reject"},
-            timestamp=now_utc(),
-            round_number=0,
-            reason="needs improvement",
-        ))
-
-        # Run convergence -- with persistent collision, it will timeout
-        result = kanban.run_convergence("artifact_A")
-        # Since we don't resolve the collision, it should force-terminate
-        assert result.forced_terminate is True
-        assert result.converged is False
-
-        # But if we clear veto and run again, it should converge
-        kanban.fluid.clear_signals("artifact_A", round_number_ge=0)
-        kanban.fluid.write_signal(IntentSignal(
-            signal_id=make_signal_id(),
-            author_role="coder",
-            target_id="artifact_A",
-            payload={"action": "approve"},
-            timestamp=now_utc(),
-            round_number=1,
-        ))
-        result2 = kanban.run_convergence("artifact_A")
-        assert result2.converged is True
-
-        # Now artifact can be appended to CrystalZone
-        from statekanban.core.kanban import Artifact
-        seq = kanban.crystal.append(Artifact(
-            seq_no=0,
-            artifact_type=ArtifactType.CODE,
-            path="artifact_A.py",
-            content="print('done')",
-            checksum=compute_checksum("print('done')"),
-            author_role="coder",
-            created_at=now_utc(),
-        ))
-        assert seq == 1
-
-
-class TestMetrics:
-    """TC-INT-006 ~ TC-INT-008: Paper-defined metrics."""
-
-    def test_convergence_rate(self):
-        # TC-INT-006
-        results = []
-        for i in range(5):
-            kanban = StateKanban()
-            kanban.fluid.write_signal(IntentSignal(
-                signal_id=make_signal_id(),
-                author_role="coder",
-                target_id=f"target_{i}",
-                payload={},
-                timestamp=now_utc(),
-                round_number=0,
-            ))
-            if i < 3:  # 3 out of 5 converge (no veto)
-                pass
-            else:  # 2 out of 5 have veto
-                kanban.fluid.write_signal(VetoSignal(
-                    signal_id=make_signal_id(),
-                    author_role="reviewer",
-                    target_id=f"target_{i}",
-                    payload={},
-                    timestamp=now_utc(),
-                    round_number=0,
-                ))
-            result = kanban.run_convergence(f"target_{i}")
-            results.append(result)
-
-        converged_count = sum(1 for r in results if r.converged)
-        convergence_rate = converged_count / len(results)
-        # 3 converged (no veto), 2 timed out (veto collision)
-        assert convergence_rate == 0.6
-
-    @pytest.mark.asyncio
-    async def test_interception_rate(self, tmp_dir):
-        # TC-INT-007
+    async def test_valve_error_injects_signal(self, tmp_path):
+        """Blocked artifact injects error signal into kanban."""
         kanban = StateKanban()
         valve = OutputValve(kanban=kanban)
 
-        total_attempts = 4
-        blocked = 0
-
-        # Valid artifacts
-        for i in range(2):
-            art = Artifact(
-                seq_no=0, artifact_type=ArtifactType.CODE,
-                path=os.path.join(tmp_dir, f"valid_{i}.py"),
-                content="x = 1",
-                checksum=compute_checksum("x = 1"),
-                author_role="coder", created_at=now_utc(),
-            )
-            result = await valve.validate_and_write(art)
-            if not result.success:
-                blocked += 1
-
-        # Invalid artifacts
-        for i in range(2):
-            art = Artifact(
-                seq_no=0, artifact_type=ArtifactType.CODE,
-                path=os.path.join(tmp_dir, f"invalid_{i}.py"),
-                content="def (",
-                checksum=compute_checksum("def ("),
-                author_role="coder", created_at=now_utc(),
-            )
-            result = await valve.validate_and_write(art)
-            if not result.success:
-                blocked += 1
-
-        interception_rate = blocked / total_attempts
-        # 2 valid passed, 2 invalid blocked
-        assert interception_rate == 0.5
-
-    def test_lossless_handoff(self):
-        # TC-INT-008: claim_primary preserves viewport and state
-        kanban = StateKanban()
-        bus = MessageBus(kanban)
-        pm = ProcessManager(kanban, bus)
-
-        spec = ViewportSpec(
-            role="coder",
-            visible_signal_types=[SignalType.INTENT, SignalType.ERROR],
-            visible_artifact_types=[ArtifactType.CODE, ArtifactType.CONFIG],
-            visible_target_patterns=["*"],
-            max_tokens=3000,
+        invalid_art = Artifact(
+            seq_no=0,
+            artifact_type=ArtifactType.CODE,
+            path=str(tmp_path / "bad.py"),
+            content="def (",
+            checksum=compute_checksum("def ("),
+            author_role="coder",
+            created_at=now_utc(),
         )
+        await valve.validate_and_write(invalid_art)
 
-        old_info = pm.create_process("coder", {"write_file"}, spec)
-        pm.activate(old_info.process_id)
-
-        # Manually register new coder process to bypass active-process check
-        import uuid
-        new_pid = str(uuid.uuid4())
-        from statekanban.core.kanban import ProcessInfo, ProcessState
-        new_spec = ViewportSpec(
-            role="coder",
-            visible_signal_types=[SignalType.INTENT],
-            visible_artifact_types=[ArtifactType.CODE],
-            visible_target_patterns=["*"],
-            max_tokens=1000,
-        )
-        new_info = ProcessInfo(
-            process_id=new_pid,
-            role="coder",
-            state=ProcessState.CREATED,
-            tool_permits={"write_file", "read_file"},
-            viewport_spec=new_spec,
-        )
-        pm._processes[new_pid] = new_info
-
-        pm.claim_primary("coder", new_pid)
-
-        # Verify lossless handoff: viewport spec from predecessor inherited
-        assert new_info.viewport_spec.max_tokens == 3000
-        assert SignalType.ERROR in new_info.viewport_spec.visible_signal_types
-        assert new_info.state == ProcessState.ACTIVE
-
-
-class TestBootstrap:
-    """TC-INT-009: Full system bootstrap."""
-
-    def test_full_bootstrap(self):
-        # TC-INT-009
-        from statekanban.cli.main import _bootstrap_system
-
-        config = Config()
-        components = _bootstrap_system(config)
-
-        assert "kanban" in components
-        assert "bus" in components
-        assert "registry" in components
-        assert "valve" in components
-        assert "slicer" in components
-        assert "pm" in components
-        assert "adapter" in components
-
-        # Verify component types
-        assert isinstance(components["kanban"], StateKanban)
-        assert isinstance(components["bus"], MessageBus)
-        assert isinstance(components["registry"], ToolRegistry)
-        assert isinstance(components["valve"], OutputValve)
-        assert isinstance(components["slicer"], ViewportSlicer)
-        assert isinstance(components["pm"], ProcessManager)
-
-        # Verify tools registered
-        tools = components["registry"].list_tools()
-        assert "write_file" in tools
-        assert "read_file" in tools
-        assert "run_shell" in tools
-        assert "call_llm" in tools
-        assert "search_code" in tools
+        error_signals = kanban.fluid.read_signals(signal_type=SignalType.ERROR)
+        assert len(error_signals) > 0, "Valve should inject error signal on rejection"

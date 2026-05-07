@@ -1,5 +1,5 @@
 """CLI layer for StateKanban."""
 
-from statekanban.cli.main import cli
+from statekanban.cli.main import main
 
-__all__ = ["cli"]
+__all__ = ["main"]

@@ -164,9 +164,11 @@ class TestFluidZoneClear:
 
     def test_clear_by_round(self, fluid, make_intent):
         # TC-FZ-018
-        fluid.write_signal(make_intent(target_id="A", round_number=0))
-        fluid.write_signal(make_intent(target_id="A", round_number=1))
-        fluid.write_signal(make_intent(target_id="A", round_number=2))
+        # Use different author_roles so the TOCTOU-fix (index overwrite)
+        # does not collapse signals into one entry.
+        fluid.write_signal(make_intent(target_id="A", round_number=0, author_role="coder"))
+        fluid.write_signal(make_intent(target_id="A", round_number=1, author_role="reviewer"))
+        fluid.write_signal(make_intent(target_id="A", round_number=2, author_role="tester"))
         fluid.clear_signals("A", round_number_ge=2)
         signals = fluid.read_signals(target_id="A")
         rounds = {s.round_number for s in signals}
@@ -188,15 +190,16 @@ class TestFluidZoneOverwrite:
 
     def test_same_key_overwrites_index(self, fluid, make_intent):
         # TC-FZ-020: Same (target_id, signal_type, author_role) overwrites in index
-        # The implementation keeps the latest signal in the index, but appends to list
+        # After TOCTOU fix (RR-001), the stale entry is removed from the backing
+        # list, so only the latest signal remains.
         sid1 = make_signal_id()
         sid2 = make_signal_id()
         s1 = make_intent(target_id="A", author_role="coder", signal_id=sid1)
         s2 = make_intent(target_id="A", author_role="coder", signal_id=sid2)
         fluid.write_signal(s1)
         fluid.write_signal(s2)
-        # Both signals are in the list, but index holds only the latest
+        # Only the latest signal should be in the list (stale removed)
         signals = fluid.read_signals(target_id="A")
-        assert len(signals) == 2
-        # The second one is the latest write
-        assert signals[-1].signal_id == sid2
+        assert len(signals) == 1
+        # The remaining one is the latest write
+        assert signals[0].signal_id == sid2

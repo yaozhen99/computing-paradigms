@@ -7,8 +7,10 @@
 
 | 编号 | 角色 | 输入 | 输出 | 签字凭证 | prompt_path |
 |:---|:---|:---|:---|:---|:---|
-| 01 | 产品经理 | user_input.md | 01_requirements/prd_final.md | lock_pm.json | {mode}/01_pm/prompt.md |
-| 02 | 系统架构师 | prd_final.md | architecture.md, api_contracts.md | lock_architect.json | {mode}/02_architect/prompt.md |
+| 00 | 需求编写师 | 用户原始想法 + 项目代码 + 历史需求 + 评审报告 | user_inputs/<project>_r<N>.md | — | 00_requirement_writer/prompt.md |
+| 01 | 任务师 | 00 需求编写师产出的需求文档 | $PROJECT_SPACE/ 整个目录树 | — | 01_task_master/prompt.md |
+| 02 | 产品经理 | user_input.md | 01_requirements/prd_final.md | lock_pm.json | {mode}/01_pm/prompt.md |
+| 03 | 系统架构师 | prd_final.md | architecture.md, api_contracts.md | lock_architect.json | {mode}/02_architect/prompt.md |
 | 03 | 数据库架构师 | architecture.md | db_schema.sql, data_dict.md | lock_dba.json | {mode}/03_dba/prompt.md |
 | 04 | UIUX 设计师 | prd_final.md, architecture.md | ui_spec.md | lock_uiux.json | {mode}/04_uiux/prompt.md |
 | 05 | 后端开发 | architecture.md, api_contracts.md, db_schema.sql | 03_source/backend/ | lock_backend.json | {mode}/05_backend/prompt.md |

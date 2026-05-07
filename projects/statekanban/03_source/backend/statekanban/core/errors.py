@@ -183,6 +183,11 @@ class ToolTimeoutError(ToolRegistryError):
     http_analogy = 408
 
 
+# Note: SK_TR_004 is raised as ToolRegistryError with error_code="SK_TR_004"
+# for null bytes in tool input (REQ-008). No new class is needed; the
+# existing ToolRegistryError is used with the specific error_code.
+
+
 # ---------------------------------------------------------------------------
 # ProcessManager errors
 # ---------------------------------------------------------------------------
@@ -308,10 +313,17 @@ class CodexNotAvailableError(CodexAdapterError):
 
 
 class CodexExecutionError(CodexAdapterError):
-    """Codex execution error (non-zero exit or timeout)."""
+    """Codex execution error (non-zero exit code)."""
 
     error_code = "SK_CX_002"
     http_analogy = 500
+
+
+class CodexTimeoutError(CodexAdapterError):
+    """Codex API call timed out (REQ-006)."""
+
+    error_code = "SK_CX_003"
+    http_analogy = 408
 
 
 # ---------------------------------------------------------------------------
@@ -340,4 +352,11 @@ class ParseRecoveryError(EngineError):
     """Parse recovery failed (consecutive parse errors)."""
 
     error_code = "SK_EN_003"
+    http_analogy = 500
+
+
+class ValveReworkLoopError(EngineError):
+    """Consecutive valve failures detected -- infinite rework loop (REQ-006)."""
+
+    error_code = "SK_EN_004"
     http_analogy = 500

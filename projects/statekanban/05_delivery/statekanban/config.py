@@ -11,10 +11,14 @@ class Config:
     """Global configuration for the StateKanban system."""
 
     # LLM settings
-    llm_adapter: str = "mock"  # "anthropic", "cli", "mock"
+    llm_adapter: str = "mock"  # "anthropic", "cli", "mock", "codex"
     llm_model: str = "claude-sonnet-4-20250514"
     llm_max_tokens: int = 4096
     llm_temperature: float = 0.0
+
+    # Codex settings (NEW)
+    codex_cli_path: str = "codex"
+    codex_timeout: float = 300.0
 
     # Process settings
     heartbeat_interval: int = 30  # seconds
