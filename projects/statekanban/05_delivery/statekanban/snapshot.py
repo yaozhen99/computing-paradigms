@@ -14,12 +14,16 @@ It imports from core/ but performs I/O itself.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import tempfile
+from pathlib import Path
 from typing import Any
 
 from statekanban.core.errors import SnapshotIntegrityError, SnapshotWriteError
 from statekanban.core.kanban import StateKanban
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Module-level functions
@@ -125,16 +129,22 @@ class SnapshotManager:
     def __init__(
         self,
         base_dir: str = ".statekanban/snapshots",
-        project_root: str = "",  # REQ-503
+        project_root: str = "",  # REQ-503: deprecated, use config
+        config: Any | None = None,  # REQ-603: preferred
     ) -> None:
         """
         Args:
-            base_dir: Directory where snapshots are stored.
-            project_root: Project space root for path resolution (REQ-503).
-                Empty string falls back to os.getcwd() at resolution time.
+            base_dir: Directory where snapshots are stored (relative to project_root).
+            project_root: Project space root (deprecated, use config).
+            config: Config instance for path resolution (REQ-603).
         """
         self._base_dir = base_dir
-        self._project_root = project_root
+        self._config = config
+        # Backward compat: if config not provided, use project_root
+        if config is not None:
+            self._project_root = config.project_root
+        else:
+            self._project_root = project_root
 
     def save_snapshot(self, kanban: StateKanban, path: str) -> None:
         """Atomically persist StateKanban to a JSON file.
@@ -147,6 +157,7 @@ class SnapshotManager:
             SnapshotWriteError: SK_SN_002 -- write failed.
         """
         full_path = self._resolve_path(path)
+        self._ensure_gitignore()
         _save_snapshot_atomic(kanban, full_path)
 
     def load_snapshot(self, path: str) -> StateKanban:
@@ -190,15 +201,60 @@ class SnapshotManager:
     def _resolve_path(self, path: str) -> str:
         """Resolve a path relative to project_root + base_dir if not absolute.
 
-        REQ-503: When project_root is set, base_dir is resolved against
-        project_root first. When project_root is empty, falls back to
-        os.getcwd() for the same behavior as R4.
+        REQ-603: When config is provided, uses config.resolve_path()
+        which includes traversal guard. Otherwise falls back to
+        legacy project_root/CWD resolution with a basic traversal
+        guard when project_root is set.
         """
         if os.path.isabs(path):
             return path
+
+        if self._config is not None:
+            # REQ-603: Use config.resolve_path() with traversal guard
+            effective_path = os.path.join(self._base_dir, path)
+            return self._config.resolve_path(effective_path)
+
+        # Legacy fallback (R5 compat)
         base = self._project_root if self._project_root else os.getcwd()
         effective_base = os.path.join(base, self._base_dir)
-        return os.path.join(effective_base, path)
+        result = os.path.join(effective_base, path)
+
+        # M-2 fix: Traversal guard in legacy path
+        # When project_root is set, verify the resolved path stays within it.
+        if self._project_root:
+            abs_result = os.path.abspath(result)
+            abs_root = os.path.abspath(self._project_root)
+            if not Path(abs_result).is_relative_to(Path(abs_root)):
+                from statekanban.core.errors import PathEscapeError
+
+                raise PathEscapeError(
+                    attempted_path=path,
+                    project_root=abs_root,
+                )
+
+        return result
+
+    def _ensure_gitignore(self) -> None:
+        """Create .gitignore in .statekanban/ if it doesn't exist (AC-603.5).
+
+        Content is '*' to prevent snapshots from being tracked by git.
+        Called lazily on first save_snapshot().
+        """
+        if self._config is not None:
+            statekanban_dir = self._config.resolve_path(".statekanban")
+        else:
+            base = self._project_root if self._project_root else os.getcwd()
+            statekanban_dir = os.path.join(base, ".statekanban")
+
+        gitignore_path = os.path.join(statekanban_dir, ".gitignore")
+
+        if not os.path.exists(gitignore_path):
+            try:
+                os.makedirs(statekanban_dir, exist_ok=True)
+                with open(gitignore_path, "w", encoding="utf-8") as f:
+                    f.write("*\n")
+            except OSError:
+                logger.debug("Failed to create .gitignore in %s", statekanban_dir)
 
 
 # ---------------------------------------------------------------------------

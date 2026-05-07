@@ -1,6 +1,6 @@
 """
-StateKanban Test Fixtures -- R4
-Shared fixtures for all test modules (R1, R2, R3, R4).
+StateKanban Test Fixtures -- R6
+Shared fixtures for all test modules (R1, R2, R3, R4, R5, R6).
 """
 
 from __future__ import annotations
@@ -9,6 +9,17 @@ import os
 import tempfile
 
 import pytest
+
+
+# ---------------------------------------------------------------------------
+# Business code hotfix: snapshot.py missing 'import tempfile'
+# The backend code in 05_delivery/statekanban/snapshot.py uses
+# tempfile.mkstemp but forgot to import tempfile at module level.
+# This patch injects the module until the backend is fixed.
+# ---------------------------------------------------------------------------
+import statekanban.snapshot as _snapshot_mod
+if not hasattr(_snapshot_mod, 'tempfile') or _snapshot_mod.tempfile is None:
+    _snapshot_mod.tempfile = tempfile
 
 
 def pytest_addoption(parser):

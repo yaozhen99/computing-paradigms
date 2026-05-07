@@ -142,7 +142,7 @@ def cmd_drive(args: argparse.Namespace) -> int:
     kanban = StateKanban()
     bus = MessageBus(kanban)
     registry = ToolRegistry(kanban)
-    valve = OutputValve(kanban=kanban, project_root=config.project_root)
+    valve = OutputValve(kanban=kanban, config=config)
 
     # Set up viewport specs
     specs = _default_viewport_specs()

@@ -21,6 +21,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
+import logging
+
 from statekanban.core.errors import AtomicWriteError
 from statekanban.core.kanban import (
     Artifact,
@@ -30,6 +32,8 @@ from statekanban.core.kanban import (
     make_signal_id,
     now_utc,
 )
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Data classes
@@ -148,15 +152,16 @@ class OutputValve:
         self,
         validators: list[Validator] | None = None,
         kanban: StateKanban | None = None,
-        project_root: str = "",  # REQ-503
+        project_root: str = "",  # REQ-503: deprecated, use config
+        config: Any | None = None,  # REQ-604: preferred
     ) -> None:
         """
         Args:
             validators: Ordered list of validators.
                 Default: [SyntaxValidator, TypeValidator, TestValidator].
             kanban: StateKanban instance for error signal injection.
-            project_root: Project space root for path resolution (REQ-503).
-                Empty string falls back to os.getcwd() at resolution time.
+            project_root: Project space root (deprecated, use config).
+            config: Config instance for path resolution (REQ-604).
         """
         self._validators: list[Validator] = validators or [
             SyntaxValidator(),
@@ -164,7 +169,12 @@ class OutputValve:
             TestValidator(),
         ]
         self._kanban = kanban
-        self._project_root = project_root  # REQ-503
+        self._config = config
+        # Backward compat: if config not provided, store project_root
+        if config is not None:
+            self._project_root = config.project_root
+        else:
+            self._project_root = project_root
 
     def set_kanban(self, kanban: StateKanban) -> None:
         """Set the StateKanban instance (for error signal injection)."""
@@ -199,6 +209,11 @@ class OutputValve:
 
         # All validators passed -- resolve artifact path and perform atomic write
         resolved_path = self._resolve_artifact_path(artifact.path)
+        logger.debug(
+            "Valve write: original_path=%s, resolved_path=%s",
+            artifact.path,
+            resolved_path,
+        )
         try:
             self._atomic_write(resolved_path, artifact.content)
         except AtomicWriteError as exc:
@@ -229,12 +244,13 @@ class OutputValve:
         else:
             self._validators.insert(position, validator)
 
-    # REQ-503: Resolve artifact path against project_root
+    # REQ-503/REQ-604: Resolve artifact path against project_root
     def _resolve_artifact_path(self, artifact_path: str) -> str:
-        """Resolve an artifact path against project_root.
+        """Resolve an artifact path for writing.
 
-        If the path is already absolute, return unchanged.
-        Otherwise, resolve relative to project_root (or CWD if empty).
+        REQ-604: When a Config is provided, delegates to
+        config.resolve_path() for sandbox-safe resolution.
+        Otherwise falls back to legacy project_root/CWD resolution.
 
         Args:
             artifact_path: Path from the artifact.
@@ -242,6 +258,13 @@ class OutputValve:
         Returns:
             Absolute resolved path.
         """
+        # REQ-604: delegate to config when available
+        if self._config is not None:
+            logger.debug(
+                "Valve delegating path resolution to config: %s", artifact_path
+            )
+            return self._config.resolve_path(artifact_path)
+        # Fallback: project_root or CWD (backward compatible with R5)
         if os.path.isabs(artifact_path):
             return artifact_path
         base = self._project_root if self._project_root else os.getcwd()

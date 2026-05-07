@@ -29,9 +29,12 @@
 {"status":"completed|rejected","signed_by":"reviewer","timestamp":"<当前时间>","retry_count":0,"issues":["<问题列表>"]}
 ```
 
-## 禁令
+## 管道隔离
 
-- 只允许写入 05_review/ 目录
-- 不允许修改其他角色的 lock 文件
-- 不允许与全局 AI 对话
+文件读写管道（pipe_guard.py）已激活，越权操作将被自动阻断：
+- 可读：01_requirements/、02_design/、03_source/、04_testing/、_system/、_skills/（只读）
+- 可写：05_review/、_pipes/lock_reviewer.json
+- 禁止写入非输出目录（物理阻断，非 prompt 禁令）
+- 禁止修改其他角色的 lock 文件（物理阻断）
+- 禁止与全局 AI 对话（只通过文件通信）
 - 审核必须逐维度审查，不允许走过场

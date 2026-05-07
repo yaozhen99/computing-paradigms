@@ -39,6 +39,30 @@
 
 5. **循环续命**：如果未终局且当前无待执行节点，用 ScheduleWakeup 设定约60秒后唤醒，prompt 为"执行下一轮调度循环"，然后等待。
 
+### 管道协议（物理隔离）
+
+拉起子代理前，必须执行管道激活步骤：
+
+1. 读取 pipeline_blueprint.json 中该角色的 `inputs`/`outputs`/`lock_file` 字段
+2. 生成 `_pipes/pipe_manifest_<角色>.json`，内容为：
+   ```json
+   {
+     "role": "<角色名>",
+     "inputs": ["<蓝图的inputs列表>"],
+     "outputs": ["<蓝图的outputs>", "<蓝图的lock_file>"],
+     "created_at": "<当前ISO8601时间>",
+     "agent_id": "<即将拉起的子代理ID>"
+   }
+   ```
+3. 设置环境变量 `ACTIVE_ROLE=<角色名>`（通过 Bash 工具执行 `export ACTIVE_ROLE=<角色名>`）
+
+子代理返回后，必须执行管道清理步骤：
+
+4. 删除 `_pipes/pipe_manifest_<角色>.json`
+5. 清除环境变量 `ACTIVE_ROLE`（通过 Bash 工具执行 `unset ACTIVE_ROLE`）
+
+**管道是物理隔离的唯一手段**——pipe_guard.py PreToolUse hook 会阻断越权操作。不激活管道，子代理的读写不受限制。
+
 ### Agent 子代理拉起规范
 
 用 Agent 工具拉起节点时，必须：

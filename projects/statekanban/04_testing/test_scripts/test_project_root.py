@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+from pathlib import Path
 
 import pytest
 
@@ -65,13 +66,16 @@ class TestConfigResolvePath:
         with tempfile.TemporaryDirectory() as tmp_dir:
             config = Config(project_root=tmp_dir)
             result = config.resolve_path(".statekanban/snapshots")
-            assert result == os.path.join(tmp_dir, ".statekanban/snapshots")
+            # resolve_path uses Path.resolve() which normalizes path separators
+            expected = str(Path(tmp_dir).resolve() / ".statekanban" / "snapshots")
+            assert result == expected
 
     def test_resolve_path_relative_without_project_root_falls_back_to_cwd(self):
         """REQ-501 AC: resolve_path falls back to os.getcwd() when project_root is empty."""
         config = Config(project_root="")
         result = config.resolve_path(".statekanban/snapshots")
-        expected = os.path.join(os.getcwd(), ".statekanban/snapshots")
+        # resolve_path uses Path.resolve() which normalizes path separators
+        expected = str(Path.cwd() / ".statekanban" / "snapshots")
         assert result == expected
 
     def test_resolve_path_absolute_path_unchanged(self):
@@ -91,17 +95,21 @@ class TestConfigResolvePath:
             assert result == abs_path
 
     def test_resolve_path_empty_relative_path(self):
-        """resolve_path with empty relative path returns project_root or cwd."""
+        """resolve_path with empty relative path returns project_root."""
         with tempfile.TemporaryDirectory() as tmp_dir:
             config = Config(project_root=tmp_dir)
             result = config.resolve_path("")
-            assert result == os.path.join(tmp_dir, "")
+            # resolve_path returns normalized path without trailing separator
+            expected = str(Path(tmp_dir).resolve())
+            assert result == expected
 
     def test_resolve_path_empty_relative_path_with_empty_root(self):
         """resolve_path with empty relative path and empty root returns cwd."""
         config = Config(project_root="")
         result = config.resolve_path("")
-        assert result == os.path.join(os.getcwd(), "")
+        # resolve_path returns normalized CWD without trailing separator
+        expected = str(Path.cwd())
+        assert result == expected
 
 
 # ---------------------------------------------------------------------------

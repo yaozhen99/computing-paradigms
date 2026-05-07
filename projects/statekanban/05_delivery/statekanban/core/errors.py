@@ -372,3 +372,36 @@ class ValveReworkLoopError(EngineError):
 
     error_code = "SK_EN_004"
     http_analogy = 500
+
+
+# ---------------------------------------------------------------------------
+# Path errors (REQ-602)
+# ---------------------------------------------------------------------------
+
+
+class PathEscapeError(StateKanbanError):
+    """Resolved path escapes the project root sandbox.
+
+    Error code: SK_06_001
+    Triggered by Config.resolve_path() when a path traversal is detected.
+    """
+
+    error_code = "SK_06_001"
+    http_analogy = 403
+
+    def __init__(
+        self,
+        message: str = "",
+        *,
+        attempted_path: str = "",
+        project_root: str = "",
+        error_code: str | None = None,
+    ) -> None:
+        if not message:
+            message = (
+                f"Path escape detected: '{attempted_path}' "
+                f"resolves outside project root '{project_root}'"
+            )
+        super().__init__(message, error_code=error_code)
+        self.attempted_path = attempted_path
+        self.project_root = project_root

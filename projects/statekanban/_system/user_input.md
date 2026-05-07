@@ -1,202 +1,231 @@
-# 项目需求：StateKanban 第五轮 — 可配置项目空间 + R4 遗留修正
+# 项目需求：StateKanban 第六轮 — 虚拟底座隔离强化
 
 ## 项目概述
 
-R4 完成了接口修正和端到端测试（381 项测试通过），但存在 2 项实现偏差未修正，且项目空间路径硬编码无法迁移。本轮目标：**实现可配置的项目空间路径，修正 R4 遗留偏差，让 StateKanban 可在任何位置运行。**
+R5 完成了可配置项目空间路径和 R4 遗留修正。本轮目标：**强化虚拟底座与外部环境的隔离边界，使 StateKanban 内部状态机的运行不依赖、不泄漏、不被外部异常穿透。**
 
-## 当前状态
+## 隔离现状
 
-### Config（`05_delivery/statekanban/config.py`）
+当前原型的架构意图正确——ToolRegistry 是唯一入口，OutputValve 是唯一出口：
 
-- `EngineConfig` 有 `output_dir: str = "output"`，但无 `project_root` 概念
-- `output_dir` 是绝对路径或相对于 cwd，没有统一的基准目录
-- snapshot 路径由调用者自行传入，无配置化
+```
+外部世界 ← OutputValve（出口）→ 虚拟底座 ← ToolRegistry（入口）→ 外部工具
+```
 
-### CLI（`05_delivery/statekanban/cli/main.py`）
+但存在 5 处隔离泄漏：
 
-- `drive` 命令的 output_dir 硬编码为 `"./output"`
-- 无 `--project-root` 参数
-- snapshot 子命令无路径配置
-
-### MockLLMAdapter（`05_delivery/statekanban/adapters/mock_adapter.py`）
-
-- `set_behavior_mode(mode)` 仍为单参数签名（R4 REQ-001 要求双参数）
-- `GENERATE_WITH_BUG` 的 `artifact_content` 是 `"def hello():\n    print('hello world')"` 而非 `"def hello():\n    return undefined_var\n"`
-- tester / integrator 角色无专属预设行为，落入 reviewer 的 ALWAYS_APPROVE
-
-### test_e2e.py（`04_testing/test_scripts/test_e2e.py`）
-
-- TC-E2E-02/03 未走 Engine.drive()，仍用手动构造信号（R4 REQ-002 未修正）
-
----
+| # | 位置 | 问题 | 严重度 |
+|---|------|------|--------|
+| 1 | OutputValve | 写出路径无沙箱，可写任意位置（含 `../` 越界） | 高 |
+| 2 | read_file 工具 | 可读任意文件，无路径限制 | 高 |
+| 3 | call_llm 工具 | 网络调用无超时隔离、无重试上限，异常穿透到 Engine | 中 |
+| 4 | snapshot.py | 绕过 OutputValve 独立做文件 I/O，是隔离边界外的旁路 | 中 |
+| 5 | Engine._call_llm_for_role | 外部 API 异常（超时/网络错误）穿透到驱动循环，未转为内部信号 | 中 |
 
 ## 需求条目
 
-### REQ-501：Config 新增 project_root 字段
+### REQ-601：OutputValve 路径沙箱
 
-**现在**：Config 没有 `project_root` 字段。OutputValve 的写入路径、snapshot 的保存路径都由调用者传入绝对路径或相对于 cwd 的路径，没有统一的基准目录。
+**现在**：OutputValve 写出 artifact 时直接 `open(path)` 写入，路径无约束。
 
-**改成**：Config 新增 `project_root` 字段，所有路径相对于此解析。
-
-**接口**：
-```python
-@dataclass
-class EngineConfig:
-    project_root: str = "."  # 项目空间根目录，所有相对路径的基准
-    output_dir: str = "output"  # 相对于 project_root
-    snapshot_dir: str = ".statekanban/snapshots"  # 相对于 project_root
-    llm_max_tokens: int = 4096
-    llm_temperature: float = 0.7
-    max_rounds: int = 10
-```
-
-**路径解析规则**：
-1. 如果 `project_root` 是绝对路径，直接使用
-2. 如果 `project_root` 是相对路径，相对于 `os.getcwd()` 解析
-3. `output_dir` 和 `snapshot_dir` 始终相对于 `project_root` 解析
-4. 提供辅助方法 `resolve_path(relative_path: str) -> str`，统一解析逻辑
-
-**向后兼容**：`project_root` 默认为 `"."`，与当前行为一致（相对于 cwd）。
-
-### REQ-502：CLI 支持 --project-root 参数
-
-**现在**：CLI 无项目空间根目录概念，output_dir 硬编码为 `"./output"`。
-
-**改成**：`statekanban drive` 和 `statekanban snapshot` 新增 `--project-root` 参数。
-
-**接口**：
-```bash
-# 驱动任务
-statekanban drive "实现 hello world 函数" --project-root /path/to/project
-
-# 保存快照
-statekanban snapshot save --project-root /path/to/project
-
-# 加载快照
-statekanban snapshot load snapshot.json --project-root /path/to/project
-```
-
-**默认值**：`--project-root` 默认为当前目录（`.`），与现有行为一致。
-
-**实现**：
-- `drive` 命令：从 `--project-root` 构建 Config，传给 Engine
-- `snapshot save` 命令：从 `--project-root` 解析 snapshot 存储路径
-- `snapshot load` 命令：同上
-
-### REQ-503：调用者从 Config 解析路径传给 OutputValve
-
-**现在**：CLI 构造 OutputValve 时无 output_dir 配置，Engine 不参与路径解析。
-
-**改成**：CLI（或任何 Engine 调用者）从 `Config.resolve_path(config.output_dir)` 解析绝对路径，传给 OutputValve。Engine 本身不改构造签名。
-
-**具体改动**（`cli/main.py`）：
-- `cmd_drive()` 中：`valve = OutputValve(kanban=kanban, output_dir=config.resolve_path(config.output_dir))`
-- OutputValve 新增 `output_dir` 构造参数（可选，默认 `"./output"`），用于指定写入目录
-
-**具体改动**（`core/valve.py`）：
-- OutputValve 构造新增 `output_dir: str = "./output"` 参数
-- `_atomic_write()` 中 artifact.path 若为相对路径，相对于 output_dir 解析
-
-### REQ-504：修正 set_behavior_mode 为双参数签名（R4 遗留）
-
-**现在**：`set_behavior_mode(mode: MockReviewerBehavior | MockCoderBehavior)` 只接受单个枚举值。
-
-**改成**：改为双参数签名，与 R4 需求一致。
+**改成**：OutputValve 写出路径必须限制在 `output_dir` 内，禁止越界。
 
 **接口**：
 ```python
-def set_behavior_mode(
-    self,
-    reviewer_behavior: MockReviewerBehavior = MockReviewerBehavior.ALWAYS_APPROVE,
-    coder_behavior: MockCoderBehavior = MockCoderBehavior.GENERATE_SIMPLE,
-) -> None:
-    """启用行为模式。自动启用 structured_mode。同时配置 reviewer 和 coder 行为。"""
+class OutputValve:
+    def __init__(self, kanban, output_dir: str = "./output"):
+        self._output_dir = os.path.abspath(output_dir)
+
+    def _validate_path(self, path: str) -> str:
+        """校验路径在 output_dir 内，返回绝对路径。越界抛 ValvePathViolationError。"""
+        abs_path = os.path.abspath(os.path.join(self._output_dir, path))
+        if not abs_path.startswith(self._output_dir + os.sep) and abs_path != self._output_dir:
+            raise ValvePathViolationError(
+                code="SK_VS_005",
+                message=f"路径越界: {path} 不在 {self._output_dir} 内",
+            )
+        return abs_path
 ```
 
-**行为配置逻辑**：
-1. 根据 `reviewer_behavior` 配置 reviewer 角色的 structured_response
-2. 根据 `coder_behavior` 配置 coder 角色的 structured_response
-3. 自动配置 tester 角色：`{"type": "intent", "target_id": "task_root", "payload": {"action": "test_passed", "coverage": "100%"}}`
-4. 自动配置 integrator 角色：`{"type": "intent", "target_id": "task_root", "payload": {"action": "integrate", "files": ["output.py"]}}`
+**路径校验规则**：
+1. 所有写出路径必须解析为 `output_dir` 的子路径
+2. `../` 越界、绝对路径指向其他目录、符号链接指向外部，均抛 `ValvePathViolationError`
+3. 符号链接：解析后校验（`os.path.realpath`），防止通过符号链接逃逸
+4. 错误码：`SK_VS_005`（新增）
 
-**artifact_content 精确值**：
-- GENERATE_SIMPLE：`"def hello():\n    return \"hello world\"\n"`
-- GENERATE_WITH_BUG：`"def hello():\n    return undefined_var\n"`
+### REQ-602：read_file 工具路径沙箱
 
-**破坏性变更**：现有单参数调用 `set_behavior_mode(MockReviewerBehavior.ALWAYS_APPROVE)` 会因签名变更报错。需同步修改所有调用点（test_e2e.py、test_mock_adapter.py 等）。这是有意为之——双参数签名是唯一正确的调用方式，不再支持单参数。
+**现在**：`read_file` 工具直接 `open(path)` 读任意文件。
 
-### REQ-505：修正 E2E 测试为 Engine.drive() 驱动（R4 遗留）
+**改成**：read_file 限制读取范围在 `project_root` 内。
 
-**现在**：TC-E2E-02/03 使用手动构造信号测试收敛，未走 Engine.drive() 完整流程。
-
-**改成**：改为通过 Engine.drive() + behavior_mode 驱动，验证完整驱动循环。
-
-**TC-E2E-002：碰撞收敛（重写）**
-- 用 `_make_system()` 工厂函数构建完整系统
-- adapter 设置 `set_behavior_mode(reviewer_behavior=MockReviewerBehavior.REJECT_THEN_APPROVE, coder_behavior=MockCoderBehavior.GENERATE_SIMPLE)`
-- `result = await engine.drive("实现带类型注解的函数")`
-- 断言：`result.converged is True`
-- 断言：FluidZone 有至少 1 个 VetoSignal
-
-**TC-E2E-003：拦截率（重写）**
-- 用 `_make_system()` 工厂函数构建完整系统
-- adapter 设置 `set_behavior_mode(reviewer_behavior=MockReviewerBehavior.ALWAYS_REJECT, coder_behavior=MockCoderBehavior.GENERATE_WITH_BUG)`
-- `result = await engine.drive("实现安全函数")`，max_rounds=3
-- 断言：`result.converged is False`，`result.forced_terminate is True`
-- 断言：CrystalZone 无 artifact
-
-**`_make_system()` 工厂函数定义**：
+**接口**：
 ```python
-def _make_system(config: Config | None = None) -> tuple[StateKanban, MessageBus, ToolRegistry, OutputValve, ViewportSlicer, ProcessManager, MockLLMAdapter, Config]:
-    """构建完整系统，返回 (kanban, bus, registry, valve, slicer, pm, adapter, config)。"""
-    config = config or Config()
-    kanban = StateKanban()
-    bus = MessageBus(kanban)
-    registry = ToolRegistry(kanban)
-    valve = OutputValve(kanban=kanban, output_dir=config.resolve_path(config.output_dir))
-    # 注册 4 个 viewport（coder/reviewer/tester/integrator）
-    for spec in _make_viewport_specs():
-        kanban.register_viewport(spec)
-    slicer = ViewportSlicer(kanban, _make_viewport_specs())
-    pm = ProcessManager(kanban, bus)
-    adapter = MockLLMAdapter()
-    # 注册 call_llm 工具
-    registry.register(ToolDef(...), create_call_llm_tool(adapter))
-    return kanban, bus, registry, valve, slicer, pm, adapter, config
+class ReadFileTool:
+    def __init__(self, project_root: str = "."):
+        self._project_root = os.path.abspath(project_root)
+
+    def _validate_path(self, path: str) -> str:
+        """校验路径在 project_root 内。越界抛 ToolPathViolationError。"""
+        abs_path = os.path.abspath(os.path.join(self._project_root, path))
+        if not abs_path.startswith(self._project_root + os.sep) and abs_path != self._project_root:
+            raise ToolPathViolationError(
+                code="SK_TR_005",
+                message=f"路径越界: {path} 不在 {self._project_root} 内",
+            )
+        return abs_path
 ```
 
-**TC-E2E-001 也需修正**：改为双参数调用：
+**路径校验规则**：
+1. 只允许读 `project_root` 内的文件
+2. 符号链接：解析后校验
+3. 错误码：`SK_TR_005`（新增）
+4. `project_root` 从 Config 传入，注册工具时确定
+
+### REQ-603：call_llm 工具隔离
+
+**现在**：call_llm 工具直接调用 adapter，无超时控制，异常直接抛出。
+
+**改成**：call_llm 工具增加超时、重试上限、异常降级。
+
+**接口**：
 ```python
-adapter.set_behavior_mode(
-    reviewer_behavior=MockReviewerBehavior.ALWAYS_APPROVE,
-    coder_behavior=MockCoderBehavior.GENERATE_SIMPLE,
-)
+class CallLLMTool:
+    def __init__(self, adapter, timeout: float = 30.0, max_retries: int = 2):
+        self._adapter = adapter
+        self._timeout = timeout
+        self._max_retries = max_retries
+
+    async def __call__(self, messages: list, **kwargs) -> dict:
+        """调用 LLM，超时/失败返回降级响应而非抛异常。"""
+        for attempt in range(self._max_retries + 1):
+            try:
+                return await asyncio.wait_for(
+                    self._adapter.complete(messages=messages, **kwargs),
+                    timeout=self._timeout,
+                )
+            except asyncio.TimeoutError:
+                if attempt == self._max_retries:
+                    return self._fallback_response("LLM_TIMEOUT")
+            except Exception:
+                if attempt == self._max_retries:
+                    return self._fallback_response("LLM_ERROR")
+
+    def _fallback_response(self, reason: str) -> dict:
+        """降级响应：返回空意图信号，让驱动循环继续而非崩溃。"""
+        return {
+            "type": "intent",
+            "target_id": "task_root",
+            "payload": {"action": "degraded", "reason": reason},
+        }
 ```
+
+**隔离规则**：
+1. 超时默认 30 秒，可通过 Config 配置
+2. 重试上限默认 2 次
+3. 所有外部异常在工具层消化，**绝不穿透到 Engine**
+4. 降级响应是合法的内部信号，驱动循环可正常处理
+
+### REQ-604：snapshot 统一走 OutputValve
+
+**现在**：`save_snapshot` / `load_snapshot` 直接 `open()` 读写文件，绕过 OutputValve。
+
+**改成**：snapshot 的文件 I/O 通过 OutputValve 的受控通道执行。
+
+**接口**：
+```python
+# snapshot.py 改为通过 OutputValve 写出
+def save_snapshot(kanban: StateKanban, path: str, valve: OutputValve | None = None) -> None:
+    """保存快照。如果提供 valve，通过 valve 写出；否则降级为直接写入（向后兼容）。"""
+    data = _serialize(kanban)
+    if valve is not None:
+        valve.write_artifact(Artifact(
+            artifact_id=make_artifact_id(),
+            artifact_type=ArtifactType.CONFIG,
+            author_role="system",
+            content=json.dumps(data, indent=2, ensure_ascii=False),
+            path=path,
+            timestamp=now_utc(),
+        ))
+    else:
+        # 向后兼容：直接写入
+        _atomic_write(path, json.dumps(data, indent=2, ensure_ascii=False))
+
+def load_snapshot(path: str, project_root: str = ".") -> StateKanban:
+    """加载快照。路径校验同 read_file 沙箱规则。"""
+    abs_path = os.path.abspath(os.path.join(project_root, path))
+    # 校验路径在 project_root 内
+    root_abs = os.path.abspath(project_root)
+    if not abs_path.startswith(root_abs + os.sep) and abs_path != root_abs:
+        raise SnapshotIntegrityError(code="SK_SN_003", message=f"路径越界: {path}")
+    ...
+```
+
+**隔离规则**：
+1. `save_snapshot` 优先走 OutputValve，享受路径沙箱保护
+2. `load_snapshot` 增加路径校验，防止读取项目空间外的文件
+3. 向后兼容：`valve` 参数可选，不传时降级为直接写入
+4. 错误码：`SK_SN_003`（路径越界）
+
+### REQ-605：Engine 异常边界
+
+**现在**：Engine._call_llm_for_role 中，工具调用异常直接穿透到 drive() 循环。
+
+**改成**：Engine 在驱动循环中捕获所有外部异常，转为内部 ErrorSignal，不中断驱动。
+
+**接口**：
+```python
+async def _call_llm_for_role(self, role: str, ...) -> None:
+    try:
+        result = await self._registry.dispatch(tool_name, params)
+        # 处理结果...
+    except Exception as e:
+        # 外部异常转为内部 ErrorSignal
+        error_signal = ErrorSignal(
+            signal_id=make_signal_id(),
+            author_role="system",
+            target_id="task_root",
+            payload={"error": str(e), "source": role, "code": "SK_EN_006"},
+            timestamp=now_utc(),
+            round_number=self._current_round,
+        )
+        self._kanban.fluid.write_signal(error_signal)
+```
+
+**隔离规则**：
+1. Engine.drive() 的每一轮中，角色调用异常转为 ErrorSignal 写入 FluidZone
+2. ErrorSignal 不中断驱动循环，由 ConvergenceDetector 统一判断
+3. 连续 N 轮产生 ErrorSignal（默认 3 轮），ConvergenceDetector 判定为异常终止
+4. 错误码：`SK_EN_006`（外部异常转内部信号）
 
 ---
 
 ## 技术约束
 
-1. **不改核心模块接口**：kanban / message_bus / viewport / valve / registry / process 的公开方法签名不变
-2. **向后兼容**：Config.project_root 默认为 `"."`，与当前行为一致
-3. **路径解析统一**：所有路径解析走 `Config.resolve_path()`，不允许模块自行拼接路径
-4. **新增文件遵循现有目录结构**
+1. **不改核心模块接口**：Kanban / MessageBus / Viewport / ProcessManager 的公开方法签名不变
+2. **隔离边界清晰**：所有外部 I/O 必须经过 OutputValve（写）或 ToolRegistry（读/调用），不允许旁路
+3. **降级优于崩溃**：外部异常在边界层消化，返回降级信号，不让驱动循环崩溃
+4. **向后兼容**：新增参数均有默认值，现有调用无需修改
+5. **路径校验统一**：所有路径校验逻辑复用 Config.resolve_path() 的基准目录
 
 ## 验收标准
 
-1. `python -m pytest 04_testing/test_scripts/ -q` — 全部通过（现有 381 + 修正后的 E2E 测试）
-2. `python -c "from statekanban.config import EngineConfig; c = EngineConfig(project_root='/tmp/test'); print(c.resolve_path('output'))"` — 输出 `/tmp/test/output`
-3. `python -c "from statekanban.adapters.mock_adapter import MockLLMAdapter, MockReviewerBehavior, MockCoderBehavior; m = MockLLMAdapter(); m.set_behavior_mode(reviewer_behavior=MockReviewerBehavior.REJECT_THEN_APPROVE, coder_behavior=MockCoderBehavior.GENERATE_SIMPLE); print('OK')"` — 双参数签名可调用
-4. TC-E2E-002/003 通过 Engine.drive() 驱动
-5. `python -m statekanban.cli.main drive "test" --project-root /tmp/test_project` — CLI 可指定项目根目录
+1. `python -m pytest 04_testing/test_scripts/ -q` — 全部通过（现有测试 + 新增隔离测试）
+2. OutputValve 写出 `../etc/passwd` → 抛 `ValvePathViolationError`
+3. read_file 读取 `/etc/passwd` → 抛 `ToolPathViolationError`
+4. call_llm 超时 → 返回降级响应，Engine 不崩溃
+5. `save_snapshot(kanban, "../outside.json", valve=valve)` → 抛路径越界错误
+6. Engine 驱动中 LLM 异常 → ErrorSignal 写入 FluidZone，驱动继续
+7. `python -m pytest 04_testing/test_scripts/test_isolation.py -v` — 隔离专项测试全部通过
 
 ## 交付物清单
 
 | # | 文件 | 操作 |
 |---|------|------|
-| 1 | `05_delivery/statekanban/config.py` | 修改：REQ-501（新增 project_root + resolve_path） |
-| 2 | `05_delivery/statekanban/cli/main.py` | 修改：REQ-502（--project-root 参数）+ REQ-503（从 Config 解析路径传给 OutputValve） |
-| 3 | `05_delivery/statekanban/core/valve.py` | 修改：REQ-503（新增 output_dir 构造参数） |
-| 4 | `05_delivery/statekanban/adapters/mock_adapter.py` | 修改：REQ-504（双参数签名 + artifact_content 精确值 + tester/integrator 预设） |
-| 5 | `04_testing/test_scripts/test_e2e.py` | 修改：REQ-505（TC-E2E-001/002/003 改为 Engine.drive() 驱动 + _make_system 工厂函数） |
-| 6 | `04_testing/test_scripts/test_mock_adapter.py` | 修改：同步更新 set_behavior_mode 调用点 |
+| 1 | `05_delivery/statekanban/core/valve.py` | 修改：REQ-601（路径沙箱 + ValvePathViolationError） |
+| 2 | `05_delivery/statekanban/core/errors.py` | 修改：REQ-601/602/604（新增 SK_VS_005、SK_TR_005、SK_SN_003、SK_EN_006） |
+| 3 | `05_delivery/statekanban/tools/read_file.py` | 修改：REQ-602（路径沙箱 + ToolPathViolationError） |
+| 4 | `05_delivery/statekanban/tools/call_llm.py` | 修改：REQ-603（超时 + 重试 + 降级） |
+| 5 | `05_delivery/statekanban/snapshot.py` | 修改：REQ-604（走 OutputValve + 路径校验） |
+| 6 | `05_delivery/statekanban/engine/engine.py` | 修改：REQ-605（异常边界 + ErrorSignal） |
+| 7 | `04_testing/test_scripts/test_isolation.py` | 新增：隔离专项测试 |

@@ -115,9 +115,14 @@ $PROJECT_SPACE/
 
 为每个岗位生成：
 - `_pipes/lock_<角色>.json`：`{status: "pending", signed_by: null, timestamp: null, retry_count: 0}`
+- `_pipes/pipe_manifest_<角色>.json`：`{role: "<角色名>", inputs: [], outputs: [], created_at: null, agent_id: null}`（初始为空，运行时由全局 AI 填充）
 
 ISA 模式额外生成：
 - `_heartbeats/hb_<角色>.md`：`[等待启动] 角色 <角色名> 尚未激活`
+
+管道守卫脚本（物理隔离核心）：
+- `_pipes/hooks/pipe_guard.py`：从 `../agent_protocol/v2_agent/_shared/_pipes/hooks/pipe_guard.py` 复制
+- `_pipes/hooks/subagent_context.py`：从 `../agent_protocol/v2_agent/_shared/_pipes/hooks/subagent_context.py` 复制
 
 ### 第5步：Prompt 激活与配置
 

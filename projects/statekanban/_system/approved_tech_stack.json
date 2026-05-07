@@ -1,6 +1,6 @@
 {
   "project": "statekanban",
-  "round": 5,
+  "round": 6,
   "language": "Python 3.11+",
   "frameworks": {
     "async": "asyncio",
@@ -12,12 +12,15 @@
   },
   "new_dependencies": {},
   "modified_files": [
-    "05_delivery/statekanban/config.py",
-    "05_delivery/statekanban/cli/main.py",
     "05_delivery/statekanban/core/valve.py",
-    "05_delivery/statekanban/adapters/mock_adapter.py",
-    "04_testing/test_scripts/test_e2e.py",
-    "04_testing/test_scripts/test_mock_adapter.py"
+    "05_delivery/statekanban/core/errors.py",
+    "05_delivery/statekanban/tools/read_file.py",
+    "05_delivery/statekanban/tools/call_llm.py",
+    "05_delivery/statekanban/snapshot.py",
+    "05_delivery/statekanban/engine/engine.py"
+  ],
+  "new_files": [
+    "04_testing/test_scripts/test_isolation.py"
   ],
   "roles": {
     "pm": {"platform": "claude"},

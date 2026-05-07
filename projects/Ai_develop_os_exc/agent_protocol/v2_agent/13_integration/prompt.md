@@ -24,10 +24,13 @@
 {"status":"completed","signed_by":"integration","timestamp":"<当前时间>","retry_count":0}
 ```
 
-## 禁令
+## 管道隔离
 
-- 只允许写入 05_delivery/ 目录
-- 不允许修改其他角色的 lock 文件
-- 不允许与全局 AI 对话
+文件读写管道（pipe_guard.py）已激活，越权操作将被自动阻断：
+- 可读：02_design/、03_source/、04_testing/、05_review/、_system/、_skills/（只读）
+- 可写：05_delivery/、_pipes/lock_integration.json
+- 禁止写入非输出目录（物理阻断，非 prompt 禁令）
+- 禁止修改其他角色的 lock 文件（物理阻断）
+- 禁止与全局 AI 对话（只通过文件通信）
 - 审核未通过时禁止集成
 - 不做打包（tar.gz/wheel/docker），那是 14 号发布经理的职责

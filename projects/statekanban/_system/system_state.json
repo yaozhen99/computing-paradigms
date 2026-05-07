@@ -1,10 +1,10 @@
 {
-  "status": "COMPLETE",
+  "status": "READY",
   "mode": "v2_agent",
-  "round": 5,
-  "stage_reached": 8,
+  "round": 6,
+  "stage_reached": 6,
   "active_nodes": [],
-  "completed_nodes": ["pm", "architect", "backend", "tester_write", "tester_run", "reviewer", "integration"],
+  "completed_nodes": ["pm", "architect", "backend", "tester_write", "tester_run", "reviewer"],
   "blocked_nodes": [],
   "round_history": {
     "R1": {
@@ -26,15 +26,21 @@
       "status": "MISSION_ACCOMPLISHED",
       "completed_at": "2026-05-06T19:00:00Z",
       "summary": "接口修正+真实API验证，381项测试通过，2项实现偏差遗留至R5"
+    },
+    "R5": {
+      "status": "MISSION_ACCOMPLISHED",
+      "completed_at": "2026-05-07T10:00:00Z",
+      "summary": "可配置项目空间+R4遗留修正，Config.resolve_path+CLI --project-root+OutputValve output_dir"
     }
   },
-  "r5_requirements": {
-    "title": "可配置项目空间 + R4 遗留修正",
+  "r6_requirements": {
+    "title": "虚拟底座隔离强化",
     "req_count": 5,
-    "req_ids": ["REQ-501", "REQ-502", "REQ-503", "REQ-504", "REQ-505"],
-    "origin": "R4 遗留2项偏差 + 项目空间路径硬编码问题",
-    "deliverables": 6,
-    "acceptance_criteria": 5
+    "req_ids": ["REQ-601", "REQ-602", "REQ-603", "REQ-604", "REQ-605"],
+    "origin": "5处隔离泄漏：OutputValve路径无沙箱、read_file无限制、call_llm无超时、snapshot旁路、Engine异常穿透",
+    "deliverables": 7,
+    "acceptance_criteria": 7,
+    "core_principle": "降级优于崩溃，所有外部异常在边界层消化"
   },
-  "last_updated": "2026-05-07T10:00:00+08:00"
+  "last_updated": "2026-05-07T11:00:00+08:00"
 }
