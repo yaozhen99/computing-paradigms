@@ -50,9 +50,14 @@ def build_parser() -> argparse.ArgumentParser:
     drive_p.add_argument("intent", help="Task intent string")
     drive_p.add_argument(
         "--adapter",
-        choices=["mock", "codex"],
+        choices=["mock", "codex", "anthropic", "iflytek", "deepseek"],
         default="mock",
         help="LLM adapter to use (default: mock)",
+    )
+    drive_p.add_argument(
+        "--model",
+        default=None,
+        help="Override adapter default model name",
     )
     drive_p.add_argument(
         "--structured",
@@ -272,22 +277,42 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
 def _create_adapter(args: argparse.Namespace) -> Any:
     """Create the LLM adapter based on CLI arguments.
 
-    Handles --structured, --behavior, and --adapter flags.
+    Handles --structured, --behavior, --adapter, and --model flags.
+    Adapters are lazy-imported inside this function so that missing
+    SDK packages do not affect unrelated adapters.
     """
     if args.adapter == "codex":
         from statekanban.adapters.codex_adapter import CodexAdapter
 
         return CodexAdapter()
 
+    elif args.adapter == "anthropic":
+        from statekanban.adapters.anthropic_adapter import AnthropicMessagesAdapter
+
+        model = args.model or "claude-sonnet-4-20250514"
+        return AnthropicMessagesAdapter(model=model)
+
+    elif args.adapter == "iflytek":
+        from statekanban.adapters.iflytek_adapter import IflytekAdapter
+
+        return IflytekAdapter(model=args.model)
+
+    elif args.adapter == "deepseek":
+        from statekanban.adapters.deepseek_adapter import DeepSeekAdapter
+
+        return DeepSeekAdapter(model=args.model)
+
     # Default: MockLLMAdapter
     from statekanban.adapters.mock_adapter import MockLLMAdapter
 
     if args.structured:
-        return MockLLMAdapter(mode="structured")
+        return MockLLMAdapter(structured_mode=True)
     elif args.behavior:
-        return MockLLMAdapter(mode="behavior")
+        adapter = MockLLMAdapter(structured_mode=True)
+        adapter.set_behavior_mode()
+        return adapter
     else:
-        return MockLLMAdapter(mode="mock")
+        return MockLLMAdapter()
 
 
 def _default_viewport_specs() -> dict[str, Any]:
