@@ -1,42 +1,16 @@
 {
-  "status": "MISSION_ACCOMPLISHED",
-  "mode": "v2_agent",
-  "round": 6,
-  "stage_reached": 7,
-  "active_nodes": [],
-  "completed_nodes": ["pm", "architect", "backend", "tester_write", "tester_run", "reviewer", "integration"],
-  "blocked_nodes": [],
-  "round_history": {
-    "R1": {
-      "status": "MISSION_ACCOMPLISHED",
-      "completed_at": "2026-05-05T12:39:41Z",
-      "summary": "内核六大模块实现，3987行代码，203项测试通过"
-    },
-    "R2": {
-      "status": "MISSION_ACCOMPLISHED",
-      "completed_at": "2026-05-05T23:38:00Z",
-      "summary": "驱动引擎+Codex接入，+1553行，369项测试通过，4个Advisory Findings待修"
-    },
-    "R3": {
-      "status": "MISSION_ACCOMPLISHED",
-      "completed_at": "2026-05-06T18:00:00Z",
-      "summary": "引擎调校+端到端验证，8 REQ，369+测试通过，11个review issues待修"
-    },
-    "R4": {
-      "status": "MISSION_ACCOMPLISHED",
-      "completed_at": "2026-05-06T19:00:00Z",
-      "summary": "接口修正+真实API验证，381项测试通过，2项实现偏差遗留至R5"
-    },
-    "R5": {
-      "status": "MISSION_ACCOMPLISHED",
-      "completed_at": "2026-05-07T10:00:00Z",
-      "summary": "可配置项目空间+R4遗留修正，Config.resolve_path+CLI --project-root+OutputValve output_dir"
-    },
-    "R6": {
-      "status": "MISSION_ACCOMPLISHED",
-      "completed_at": "2026-05-08T12:00:00Z",
-      "summary": "虚拟底座隔离强化，5处泄漏封堵：OutputValve路径沙箱、read_file沙箱、call_llm超时降级、snapshot走OutputValve、Engine异常边界"
-    }
+  "project": "statekanban",
+  "current_round": "R7",
+  "status": "completed",
+  "previous_rounds": {
+    "R1": "completed",
+    "R2": "completed",
+    "R3": "completed",
+    "R4": "completed",
+    "R5": "completed",
+    "R6": "completed",
+    "R7": "completed"
   },
-  "last_updated": "2026-05-08T12:00:00+08:00"
+  "test_count": 596,
+  "last_updated": "2026-05-08T19:40:00"
 }
