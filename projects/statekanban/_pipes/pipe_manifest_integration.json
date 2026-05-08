@@ -1,0 +1,8 @@
+{
+  "role": "integration",
+  "inputs": ["02_design/", "_system/approved_tech_stack.json", "_system/pipeline_blueprint.json", "05_delivery/", "04_testing/", "05_review/"],
+  "outputs": ["05_delivery/", "_pipes/lock_integration.json"],
+  "readonly_shared": ["_system/", "_skills/"],
+  "created_at": "2026-05-08T00:00:00Z",
+  "status": "pending"
+}

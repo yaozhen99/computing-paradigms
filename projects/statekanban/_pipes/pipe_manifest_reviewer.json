@@ -1,0 +1,8 @@
+{
+  "role": "reviewer",
+  "inputs": ["01_requirements/", "02_design/", "_system/approved_tech_stack.json", "_system/pipeline_blueprint.json", "05_delivery/statekanban/", "04_testing/"],
+  "outputs": ["05_review/", "_pipes/lock_reviewer.json"],
+  "readonly_shared": ["_system/", "_skills/"],
+  "created_at": "2026-05-08T00:00:00Z",
+  "status": "pending"
+}

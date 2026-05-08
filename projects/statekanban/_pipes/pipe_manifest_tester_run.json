@@ -1,0 +1,8 @@
+{
+  "role": "tester_run",
+  "inputs": ["04_testing/", "_system/approved_tech_stack.json", "_system/pipeline_blueprint.json", "05_delivery/"],
+  "outputs": ["04_testing/", "_pipes/lock_tester_run.json"],
+  "readonly_shared": ["_system/", "_skills/"],
+  "created_at": "2026-05-08T00:00:00Z",
+  "status": "pending"
+}
