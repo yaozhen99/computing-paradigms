@@ -54,13 +54,14 @@ async def read_file(
         try:
             resolved_path = config.resolve_path(path)
         except Exception as exc:
-            # PathEscapeError or ValueError from config.resolve_path
+            # REQ-602: All path violations from read_file use SK_TR_005
+            # regardless of the underlying error code (e.g. PathEscapeError
+            # uses SK_06_001, but read_file normalizes to SK_TR_005).
             exc_name = type(exc).__name__
-            error_code = getattr(exc, "error_code", "SK_TR_005")
             return {
                 "success": False,
                 "error": f"Path violation: {exc_name}: {exc}",
-                "error_code": error_code,
+                "error_code": "SK_TR_005",
             }
         # Symlink normalization: os.path.realpath() after resolve
         resolved_path = os.path.realpath(resolved_path)

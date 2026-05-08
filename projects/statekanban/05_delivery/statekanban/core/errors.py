@@ -152,6 +152,35 @@ class AtomicWriteError(OutputValveError):
     http_analogy = 500
 
 
+class ValvePathViolationError(OutputValveError):
+    """OutputValve write path escapes the output directory sandbox.
+
+    Error code: SK_VS_005
+    REQ-601: Triggered by OutputValve._validate_path() when a path
+    traversal or out-of-bounds write is detected.
+    """
+
+    error_code = "SK_VS_005"
+    http_analogy = 403
+
+    def __init__(
+        self,
+        message: str = "",
+        *,
+        attempted_path: str = "",
+        output_dir: str = "",
+        error_code: str | None = None,
+    ) -> None:
+        if not message:
+            message = (
+                f"Path violation: '{attempted_path}' "
+                f"resolves outside output directory '{output_dir}'"
+            )
+        super().__init__(message, error_code=error_code)
+        self.attempted_path = attempted_path
+        self.output_dir = output_dir
+
+
 class HumanGateRejectedError(OutputValveError):
     """Human gate rejected the write."""
 
@@ -187,6 +216,35 @@ class ToolTimeoutError(ToolRegistryError):
 
     error_code = "SK_TR_003"
     http_analogy = 408
+
+
+class ToolPathViolationError(ToolRegistryError):
+    """Tool path escapes the project root sandbox.
+
+    Error code: SK_TR_005
+    REQ-602: Triggered by read_file._validate_path() when a path
+    traversal or out-of-bounds read is detected.
+    """
+
+    error_code = "SK_TR_005"
+    http_analogy = 403
+
+    def __init__(
+        self,
+        message: str = "",
+        *,
+        attempted_path: str = "",
+        project_root: str = "",
+        error_code: str | None = None,
+    ) -> None:
+        if not message:
+            message = (
+                f"Path violation: '{attempted_path}' "
+                f"resolves outside project root '{project_root}'"
+            )
+        super().__init__(message, error_code=error_code)
+        self.attempted_path = attempted_path
+        self.project_root = project_root
 
 
 # Note: SK_TR_004 is raised as ToolRegistryError with error_code="SK_TR_004"
@@ -307,6 +365,35 @@ class SnapshotWriteError(SnapshotError):
     http_analogy = 500
 
 
+class SnapshotPathViolationError(SnapshotError):
+    """Snapshot path escapes the project root sandbox.
+
+    Error code: SK_SN_003
+    REQ-604: Triggered by load_snapshot() when a path traversal
+    or out-of-bounds read is detected.
+    """
+
+    error_code = "SK_SN_003"
+    http_analogy = 403
+
+    def __init__(
+        self,
+        message: str = "",
+        *,
+        attempted_path: str = "",
+        project_root: str = "",
+        error_code: str | None = None,
+    ) -> None:
+        if not message:
+            message = (
+                f"Snapshot path violation: '{attempted_path}' "
+                f"resolves outside project root '{project_root}'"
+            )
+        super().__init__(message, error_code=error_code)
+        self.attempted_path = attempted_path
+        self.project_root = project_root
+
+
 # ---------------------------------------------------------------------------
 # CodexAdapter errors (NEW)
 # ---------------------------------------------------------------------------
@@ -371,6 +458,19 @@ class ValveReworkLoopError(EngineError):
     """Consecutive valve failures detected -- infinite rework loop (REQ-006)."""
 
     error_code = "SK_EN_004"
+    http_analogy = 500
+
+
+class EngineExternalError(EngineError):
+    """External exception converted to internal ErrorSignal.
+
+    Error code: SK_EN_006
+    REQ-605: Triggered by Engine._call_llm_for_role() when an
+    external API exception is caught and converted to an ErrorSignal
+    instead of propagating to the drive loop.
+    """
+
+    error_code = "SK_EN_006"
     http_analogy = 500
 
 

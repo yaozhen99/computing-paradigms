@@ -1,10 +1,10 @@
 {
-  "status": "READY",
+  "status": "MISSION_ACCOMPLISHED",
   "mode": "v2_agent",
   "round": 6,
-  "stage_reached": 6,
+  "stage_reached": 7,
   "active_nodes": [],
-  "completed_nodes": ["pm", "architect", "backend", "tester_write", "tester_run", "reviewer"],
+  "completed_nodes": ["pm", "architect", "backend", "tester_write", "tester_run", "reviewer", "integration"],
   "blocked_nodes": [],
   "round_history": {
     "R1": {
@@ -31,16 +31,12 @@
       "status": "MISSION_ACCOMPLISHED",
       "completed_at": "2026-05-07T10:00:00Z",
       "summary": "可配置项目空间+R4遗留修正，Config.resolve_path+CLI --project-root+OutputValve output_dir"
+    },
+    "R6": {
+      "status": "MISSION_ACCOMPLISHED",
+      "completed_at": "2026-05-08T12:00:00Z",
+      "summary": "虚拟底座隔离强化，5处泄漏封堵：OutputValve路径沙箱、read_file沙箱、call_llm超时降级、snapshot走OutputValve、Engine异常边界"
     }
   },
-  "r6_requirements": {
-    "title": "虚拟底座隔离强化",
-    "req_count": 5,
-    "req_ids": ["REQ-601", "REQ-602", "REQ-603", "REQ-604", "REQ-605"],
-    "origin": "5处隔离泄漏：OutputValve路径无沙箱、read_file无限制、call_llm无超时、snapshot旁路、Engine异常穿透",
-    "deliverables": 7,
-    "acceptance_criteria": 7,
-    "core_principle": "降级优于崩溃，所有外部异常在边界层消化"
-  },
-  "last_updated": "2026-05-07T11:00:00+08:00"
+  "last_updated": "2026-05-08T12:00:00+08:00"
 }

@@ -53,6 +53,7 @@ from statekanban.engine.router import SignalRouter
 from statekanban.engine.scheduler import RoleScheduler
 from statekanban.adapters.base import LLMAdapter
 from statekanban.config import Config
+from statekanban.core.errors import InvalidViewportSpecError, StateKanbanError
 
 
 class Engine:
@@ -111,6 +112,10 @@ class Engine:
         self._consecutive_valve_failures: int = 0
         self._max_consecutive_valve_failures: int = 3
 
+        # REQ-605: Consecutive external exception tracking
+        self._consecutive_error_rounds: int = 0
+        self._max_consecutive_error_rounds: int = 3
+
         # REQ-004: Whether to route through ToolRegistry (default True)
         self._use_registry_for_llm: bool = True
 
@@ -166,6 +171,24 @@ class Engine:
             # 3. Role scheduling: process each role in order
             for role in self._scheduler.iter_round():
                 await self._process_role(role, round_num)
+
+            # REQ-605: Track consecutive rounds with external exceptions
+            error_signals = self._kanban.fluid.read_signals(signal_type=SignalType.ERROR)
+            has_external_error = any(
+                s.error_code == "SK_EN_006" and s.round_number == round_num
+                for s in error_signals
+            )
+            if has_external_error:
+                self._consecutive_error_rounds += 1
+                if self._consecutive_error_rounds >= self._max_consecutive_error_rounds:
+                    from statekanban.core.errors import EngineExternalError
+
+                    raise EngineExternalError(
+                        f"Consecutive external exceptions ({self._consecutive_error_rounds}): "
+                        f"abnormal termination"
+                    )
+            else:
+                self._consecutive_error_rounds = 0
 
             # 4. Convergence check for all pending targets
             all_results = self._convergence.check_all_pending(round_num)
@@ -227,7 +250,11 @@ class Engine:
         """
         try:
             # 3a. Viewport slice (role-isolated)
-            slice_data = self._slicer.slice(role)
+            try:
+                slice_data = self._slicer.slice(role)
+            except InvalidViewportSpecError:
+                # Role has no viewport spec configured -- skip it
+                return
 
             if self._verbose:
                 print(
@@ -248,6 +275,26 @@ class Engine:
                     file=sys.stderr,
                 )
 
+            # REQ-605: If LLM returned an error response, inject SK_EN_006
+            # ErrorSignal directly instead of relying on ResponseParser.
+            if raw_response.finish_reason in ("error", "degraded"):
+                error_signal = ErrorSignal(
+                    signal_id=make_signal_id(),
+                    author_role="system",
+                    target_id=role,
+                    payload={
+                        "error": raw_response.content or "LLM error",
+                        "source": role,
+                    },
+                    timestamp=now_utc(),
+                    round_number=round_number,
+                    error_code="SK_EN_006",
+                    error_detail=f"External exception in role {role}: "
+                    f"{raw_response.content}",
+                )
+                self._kanban.fluid.write_signal(error_signal)
+                return
+
             # 3c. Parse response into typed signals
             parsed_list = self._parser.parse(raw_response, role, round_number)
 
@@ -255,17 +302,21 @@ class Engine:
             for parsed in parsed_list:
                 self._inject_parsed(parsed, role, round_number)
 
+        except StateKanbanError:
+            # Internal errors (config, viewport, etc.) should propagate up
+            raise
         except Exception as exc:
-            # Never crash the kernel -- inject error signal and continue
+            # REQ-605: External exception -> internal ErrorSignal (SK_EN_006)
+            # Only catch non-internal exceptions (LLM failures, tool errors, etc.)
             error_signal = ErrorSignal(
                 signal_id=make_signal_id(),
-                author_role="Engine",
+                author_role="system",
                 target_id=role,
-                payload={"error": str(exc)},
+                payload={"error": str(exc), "source": role},
                 timestamp=now_utc(),
                 round_number=round_number,
-                error_code="SK_EN_002",
-                error_detail=f"Role processing error: {exc}",
+                error_code="SK_EN_006",
+                error_detail=f"External exception in role {role}: {exc}",
             )
             try:
                 self._kanban.fluid.write_signal(error_signal)

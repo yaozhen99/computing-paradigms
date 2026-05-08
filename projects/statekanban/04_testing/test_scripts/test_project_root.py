@@ -256,8 +256,8 @@ class TestOutputValveProjectRoot:
             assert os.path.exists(os.path.join(tmp_dir, "output.py"))
 
     @pytest.mark.asyncio
-    async def test_valve_writes_absolute_path_ignores_project_root(self):
-        """REQ-503 AC: OutputValve ignores project_root for absolute artifact paths."""
+    async def test_valve_writes_absolute_path_outside_project_root_rejected(self):
+        """REQ-601: OutputValve rejects absolute paths outside project_root."""
         with tempfile.TemporaryDirectory() as tmp_dir:
             abs_output = os.path.join(tmp_dir, "abs_output.py")
             from statekanban.core.kanban import StateKanban
@@ -277,5 +277,6 @@ class TestOutputValveProjectRoot:
                     created_at=now_utc(),
                 )
                 result = await valve.validate_and_write(art)
-                assert result.success is True
-                assert result.artifact_path == abs_output
+                # REQ-601: Absolute path outside project_root is rejected
+                assert result.success is False
+                assert "SK_VS_005" in (result.error or "")

@@ -3,6 +3,7 @@
 REQ-005: call_llm tool with permission control, audit logging, and null bytes validation.
 REQ-005a: call_llm integration with Engine via ToolRegistry.
 REQ-008: null bytes validation per reviewer rules RR-004.
+REQ-603: timeout isolation, retry cap, and degraded fallback.
 
 This module provides:
   - CallLlmTool: callable tool class for invoking LLM.
@@ -14,6 +15,7 @@ uses `await implementation(params)`.
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 import logging
 from typing import Any, Callable
@@ -31,17 +33,32 @@ class CallLlmTool:
     Permission control: all roles can call this tool.
     Audit logging: every invocation is logged with timestamp, role, and prompt summary.
     Null bytes validation: inputs containing null bytes are rejected (RR-004).
+    REQ-603: timeout isolation (default 30s), retry cap (default 2),
+    and degraded fallback on exhaustion.
     """
 
-    def __init__(self, adapter: LLMAdapter) -> None:
+    def __init__(
+        self,
+        adapter: LLMAdapter,
+        timeout: float = 30.0,
+        max_retries: int = 2,
+    ) -> None:
         """
         Args:
             adapter: An LLM adapter instance with an async complete() method.
+            timeout: Maximum seconds per LLM call (REQ-603). Default 30.0.
+            max_retries: Maximum retry attempts after initial failure (REQ-603). Default 2.
         """
         self._adapter = adapter
+        self._timeout = timeout
+        self._max_retries = max_retries
 
     async def __call__(self, params: dict[str, Any]) -> dict[str, Any]:
         """Execute the call_llm tool (async).
+
+        REQ-603: Wraps the adapter call with asyncio.wait_for timeout
+        and retry logic. On exhaustion, returns a degraded fallback
+        response instead of raising.
 
         Args:
             params: Dict with keys:
@@ -53,8 +70,8 @@ class CallLlmTool:
             On success:
                 {"success": True, "output": {"content": str, "finish_reason": str}}
 
-            On failure:
-                {"success": False, "error": str, "error_code": "SK_LLM_001"}
+            On timeout/error (after retries exhausted):
+                Degraded fallback response (REQ-603).
 
         Raises:
             ToolRegistryError: SK_TR_004 if null bytes detected in input.
@@ -91,51 +108,91 @@ class CallLlmTool:
             timestamp,
         )
 
-        try:
-            response = await self._adapter.complete(
-                messages=messages,
-                tools=tools,
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
+        # REQ-603: Retry loop with timeout
+        last_error: str = ""
+        for attempt in range(self._max_retries + 1):
+            try:
+                response = await asyncio.wait_for(
+                    self._adapter.complete(
+                        messages=messages,
+                        tools=tools,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                    ),
+                    timeout=self._timeout,
+                )
 
-            logger.info(
-                "call_llm completed: response_len=%d",
-                len(response.content) if response.content else 0,
-            )
+                logger.info(
+                    "call_llm completed: response_len=%d",
+                    len(response.content) if response.content else 0,
+                )
 
-            return {
-                "success": True,
-                "output": {
-                    "content": response.content,
-                    "finish_reason": response.finish_reason,
-                },
-            }
+                return {
+                    "success": True,
+                    "output": {
+                        "content": response.content,
+                        "finish_reason": response.finish_reason,
+                    },
+                }
 
-        except Exception as exc:
-            logger.error(
-                "call_llm error: error=%s",
-                str(exc),
-            )
-            return {
-                "success": False,
-                "error": str(exc),
-                "error_code": "SK_LLM_001",
-            }
+            except asyncio.TimeoutError:
+                last_error = f"LLM_TIMEOUT after {self._timeout}s (attempt {attempt + 1})"
+                logger.warning("call_llm timeout: %s", last_error)
+                if attempt == self._max_retries:
+                    return self._fallback_response("LLM_TIMEOUT")
+
+            except Exception as exc:
+                last_error = f"LLM_ERROR: {exc} (attempt {attempt + 1})"
+                logger.error("call_llm error: %s", last_error)
+                if attempt == self._max_retries:
+                    return self._fallback_response("LLM_ERROR")
+
+        # Should not reach here, but safety net
+        return self._fallback_response("LLM_ERROR")
+
+    def _fallback_response(self, reason: str) -> dict[str, Any]:
+        """Degraded fallback response (REQ-603).
+
+        Returns a valid intent signal that lets the drive loop continue
+        rather than crashing. The degraded signal is a legitimate internal
+        signal that the Engine can process normally.
+
+        Args:
+            reason: "LLM_TIMEOUT" or "LLM_ERROR".
+
+        Returns:
+            Dict with success=False and degraded intent payload.
+        """
+        return {
+            "success": False,
+            "error": reason,
+            "error_code": "SK_LLM_001",
+            "degraded": True,
+            "output": {
+                "content": "",
+                "finish_reason": "degraded",
+            },
+        }
 
 
-def create_call_llm_tool(adapter: LLMAdapter) -> Callable[[dict[str, Any]], Any]:
+def create_call_llm_tool(
+    adapter: LLMAdapter,
+    timeout: float = 30.0,
+    max_retries: int = 2,
+) -> Callable[[dict[str, Any]], Any]:
     """Factory function to create a call_llm tool callable.
 
     Used for ToolRegistry registration.
 
     Args:
         adapter: An LLM adapter instance with an async complete() method.
+        timeout: Maximum seconds per LLM call (REQ-603). Default 30.0.
+        max_retries: Maximum retry attempts after initial failure (REQ-603). Default 2.
 
     Returns:
         An async callable that accepts params dict and returns result dict.
     """
-    tool = CallLlmTool(adapter)
+    tool = CallLlmTool(adapter, timeout=timeout, max_retries=max_retries)
     return tool
 
 

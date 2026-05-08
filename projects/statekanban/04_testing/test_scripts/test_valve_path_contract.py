@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 
 from statekanban.config import Config
-from statekanban.core.errors import PathEscapeError
+from statekanban.core.errors import PathEscapeError, ValvePathViolationError
 from statekanban.core.kanban import (
     Artifact,
     ArtifactType,
@@ -145,19 +145,17 @@ class TestValvePathContractWrite:
 
     @pytest.mark.asyncio
     async def test_escape_path_write_blocked(self):
-        """AC-604.2: Traversal path raises PathEscapeError, no file written."""
+        """AC-604.2: Traversal path rejected by valve, no file written."""
         with tempfile.TemporaryDirectory() as tmp_dir:
             kanban = StateKanban()
             config = Config(project_root=tmp_dir)
             valve = OutputValve(kanban=kanban, config=config)
 
             art = _make_code_artifact("../../etc/evil.py")
-            with pytest.raises(PathEscapeError) as exc_info:
-                await valve.validate_and_write(art)
-            assert exc_info.value.error_code == "SK_06_001"
-            # Strengthened assertions: verify attempted_path and project_root
-            assert exc_info.value.attempted_path == "../../etc/evil.py"
-            assert tmp_dir in exc_info.value.project_root
+            result = await valve.validate_and_write(art)
+            # REQ-601: Traversal path is rejected with SK_VS_005
+            assert result.success is False
+            assert "SK_VS_005" in (result.error or "")
             # No file should be written at escaped path
             assert not os.path.exists("/etc/evil.py")
 

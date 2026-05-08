@@ -19,11 +19,12 @@ import os
 import tempfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import logging
 
-from statekanban.core.errors import AtomicWriteError
+from statekanban.core.errors import AtomicWriteError, ValvePathViolationError
 from statekanban.core.kanban import (
     Artifact,
     ArtifactType,
@@ -207,8 +208,24 @@ class OutputValve:
                     error=result.error_detail,
                 )
 
-        # All validators passed -- resolve artifact path and perform atomic write
-        resolved_path = self._resolve_artifact_path(artifact.path)
+        # All validators passed -- validate and resolve artifact path (REQ-601)
+        try:
+            resolved_path = self._validate_path(artifact.path)
+        except ValvePathViolationError as exc:
+            error_detail = f"[SK_VS_005] {exc}"
+            self._inject_error_signal(
+                artifact,
+                ValidationResult(
+                    passed=False,
+                    validator_name="PathValidation",
+                    error_detail=error_detail,
+                ),
+            )
+            return ValveResult(
+                success=False,
+                validation_results=results,
+                error=error_detail,
+            )
         logger.debug(
             "Valve write: original_path=%s, resolved_path=%s",
             artifact.path,
@@ -270,6 +287,56 @@ class OutputValve:
         base = self._project_root if self._project_root else os.getcwd()
         return os.path.join(base, artifact_path)
 
+    # REQ-601: Path sandbox validation
+    def _validate_path(self, path: str) -> str:
+        """Validate that a write path stays within the output directory.
+
+        REQ-601: All write paths must resolve to a subpath of the
+        project root (or output directory). Traversal attempts (../),
+        absolute paths pointing elsewhere, and symlinks pointing
+        outside are rejected.
+
+        Args:
+            path: The artifact path to validate.
+
+        Returns:
+            The validated absolute path.
+
+        Raises:
+            ValvePathViolationError: SK_VS_005 if path escapes output dir.
+        """
+        # Determine the sandbox boundary first
+        if self._config is not None:
+            sandbox_root = os.path.realpath(self._config.project_root)
+        elif self._project_root:
+            sandbox_root = os.path.realpath(self._project_root)
+        else:
+            # No sandbox configured -- all paths allowed (backward compat)
+            resolved = self._resolve_artifact_path(path)
+            return os.path.realpath(resolved)
+
+        # Resolve the path, catching PathEscapeError from config.resolve_path
+        try:
+            resolved = self._resolve_artifact_path(path)
+        except Exception as exc:
+            # PathEscapeError or ValueError from config.resolve_path
+            raise ValvePathViolationError(
+                attempted_path=path,
+                output_dir=sandbox_root,
+            ) from exc
+
+        # Normalize symlinks (REQ-601 rule 3)
+        resolved = os.path.realpath(resolved)
+
+        # Check that resolved path is within sandbox
+        if not Path(resolved).is_relative_to(Path(sandbox_root)):
+            raise ValvePathViolationError(
+                attempted_path=path,
+                output_dir=sandbox_root,
+            )
+
+        return resolved
+
     # -----------------------------------------------------------------------
     # Private helpers
     # -----------------------------------------------------------------------
@@ -281,6 +348,7 @@ class OutputValve:
         "TestValidator": "SK_OV_003",
         "AtomicWrite": "SK_OV_004",
         "HumanGate": "SK_OV_005",
+        "PathValidation": "SK_VS_005",
     }
 
     def _inject_error_signal(

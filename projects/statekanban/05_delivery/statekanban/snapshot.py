@@ -7,6 +7,9 @@ delete_snapshot: Delete a snapshot file.
 
 Also provides SnapshotManager class for stateful snapshot management.
 
+REQ-604: save_snapshot can route through OutputValve for sandboxed writes.
+load_snapshot validates path against project_root to prevent traversal.
+
 NFR-003 compliance: This module is application-layer, not in core/.
 It imports from core/ but performs I/O itself.
 """
@@ -20,7 +23,11 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from statekanban.core.errors import SnapshotIntegrityError, SnapshotWriteError
+from statekanban.core.errors import (
+    SnapshotIntegrityError,
+    SnapshotPathViolationError,
+    SnapshotWriteError,
+)
 from statekanban.core.kanban import StateKanban
 
 logger = logging.getLogger(__name__)
@@ -30,10 +37,19 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def save_snapshot(kanban: StateKanban, path: str) -> None:
+def save_snapshot(
+    kanban: StateKanban,
+    path: str,
+    valve: Any | None = None,
+    project_root: str = "",
+) -> None:
     """Atomically persist StateKanban to a JSON file.
 
-    Algorithm:
+    REQ-604: When valve is provided, routes the write through
+    OutputValve for sandboxed path validation and atomic write.
+    Otherwise falls back to direct atomic write (backward compat).
+
+    Algorithm (direct mode):
         1. kanban.to_json() -> dict (includes SHA-256 checksum)
         2. json.dumps() -> string
         3. Write to temp file in same directory
@@ -43,23 +59,39 @@ def save_snapshot(kanban: StateKanban, path: str) -> None:
     Args:
         kanban: StateKanban instance to persist.
         path: Target file path. Parent directories created if needed.
+        valve: Optional OutputValve instance for sandboxed writes (REQ-604).
+        project_root: Project space root for path validation when valve is used.
 
     Raises:
         SnapshotWriteError: SK_SN_002 -- write failed (IO, permissions, etc.).
+        ValvePathViolationError: SK_VS_005 -- path escapes sandbox (via valve).
     """
-    _save_snapshot_atomic(kanban, path)
+    if valve is not None:
+        _save_snapshot_via_valve(kanban, path, valve)
+    else:
+        _save_snapshot_atomic(kanban, path)
 
 
-def load_snapshot(path: str) -> StateKanban:
+def load_snapshot(
+    path: str,
+    project_root: str = "",
+) -> StateKanban:
     """Load StateKanban from a snapshot file.
 
+    REQ-604: When project_root is provided, validates that the
+    resolved path stays within project_root. Prevents path traversal
+    attacks (e.g., loading snapshots from outside the project space).
+
     Algorithm:
-        1. Read and parse JSON
-        2. StateKanban.from_json(data) -- verifies SHA-256 checksum
-        3. Return reconstructed StateKanban
+        1. Resolve and validate path (if project_root set)
+        2. Read and parse JSON
+        3. StateKanban.from_json(data) -- verifies SHA-256 checksum
+        4. Return reconstructed StateKanban
 
     Args:
         path: Snapshot file path.
+        project_root: Project space root for path validation (REQ-604).
+            Empty string means no path validation (backward compat).
 
     Returns:
         Fully reconstructed StateKanban instance.
@@ -67,8 +99,11 @@ def load_snapshot(path: str) -> StateKanban:
     Raises:
         FileNotFoundError: path does not exist.
         SnapshotIntegrityError: SK_SN_001 -- corrupt/invalid file or checksum mismatch.
+        SnapshotPathViolationError: SK_SN_003 -- path escapes project_root.
     """
-    return _load_snapshot_from_file(path)
+    # REQ-604: Path validation against project_root
+    resolved_path = _validate_snapshot_path(path, project_root)
+    return _load_snapshot_from_file(resolved_path)
 
 
 def list_snapshots(base_dir: str = ".statekanban/snapshots") -> list[str]:
@@ -146,22 +181,36 @@ class SnapshotManager:
         else:
             self._project_root = project_root
 
-    def save_snapshot(self, kanban: StateKanban, path: str) -> None:
+    def save_snapshot(
+        self,
+        kanban: StateKanban,
+        path: str,
+        valve: Any | None = None,
+    ) -> None:
         """Atomically persist StateKanban to a JSON file.
+
+        REQ-604: When valve is provided, routes through OutputValve.
 
         Args:
             kanban: StateKanban instance to persist.
             path: Target file path (relative to base_dir or absolute).
+            valve: Optional OutputValve instance for sandboxed writes (REQ-604).
 
         Raises:
             SnapshotWriteError: SK_SN_002 -- write failed.
+            ValvePathViolationError: SK_VS_005 -- path escapes sandbox (via valve).
         """
         full_path = self._resolve_path(path)
         self._ensure_gitignore()
-        _save_snapshot_atomic(kanban, full_path)
+        if valve is not None:
+            _save_snapshot_via_valve(kanban, full_path, valve)
+        else:
+            _save_snapshot_atomic(kanban, full_path)
 
     def load_snapshot(self, path: str) -> StateKanban:
         """Load StateKanban from a snapshot file.
+
+        REQ-604: Path is validated against project_root when configured.
 
         Args:
             path: Snapshot file path (relative to base_dir or absolute).
@@ -172,9 +221,15 @@ class SnapshotManager:
         Raises:
             FileNotFoundError: path does not exist.
             SnapshotIntegrityError: SK_SN_001 -- corrupt/invalid file or checksum mismatch.
+            SnapshotPathViolationError: SK_SN_003 -- path escapes project_root.
         """
         full_path = self._resolve_path(path)
-        return _load_snapshot_from_file(full_path)
+        # REQ-604: Validate resolved path against project_root
+        validated_path = _validate_snapshot_path(
+            full_path,
+            self._project_root,
+        )
+        return _load_snapshot_from_file(validated_path)
 
     def list_snapshots(self) -> list[str]:
         """List all snapshot files in the base directory.
@@ -315,3 +370,111 @@ def _load_snapshot_from_file(path: str) -> StateKanban:
         raise SnapshotIntegrityError(f"Failed to read snapshot file: {exc}") from exc
 
     return StateKanban.from_json(data)
+
+
+def _validate_snapshot_path(path: str, project_root: str) -> str:
+    """Validate that a snapshot path stays within project_root.
+
+    REQ-604: When project_root is set, resolves the path and checks
+    that it stays within the sandbox. Prevents path traversal attacks.
+
+    Args:
+        path: The snapshot file path.
+        project_root: Project space root. Empty string means no validation.
+
+    Returns:
+        The resolved absolute path.
+
+    Raises:
+        SnapshotPathViolationError: SK_SN_003 if path escapes project_root.
+    """
+    if not project_root:
+        # No sandbox configured -- return as-is (backward compat)
+        return path
+
+    # Resolve absolute path
+    if os.path.isabs(path):
+        abs_path = os.path.realpath(path)
+    else:
+        abs_path = os.path.realpath(os.path.join(project_root, path))
+
+    abs_root = os.path.realpath(project_root)
+
+    if not Path(abs_path).is_relative_to(Path(abs_root)):
+        raise SnapshotPathViolationError(
+            attempted_path=path,
+            project_root=abs_root,
+        )
+
+    return abs_path
+
+
+def _save_snapshot_via_valve(
+    kanban: StateKanban, path: str, valve: Any
+) -> None:
+    """Save snapshot through OutputValve for sandboxed writes (REQ-604).
+
+    Creates an Artifact and submits it through valve.validate_and_write().
+    This ensures the write path is validated by the valve's path sandbox.
+
+    Args:
+        kanban: StateKanban instance to persist.
+        path: Target file path.
+        valve: OutputValve instance.
+
+    Raises:
+        SnapshotWriteError: SK_SN_002 if valve write fails.
+    """
+    import asyncio
+
+    from statekanban.core.kanban import (
+        Artifact,
+        ArtifactType,
+        compute_checksum,
+        make_signal_id,
+        now_utc,
+    )
+
+    try:
+        data = kanban.to_json()
+        json_str = json.dumps(data, indent=2, default=str, ensure_ascii=False)
+
+        artifact = Artifact(
+            seq_no=0,
+            artifact_type=ArtifactType.CONFIG,
+            path=path,
+            content=json_str,
+            checksum=compute_checksum(json_str),
+            author_role="system",
+            created_at=now_utc(),
+        )
+
+        # valve.validate_and_write is async -- run it in a fresh event loop
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop is not None and loop.is_running():
+            # We're inside an async context -- can't use asyncio.run()
+            # Schedule and wait using a thread
+            import concurrent.futures
+
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                valve_result = pool.submit(
+                    asyncio.run, valve.validate_and_write(artifact)
+                ).result()
+        else:
+            valve_result = asyncio.run(valve.validate_and_write(artifact))
+
+        if not valve_result.success:
+            raise SnapshotWriteError(
+                f"Valve rejected snapshot write to {path}: {valve_result.error}"
+            )
+
+    except SnapshotWriteError:
+        raise
+    except Exception as exc:
+        raise SnapshotWriteError(
+            f"Failed to save snapshot through valve: {exc}"
+        ) from exc
