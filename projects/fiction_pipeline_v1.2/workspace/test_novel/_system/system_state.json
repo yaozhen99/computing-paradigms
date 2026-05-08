@@ -1,0 +1,26 @@
+{
+  "story_name": "test_novel",
+  "volume": 1,
+  "status": "running",
+  "current_stage": "lead_writer",
+  "current_chapter": 2,
+  "total_chapters": 10,
+  "veto_count": 0,
+  "max_veto": 3,
+  "human_approval_required": ["story_bible", "voice_anchor", "rolling_outline"],
+  "approved": {
+    "story_bible": "2026-05-07T10:00:00",
+    "voice_anchor": "2026-05-07T11:00:00",
+    "rolling_outline": "2026-05-07T12:00:00"
+  },
+  "completed_stages": ["story_bible", "voice_anchor", "rolling_outline", "chapter_brief"],
+  "frozen_chapters": ["chapter_01"],
+  "startup_inputs": [
+    "_system/START_HERE.md",
+    "_system/project_canon.md",
+    "_system/stage_entrypoints.md",
+    "_system/stage_manifest.json"
+  ],
+  "created_at": "2026-05-07T09:00:00",
+  "updated_at": "2026-05-07T14:30:00"
+}

@@ -1,0 +1,9 @@
+{
+  "stage": "story_bible",
+  "status": "completed",
+  "started_at": "2026-05-07T10:00:00",
+  "completed_at": "2026-05-07T10:15:00",
+  "model_profile": "canon_planner",
+  "chapter": null,
+  "result": "ok"
+}

@@ -1,0 +1,9 @@
+{
+  "stage": "chapter_freezer",
+  "status": "pending",
+  "started_at": null,
+  "completed_at": null,
+  "model_profile": "mechanical_operator",
+  "chapter": null,
+  "result": null
+}

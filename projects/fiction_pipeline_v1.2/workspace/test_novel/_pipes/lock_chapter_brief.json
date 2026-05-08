@@ -1,0 +1,9 @@
+{
+  "stage": "chapter_brief",
+  "status": "completed",
+  "started_at": "2026-05-07T13:00:00",
+  "completed_at": "2026-05-07T13:20:00",
+  "model_profile": "brief_planner",
+  "chapter": 2,
+  "result": "ok"
+}

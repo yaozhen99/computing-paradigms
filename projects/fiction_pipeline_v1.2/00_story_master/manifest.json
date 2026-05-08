@@ -1,0 +1,39 @@
+{
+  "role": "story_master",
+  "version": "1.2.0",
+  "description": "Create clean fiction project instances from requirement intake.",
+  "core_principle": "Project canon enters at startup; prose flows through one lead writer.",
+  "pipeline_policy": {
+    "parallel_chapter_writing": false,
+    "single_lead_writer": true,
+    "assistants_may_annotate": true,
+    "assistants_may_write_full_chapters": false,
+    "chapter_freeze_required_before_next": true
+  },
+  "outputs": [
+    "README.md",
+    "_system/START_HERE.md",
+    "_system/project_canon.md",
+    "_system/stage_entrypoints.md",
+    "_system/stage_manifest.json",
+    "_system/system_state.json",
+    "_system/pipeline_blueprint.json",
+    "_system/pipeline_lock.md",
+    "_pipes/lock_*.json",
+    "_logs/pipeline_execution_log.md"
+  ],
+  "pipeline_stages": [
+    {"id": "story_bible", "role": "story_bible", "human_approval": true, "depends_on": []},
+    {"id": "voice_anchor", "role": "voice_anchor", "human_approval": true, "depends_on": ["story_bible"]},
+    {"id": "rolling_outline", "role": "rolling_outline", "human_approval": true, "depends_on": ["voice_anchor"]},
+    {"id": "chapter_brief", "role": "chapter_brief", "human_approval": false, "depends_on": ["rolling_outline"]},
+    {"id": "lead_writer", "role": "lead_writer", "human_approval": false, "depends_on": ["chapter_brief"]},
+    {"id": "style_editor", "role": "style_editor", "human_approval": false, "depends_on": ["lead_writer"]},
+    {"id": "continuity_editor", "role": "continuity_editor", "human_approval": false, "depends_on": ["lead_writer"]},
+    {"id": "revision_lead", "role": "revision_lead", "human_approval": false, "depends_on": ["style_editor", "continuity_editor"]},
+    {"id": "chapter_freezer", "role": "chapter_freezer", "human_approval": false, "depends_on": ["revision_lead"]}
+  ],
+  "veto_rules": {
+    "max_consecutive_vetoes": 3
+  }
+}

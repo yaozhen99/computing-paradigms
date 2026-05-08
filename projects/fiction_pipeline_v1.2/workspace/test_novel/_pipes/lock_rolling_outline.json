@@ -1,0 +1,9 @@
+{
+  "stage": "rolling_outline",
+  "status": "completed",
+  "started_at": "2026-05-07T12:00:00",
+  "completed_at": "2026-05-07T12:30:00",
+  "model_profile": "canon_planner",
+  "chapter": null,
+  "result": "ok"
+}

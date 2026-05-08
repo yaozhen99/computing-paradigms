@@ -1,0 +1,77 @@
+{
+  "project": "test_novel",
+  "launches": [
+    {
+      "stage": "story_bible",
+      "tool": "claude",
+      "model": "sonnet",
+      "effort": "high",
+      "directory": "01_story_bible",
+      "prompt_file": "agent_protocol/01_story_bible/prompt.md"
+    },
+    {
+      "stage": "voice_anchor",
+      "tool": "claude",
+      "model": "sonnet",
+      "effort": "high",
+      "directory": "02_voice_anchor",
+      "prompt_file": "agent_protocol/02_voice_anchor/prompt.md"
+    },
+    {
+      "stage": "rolling_outline",
+      "tool": "claude",
+      "model": "sonnet",
+      "effort": "high",
+      "directory": "03_rolling_outline",
+      "prompt_file": "agent_protocol/03_rolling_outline/prompt.md"
+    },
+    {
+      "stage": "chapter_brief",
+      "tool": "claude",
+      "model": "sonnet",
+      "effort": "high",
+      "directory": "04_chapter_briefs",
+      "prompt_file": "agent_protocol/04_chapter_brief/prompt.md"
+    },
+    {
+      "stage": "lead_writer",
+      "tool": "claude",
+      "model": "opus",
+      "effort": "high",
+      "directory": "05_draft_chapters",
+      "prompt_file": "agent_protocol/05_lead_writer/prompt.md"
+    },
+    {
+      "stage": "style_editor",
+      "tool": "claude",
+      "model": "sonnet",
+      "effort": "medium",
+      "directory": "08_style_reports",
+      "prompt_file": "agent_protocol/06_style_editor/prompt.md"
+    },
+    {
+      "stage": "continuity_editor",
+      "tool": "claude",
+      "model": "sonnet",
+      "effort": "medium",
+      "directory": "07_continuity",
+      "prompt_file": "agent_protocol/07_continuity_editor/prompt.md"
+    },
+    {
+      "stage": "revision_lead",
+      "tool": "claude",
+      "model": "opus",
+      "effort": "high",
+      "directory": "09_revision_notes",
+      "prompt_file": "agent_protocol/08_revision_lead/prompt.md"
+    },
+    {
+      "stage": "chapter_freezer",
+      "tool": "claude",
+      "model": "haiku",
+      "effort": "low",
+      "directory": "06_frozen_chapters",
+      "prompt_file": "agent_protocol/09_chapter_freezer/prompt.md"
+    }
+  ]
+}

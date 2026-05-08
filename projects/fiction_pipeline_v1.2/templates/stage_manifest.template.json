@@ -1,0 +1,100 @@
+{
+  "version": "1.2.0",
+  "project": "<project>",
+  "current_chapter": 1,
+  "stages": [
+    {
+      "id": "story_bible",
+      "directory": "01_story_bible",
+      "role_prompt": "../../agent_protocol/01_story_bible/prompt.md",
+      "model_profile": "canon_planner",
+      "reads": ["_system/project_canon.md"],
+      "writes": ["01_story_bible/story_bible.md"],
+      "lock": "_pipes/lock_story_bible.json",
+      "depends_on": []
+    },
+    {
+      "id": "voice_anchor",
+      "directory": "02_voice_anchor",
+      "role_prompt": "../../agent_protocol/02_voice_anchor/prompt.md",
+      "model_profile": "voice_designer",
+      "reads": ["_system/project_canon.md", "01_story_bible/story_bible.md"],
+      "writes": ["02_voice_anchor/voice_bible.md", "02_voice_anchor/sample_chapter.md"],
+      "lock": "_pipes/lock_voice_anchor.json",
+      "depends_on": ["story_bible"]
+    },
+    {
+      "id": "rolling_outline",
+      "directory": "03_rolling_outline",
+      "role_prompt": "../../agent_protocol/03_rolling_outline/prompt.md",
+      "model_profile": "canon_planner",
+      "reads": ["_system/project_canon.md", "01_story_bible/story_bible.md", "02_voice_anchor/voice_bible.md", "07_continuity/continuity_index.md", "06_frozen_chapters/"],
+      "writes": ["03_rolling_outline/rolling_outline.md"],
+      "lock": "_pipes/lock_rolling_outline.json",
+      "depends_on": ["voice_anchor"]
+    },
+    {
+      "id": "chapter_brief",
+      "directory": "04_chapter_briefs",
+      "role_prompt": "../../agent_protocol/04_chapter_brief/prompt.md",
+      "model_profile": "brief_planner",
+      "reads": ["_system/project_canon.md", "01_story_bible/story_bible.md", "02_voice_anchor/voice_bible.md", "03_rolling_outline/rolling_outline.md", "07_continuity/continuity_index.md", "06_frozen_chapters/chapter_{previous}.md"],
+      "writes": ["04_chapter_briefs/chapter_{current}.md"],
+      "lock": "_pipes/lock_chapter_brief.json",
+      "depends_on": ["rolling_outline"]
+    },
+    {
+      "id": "lead_writer",
+      "directory": "05_draft_chapters",
+      "role_prompt": "../../agent_protocol/05_lead_writer/prompt.md",
+      "model_profile": "prose_lead",
+      "reads": ["_system/project_canon.md", "01_story_bible/story_bible.md", "02_voice_anchor/voice_bible.md", "02_voice_anchor/sample_chapter.md", "03_rolling_outline/rolling_outline.md", "07_continuity/continuity_index.md", "06_frozen_chapters/chapter_{previous}.md", "04_chapter_briefs/chapter_{current}.md"],
+      "writes": ["05_draft_chapters/chapter_{current}.md"],
+      "lock": "_pipes/lock_lead_writer.json",
+      "depends_on": ["chapter_brief"]
+    },
+    {
+      "id": "style_editor",
+      "directory": "08_style_reports",
+      "role_prompt": "../../agent_protocol/06_style_editor/prompt.md",
+      "model_profile": "style_critic",
+      "reads": ["_system/project_canon.md", "02_voice_anchor/voice_bible.md", "02_voice_anchor/sample_chapter.md", "06_frozen_chapters/chapter_{previous}.md", "05_draft_chapters/chapter_{current}.md"],
+      "writes": ["08_style_reports/chapter_{current}_style.md"],
+      "lock": "_pipes/lock_style_editor.json",
+      "depends_on": ["lead_writer"],
+      "parallel_with": ["continuity_editor"]
+    },
+    {
+      "id": "continuity_editor",
+      "directory": "07_continuity",
+      "role_prompt": "../../agent_protocol/07_continuity_editor/prompt.md",
+      "model_profile": "continuity_auditor",
+      "reads": ["_system/project_canon.md", "01_story_bible/story_bible.md", "03_rolling_outline/rolling_outline.md", "07_continuity/continuity_index.md", "06_frozen_chapters/", "05_draft_chapters/chapter_{current}.md"],
+      "writes": ["09_revision_notes/chapter_{current}_continuity.md", "07_continuity/continuity_index.md"],
+      "lock": "_pipes/lock_continuity_editor.json",
+      "depends_on": ["lead_writer"],
+      "parallel_with": ["style_editor"]
+    },
+    {
+      "id": "revision_lead",
+      "directory": "09_revision_notes",
+      "role_prompt": "../../agent_protocol/08_revision_lead/prompt.md",
+      "model_profile": "prose_lead",
+      "same_model_as": ["lead_writer"],
+      "reads": ["_system/project_canon.md", "02_voice_anchor/voice_bible.md", "06_frozen_chapters/chapter_{previous}.md", "05_draft_chapters/chapter_{current}.md", "08_style_reports/chapter_{current}_style.md", "09_revision_notes/chapter_{current}_continuity.md"],
+      "writes": ["05_draft_chapters/chapter_{current}_revised.md", "09_revision_notes/chapter_{current}_revision.md"],
+      "lock": "_pipes/lock_revision_lead.json",
+      "depends_on": ["style_editor", "continuity_editor"]
+    },
+    {
+      "id": "chapter_freezer",
+      "directory": "06_frozen_chapters",
+      "role_prompt": "../../agent_protocol/09_chapter_freezer/prompt.md",
+      "model_profile": "mechanical_operator",
+      "reads": ["_system/project_canon.md", "05_draft_chapters/chapter_{current}_revised.md", "09_revision_notes/chapter_{current}_revision.md", "07_continuity/continuity_index.md", "_system/system_state.json"],
+      "writes": ["06_frozen_chapters/chapter_{current}.md", "_system/system_state.json", "_system/pipeline_lock.md"],
+      "lock": "_pipes/lock_chapter_freezer.json",
+      "depends_on": ["revision_lead"]
+    }
+  ]
+}

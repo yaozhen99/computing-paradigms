@@ -1,0 +1,9 @@
+{
+  "stage": "voice_anchor",
+  "status": "completed",
+  "started_at": "2026-05-07T11:00:00",
+  "completed_at": "2026-05-07T11:20:00",
+  "model_profile": "voice_designer",
+  "chapter": null,
+  "result": "ok"
+}

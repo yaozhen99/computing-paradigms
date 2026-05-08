@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fiction Pipeline v1.2 Stage Manifest",
+  "type": "object",
+  "required": ["version", "project", "current_chapter", "stages"],
+  "properties": {
+    "version": { "type": "string" },
+    "project": { "type": "string" },
+    "current_chapter": { "type": "integer", "minimum": 1 },
+    "stages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "directory", "role_prompt", "model_profile", "reads", "writes", "lock"],
+        "properties": {
+          "id": { "type": "string" },
+          "directory": { "type": "string" },
+          "role_prompt": { "type": "string" },
+          "model_profile": { "type": "string" },
+          "reads": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "writes": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "lock": { "type": "string" },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "parallel_with": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "same_model_as": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

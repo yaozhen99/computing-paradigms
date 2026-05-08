@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fiction Pipeline Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <h1>Fiction Pipeline Dashboard</h1>
+    <select id="projectSelect" class="project-select">
+      <option value="">-- 选择项目 --</option>
+    </select>
+    <span id="statusBadge" class="status-badge" style="display:none"></span>
+    <span id="currentInfo" style="margin-left:auto;font-size:13px;color:var(--text2)"></span>
+  </header>
+
+  <div class="main">
+    <!-- DAG -->
+    <div class="dag-panel">
+      <div class="panel-title">依赖关系图</div>
+      <div class="dag-canvas-wrap">
+        <canvas id="dagCanvas"></canvas>
+      </div>
+    </div>
+
+    <!-- File browser -->
+    <div class="file-panel">
+      <div class="panel-title" id="filePanelTitle">文件浏览 — 选择一个 stage</div>
+      <div class="file-list" id="fileList"></div>
+      <div class="file-content" id="fileContent">
+        <div class="placeholder">点击 stage 或文件查看内容</div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-panel">
+      <div class="panel-title">Pipeline 进度</div>
+      <div class="summary-cards" id="summaryCards"></div>
+      <div class="stage-table-wrap">
+        <table class="stage-table">
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Model</th>
+              <th>状态</th>
+              <th>依赖</th>
+              <th>并行</th>
+            </tr>
+          </thead>
+          <tbody id="stageTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="log-panel">
+      <div class="panel-title">执行日志</div>
+      <div class="log-content" id="logContent"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
