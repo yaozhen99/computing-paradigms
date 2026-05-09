@@ -1,0 +1,25 @@
+{
+  "window_id": "",
+  "room": "",
+  "role": "",
+  "parent_window_id": null,
+  "created_at": "",
+  "source_command": "",
+  "task": null,
+  "task_file": null,
+  "inherited_policy_versions": [],
+  "inheritance": {
+    "parent_constraints_applied": false,
+    "parent_room": null,
+    "parent_role": null
+  },
+  "effective_permissions": {
+    "enter": [],
+    "collect": [],
+    "propose": [],
+    "write": [],
+    "approve": []
+  },
+  "denied_permissions": [],
+  "status": "created"
+}

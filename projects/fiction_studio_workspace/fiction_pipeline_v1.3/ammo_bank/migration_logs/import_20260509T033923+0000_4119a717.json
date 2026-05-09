@@ -1,0 +1,42 @@
+{
+  "time": "2026-05-09T03:39:23+00:00",
+  "source": "C:/tower-of-babel/projects/fiction_pipeline_v1.1/workspace/lonely_star/_system/temp_ammo/ep01_坠落.md",
+  "dry_run": true,
+  "count": 13,
+  "planned": [
+    "ammo_bank\\raw\\ammo__ep01__crash_trail.md",
+    "ammo_bank\\raw\\ammo__ep01__two_shadows.md",
+    "ammo_bank\\raw\\ammo__ep01__ash_grass_ripple.md",
+    "ammo_bank\\raw\\ammo__ep01__vela_rising_crash.md",
+    "ammo_bank\\raw\\ammo__ep01__cup_down.md",
+    "ammo_bank\\raw\\ammo__ep01__rule_one_push.md",
+    "ammo_bank\\raw\\ammo__ep01__swear.md",
+    "ammo_bank\\raw\\ammo__ep01__ye_di_stands.md",
+    "ammo_bank\\raw\\ammo__ep01__ai_response_speed.md",
+    "ammo_bank\\raw\\ammo__ep01__forge_assessment.md",
+    "ammo_bank\\raw\\ammo__ep01__walk_slow.md",
+    "ammo_bank\\raw\\ammo__ep01__hot_drink_interrupted.md",
+    "ammo_bank\\raw\\ammo__ep01__b_trigger_first_human.md"
+  ],
+  "existing_targets": [],
+  "existing_ids": {},
+  "duplicate_ids": {},
+  "skipped": [],
+  "errors": [],
+  "written": [
+    "ammo_bank\\raw\\ammo__ep01__crash_trail.md",
+    "ammo_bank\\raw\\ammo__ep01__two_shadows.md",
+    "ammo_bank\\raw\\ammo__ep01__ash_grass_ripple.md",
+    "ammo_bank\\raw\\ammo__ep01__vela_rising_crash.md",
+    "ammo_bank\\raw\\ammo__ep01__cup_down.md",
+    "ammo_bank\\raw\\ammo__ep01__rule_one_push.md",
+    "ammo_bank\\raw\\ammo__ep01__swear.md",
+    "ammo_bank\\raw\\ammo__ep01__ye_di_stands.md",
+    "ammo_bank\\raw\\ammo__ep01__ai_response_speed.md",
+    "ammo_bank\\raw\\ammo__ep01__forge_assessment.md",
+    "ammo_bank\\raw\\ammo__ep01__walk_slow.md",
+    "ammo_bank\\raw\\ammo__ep01__hot_drink_interrupted.md",
+    "ammo_bank\\raw\\ammo__ep01__b_trigger_first_human.md"
+  ],
+  "index_updated": false
+}

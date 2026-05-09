@@ -1,0 +1,62 @@
+{
+  "version": "0.1.0",
+  "rooms": {
+    "author_room": {
+      "purpose": "Author premise, outline, choices, drafts, and authorial decisions.",
+      "default_primary_role": "Chief Author",
+      "canon_safe": "partial",
+      "allows_high_divergence": false,
+      "default_outputs": ["author_premise", "author_outline", "author_decisions", "drafts"]
+    },
+    "notebook": {
+      "purpose": "Low-friction raw capture.",
+      "default_primary_role": "Chief Author",
+      "canon_safe": false,
+      "allows_high_divergence": true,
+      "default_outputs": ["raw_notes"]
+    },
+    "ammo_bank": {
+      "purpose": "Abundant creative ammunition and candidate material.",
+      "default_primary_role": "Idea Assistant",
+      "canon_safe": false,
+      "allows_high_divergence": true,
+      "default_outputs": ["raw_ammo", "candidate_ammo", "ammo_index"]
+    },
+    "asset_room": {
+      "purpose": "Reusable story assets such as species, places, objects, phenomena, and scene mechanisms.",
+      "default_primary_role": "Research Assistant",
+      "canon_safe": "partial",
+      "allows_high_divergence": true,
+      "default_outputs": ["asset_index", "species", "places", "objects", "phenomena", "scene_mechanics"]
+    },
+    "canon_room": {
+      "purpose": "Durable canon facts, continuity ledgers, timeline, and inherited states.",
+      "default_primary_role": "Canon Keeper",
+      "canon_safe": true,
+      "allows_high_divergence": false,
+      "default_outputs": ["project_canon", "continuity_ledger", "timeline", "state_ledgers"]
+    },
+    "editorial_room": {
+      "purpose": "Editorial reports, blockers, and publishability review.",
+      "default_primary_role": "Development Editor",
+      "canon_safe": true,
+      "allows_high_divergence": false,
+      "default_outputs": ["developmental_reports", "continuity_reports", "line_reports", "copyedit_reports", "proof_reports"]
+    },
+    "revision_room": {
+      "purpose": "Author-led revision workspace.",
+      "default_primary_role": "Chief Author",
+      "canon_safe": "partial",
+      "allows_high_divergence": false,
+      "default_outputs": ["revisions", "accepted_editorial_changes"]
+    },
+    "publication_room": {
+      "purpose": "Frozen chapters and release records.",
+      "default_primary_role": "Publisher",
+      "canon_safe": true,
+      "allows_high_divergence": false,
+      "default_outputs": ["frozen_chapters", "release_log"]
+    }
+  }
+}
+

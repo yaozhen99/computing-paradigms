@@ -1,0 +1,11 @@
+{
+  "current": "0.1.0",
+  "versions": [
+    {
+      "version": "0.1.0",
+      "date": "2026-05-08",
+      "summary": "Initial v1.3 studio policy: rooms, roles, permission matrix, window inheritance."
+    }
+  ]
+}
+

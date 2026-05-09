@@ -1,0 +1,60 @@
+{
+  "version": "0.1.0",
+  "roles": {
+    "Chief Author": {
+      "purpose": "Owns final prose, selection, voice unity, revision authority, and final acceptance decisions.",
+      "default_rooms": ["author_room", "revision_room", "publication_room"],
+      "may_approve": true
+    },
+    "Idea Assistant": {
+      "purpose": "Generates abundant raw material and creative candidates.",
+      "default_rooms": ["notebook", "ammo_bank"],
+      "may_approve": false
+    },
+    "Research Assistant": {
+      "purpose": "Expands assets, places, phenomena, objects, and scene mechanisms.",
+      "default_rooms": ["asset_room", "ammo_bank"],
+      "may_approve": false
+    },
+    "Ammo Librarian": {
+      "purpose": "Classifies raw ammo, assigns IDs, tags entries, updates the ammo index, and manages status movement before author selection.",
+      "default_rooms": ["ammo_bank"],
+      "may_approve": false
+    },
+    "Canon Keeper": {
+      "purpose": "Maintains canon, continuity ledgers, and canon change records.",
+      "default_rooms": ["canon_room"],
+      "may_approve": false
+    },
+    "Development Editor": {
+      "purpose": "Reviews structure, stakes, character pressure, pacing, and large-scale story issues.",
+      "default_rooms": ["editorial_room"],
+      "may_approve": false
+    },
+    "Continuity Editor": {
+      "purpose": "Checks hard conflicts in character, event, time, place, form, object, and environment state.",
+      "default_rooms": ["editorial_room", "canon_room"],
+      "may_approve": false
+    },
+    "Line Editor": {
+      "purpose": "Reviews prose, rhythm, voice, repetition, imagery, and scene-level execution.",
+      "default_rooms": ["editorial_room", "revision_room"],
+      "may_approve": false
+    },
+    "Copy Editor": {
+      "purpose": "Checks names, formatting, local consistency, grammar, and copy-level issues.",
+      "default_rooms": ["editorial_room"],
+      "may_approve": false
+    },
+    "Proofreader": {
+      "purpose": "Checks final typos, punctuation, and residual issues.",
+      "default_rooms": ["editorial_room", "publication_room"],
+      "may_approve": false
+    },
+    "Publisher": {
+      "purpose": "Freezes approved chapters and records release decisions.",
+      "default_rooms": ["publication_room"],
+      "may_approve": true
+    }
+  }
+}

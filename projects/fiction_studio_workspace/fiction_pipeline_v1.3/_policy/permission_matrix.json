@@ -1,0 +1,121 @@
+{
+  "version": "0.1.0",
+  "actions": ["enter", "collect", "propose", "write", "approve"],
+  "defaults": {
+    "deny_unknown": true,
+    "deny_wins": true,
+    "manual_override_requires_audit": true
+  },
+  "matrix": {
+    "Chief Author": {
+      "author_room": ["enter", "collect", "propose", "write", "approve"],
+      "notebook": ["enter", "collect", "propose", "write"],
+      "ammo_bank": ["enter", "collect", "propose", "write"],
+      "asset_room": ["enter", "collect", "propose", "write", "approve"],
+      "canon_room": ["enter", "collect", "propose", "approve"],
+      "editorial_room": ["enter", "collect", "propose"],
+      "revision_room": ["enter", "collect", "propose", "write", "approve"],
+      "publication_room": ["enter", "collect", "propose", "approve"]
+    },
+    "Idea Assistant": {
+      "author_room": ["enter", "collect"],
+      "notebook": ["enter", "collect", "propose", "write"],
+      "ammo_bank": ["enter", "collect", "propose", "write"],
+      "asset_room": ["enter", "collect", "propose"],
+      "canon_room": ["enter", "collect"],
+      "editorial_room": [],
+      "revision_room": [],
+      "publication_room": []
+    },
+    "Research Assistant": {
+      "author_room": ["enter", "collect"],
+      "notebook": ["enter", "collect"],
+      "ammo_bank": ["enter", "collect", "propose", "write"],
+      "asset_room": ["enter", "collect", "propose", "write"],
+      "canon_room": ["enter", "collect", "propose"],
+      "editorial_room": [],
+      "revision_room": [],
+      "publication_room": []
+    },
+    "Ammo Librarian": {
+      "author_room": ["enter", "collect"],
+      "notebook": ["enter", "collect"],
+      "ammo_bank": ["enter", "collect", "propose", "write"],
+      "asset_room": ["enter", "collect", "propose"],
+      "canon_room": ["enter", "collect"],
+      "editorial_room": [],
+      "revision_room": [],
+      "publication_room": []
+    },
+    "Canon Keeper": {
+      "author_room": ["enter", "collect"],
+      "notebook": [],
+      "ammo_bank": ["enter", "collect"],
+      "asset_room": ["enter", "collect", "propose"],
+      "canon_room": ["enter", "collect", "propose", "write"],
+      "editorial_room": ["enter", "collect", "propose"],
+      "revision_room": ["enter", "collect"],
+      "publication_room": ["enter", "collect"]
+    },
+    "Development Editor": {
+      "author_room": ["enter", "collect"],
+      "notebook": [],
+      "ammo_bank": ["enter", "collect"],
+      "asset_room": ["enter", "collect"],
+      "canon_room": ["enter", "collect"],
+      "editorial_room": ["enter", "collect", "propose", "write"],
+      "revision_room": ["enter", "collect", "propose"],
+      "publication_room": []
+    },
+    "Continuity Editor": {
+      "author_room": ["enter", "collect"],
+      "notebook": [],
+      "ammo_bank": ["enter", "collect"],
+      "asset_room": ["enter", "collect"],
+      "canon_room": ["enter", "collect"],
+      "editorial_room": ["enter", "collect", "propose", "write"],
+      "revision_room": ["enter", "collect", "propose"],
+      "publication_room": ["enter", "collect"]
+    },
+    "Line Editor": {
+      "author_room": ["enter", "collect"],
+      "notebook": [],
+      "ammo_bank": ["enter", "collect"],
+      "asset_room": [],
+      "canon_room": ["enter", "collect"],
+      "editorial_room": ["enter", "collect", "propose", "write"],
+      "revision_room": ["enter", "collect", "propose"],
+      "publication_room": []
+    },
+    "Copy Editor": {
+      "author_room": ["enter", "collect"],
+      "notebook": [],
+      "ammo_bank": [],
+      "asset_room": [],
+      "canon_room": ["enter", "collect"],
+      "editorial_room": ["enter", "collect", "propose", "write"],
+      "revision_room": ["enter", "collect", "propose"],
+      "publication_room": ["enter", "collect"]
+    },
+    "Proofreader": {
+      "author_room": [],
+      "notebook": [],
+      "ammo_bank": [],
+      "asset_room": [],
+      "canon_room": ["enter", "collect"],
+      "editorial_room": ["enter", "collect", "propose", "write"],
+      "revision_room": ["enter", "collect"],
+      "publication_room": ["enter", "collect", "propose"]
+    },
+    "Publisher": {
+      "author_room": ["enter", "collect"],
+      "notebook": [],
+      "ammo_bank": [],
+      "asset_room": [],
+      "canon_room": ["enter", "collect"],
+      "editorial_room": ["enter", "collect"],
+      "revision_room": ["enter", "collect"],
+      "publication_room": ["enter", "collect", "write", "approve"]
+    }
+  }
+}
